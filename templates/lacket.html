@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>merelybot api</title>
+        <style>
+            body{
+                padding-top:1em;
+                color:#fff;
+            }
+            
+            ::selection {
+                color: red;
+                background-color: brown;
+            }
+            
+            .die{
+                border: 3px dashed red;
+                padding:5px;
+                height: 100%;
+                position: relative;
+                display: inline-block;
+                animation-name: headlackeysuperiority;
+                animation-duration: 0.25s;
+                animation-iteration-count: infinite;
+            }
+            @keyframes headlackeysuperiority {
+                0%   {background-color:rgb(0, 255, 255); left:2%; top:0px;}
+                10%  {background-color:rgb(64, 255, 0); left:6%; top:0px;}
+                20%  {background-color:rgb(255, 0, 128); left:2%; top:10px;}
+                30%  {background-color:rgb(6, 100, 255); left:6%; top:0px;}
+                40%  {background-color:rgb(0, 255, 0); left:3%; top:-10px;}
+                50%  {background-color:rgb(255, 255, 0); left:6%; top:15;}
+                75%  {background-color:rgb(0, 255, 191); left:2%; top:25px;}
+                90% {background-color:rgb(0, 255, 0); left:5%; top:0px;}
+                100% {background-color:rgb(255, 0, 75); left:2%; top:0px;}
+            }
+            .title{
+                animation-name: fontaesthetic;
+                animation-duration: 0.5s;
+                animation-iteration-count:infinite;
+            }
+            @keyframes fontaesthetic {
+                0%   {font-family: "Arial";}
+                10%  {font-family: "Times New Roman";}
+                20%  {font-family: "Helvitica";}
+                30%  {font-family: "Impact";}
+                40%  {font-family: "Courier New";}
+                50%  {font-family: "Verdana";}
+                60%  {font-family: "Georgia";}
+                70%  {font-family: "Palatino";}
+                80%  {font-family: "Bookman";}
+                90%  {font-family: "Comic Sans MS";}
+                100% {font-family: "Times";}
+            }
+            
+            /* The element to apply the animation to */
+            div {
+                width: 640px;
+                background-color: red;
+                animation-name: example;
+                animation-duration: 4s;
+            }
+            .more{
+                position:fixed;
+                bottom:0;
+                left:0;
+                right:0;
+            }
+        </style>
+    </head>
+    <body style="background-color:rgb(3, 33, 42)">
+			<style>.yiayscomparent{font-size:16px;position:fixed;left:0;top:8em;transition: 0.4s;color:#fff;font-family:sans-serif;font-weight:400;z-index: 100000;}.yiayscomparent.active{left:10em;}.yiayscomparent>.toggle{display: block;width:3em;height:3em;cursor: pointer;background:rgb(68,86,204);}.yiayscomparent>.toggle>span{position: absolute; left: 0.5em; top: 0.35em;width: 2em;height: 0.3em;background-color: #fff;margin: 6px 0;transition: 0.4s;}.yiayscomparent>.toggle>span:nth-child(2){top:0.95em;}.yiayscomparent>.toggle>span:last-child{top:1.55em;}.yiayscomparent.active>.toggle> span:first-child{top:0.275em;-webkit-transform: rotate(-45deg) translate(-9px, 7px);transform: rotate(-45deg) translate(-9px, 7px);}.yiayscomparent.active>.toggle>span:nth-child(2){opacity: 0;}.yiayscomparent.active>.toggle>span:last-child{top:1.625em;-webkit-transform: rotate(45deg) translate(-8px, -7px);transform: rotate(45deg) translate(-8px, -7px);}.yiayscomparent>.menu{position:absolute;top:0;left:-10em;width:10em;background:#fff;}.yiayscomparent>.menu>a{display:block;padding:0em 1em;line-height:1em;color:#000!important;text-decoration:none!important;opacity:0.8;transition: 0.4s;height:0em;box-sizing:initial;}.yiayscomparent.active>.menu>a{height:1em;padding:1em 1em;}.yiayscomparent>.menu>a:hover{opacity:1;}</style><div class="yiayscomparent"><div class="toggle" onclick="this.parentElement.classList.toggle('active');"><span></span><span></span><span></span></div><div class="menu"><a style="background:rgb(68,86,204);color:#fff!important;height:1em!important;padding:1em 1em!important;" href="https://yiays.com">Home</a><a style="background:rgb(68,86,204);background:linear-gradient(45deg,rgba(68,86,204,0.5)0%,rgba(12,131,167,0.5)100%);" href="https://merely.yiays.com">Merely</a><a style="background:rgb(247,183,49);background:linear-gradient(45deg,rgba(247,183,49,0.5)0%,rgba(235,59,90,0.5)100%);" href="https://kahoot.yiays.com">KahootBot</a><a style="background:rgb(52,90,100);background:linear-gradient(225deg,rgba(90,180,190,0.5)0%,rgba(45,80,90,0.5)100%);" href="https://yiays.com/blog/confession-bot-a-side-project">ConfessionBot</a><a style="background:rgb(123,176,223);background:linear-gradient(225deg,rgba(238,238,238,0.5)0%,rgba(123,176,223,0.5)70%);" href="https://yiays.com/blog">Projects</a></div></div>
+        <h1 class="title">merely api v{$globals.ver}</h1>
+        <div class="die">
+            What the fuck did you just fucking say about me, you little bitch? I'll have you know I graduated top of my class in the Navy Seals, and I've been involved in numerous secret raids on Al-Quaeda, and I have over 300 confirmed kills. I am trained in gorilla warfare and I'm the top sniper in the entire US armed forces. You are nothing to me but just another target. I will wipe you the fuck out with precision the likes of which has never been seen before on this Earth, mark my fucking words. You think you can get away with saying that shit to me over the Internet? Think again, fucker. As we speak I am contacting my secret network of spies across the USA and your IP is being traced right now so you better prepare for the storm, maggot. The storm that wipes out the pathetic little thing you call your life. You're fucking dead, kid. I can be anywhere, anytime, and I can kill you in over seven hundred ways, and that's just with my bare hands. Not only am I extensively trained in unarmed combat, but I have access to the entire arsenal of the United States Marine Corps and I will use it to its full extent to wipe your miserable ass off the face of the continent, you little shit. If only you could have known what unholy retribution your little “clever” comment was about to bring down upon you, maybe you would have held your fucking tongue. But you couldn't, you didn't, and now you're paying the price, you goddamn idiot. I will shit fury all over you and you will drown in it. You're fucking dead, kiddo.
+        </div>
+        <marquee class="more" direction="left" behaviour="scroll">for more information, visit https://merely.yiays.com</marquee>
+    </body>
+</html>

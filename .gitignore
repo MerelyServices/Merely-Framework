@@ -1,0 +1,8 @@
+/__pycache__/
+/0.0.1/
+/beta/
+/merely_data/*
+!/merely_data/config.ini
+!/merely_data/changes.txt
+/merelycmd.py
+/webserver.old.py
