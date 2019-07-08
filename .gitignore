@@ -3,6 +3,6 @@
 /beta/
 /merely_data/*
 !/merely_data/config.ini
-!/merely_data/changes.txt
+!/merely_data/changes.md
 /merelycmd.py
 /webserver.old.py

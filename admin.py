@@ -5,7 +5,7 @@ import time, os, math, re
 from discord.ext import commands
 import emformat, help
 
-globals.commandlist['admin']=['welcome','farewell','janitor','die','clean','logcat','changelog']
+globals.commandlist['admin']=['welcome','farewell','janitor','die','clean','logcat','changelog','announceupdate','owneroptout']
 
 class Admin(commands.Cog):
 	"""Admin related commands."""
@@ -307,17 +307,29 @@ class Admin(commands.Cog):
 		else:
 			await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","lockout")
 
-	@commands.command(pass_context=True, no_pm=False, aliases=['changes','updates','update','change','upgrade','upgrades','improvements'])
+	@commands.group(pass_context=True, no_pm=False, aliases=['changes','updates','update','change','upgrade','upgrades','improvements'])
 	async def changelog(self,ctx):
 		"""List changes in bot since last update."""
-		print('changelog command')
-		try:
-			await ctx.message.channel.send("You can view the full changelog online! ( "+globals.apiurl+"changes.html )")
-			await emformat.genericmsg(ctx.message.channel,"*here's a list of recent changes to merely...*\n\n"+''.join(globals.changes[-10:])+"\n\nremeber to leave feedback at m/feedback if you want changes made!",'done','changelog')
-		except:
-			if len(''.join(globals.changes))>=1800:
-				await emformat.genericmsg(ctx.message.channel,"the changelog is too long for discord! either [view the changelog online]("+globals.apiurl+"changes.html) or check back later when it's been shortened.",'error','changelog')
-				await self.bot.get_channel(globals.feedbackchannel).send("<@!140297042709708800>, the changelog is too long! ("+str(len('\n'.join(globals.changes)))+")")
+		if ctx.invoked_subcommand is None:
+			print('changelog command')
+			try:
+				await ctx.message.channel.send("You can view the full changelog online! ( "+globals.apiurl+"changes.html )")
+				await emformat.genericmsg(ctx.message.channel,"*here's a list of recent changes to merely...*\n\n"+''.join(globals.changes[-10:])+"\n\nremeber to leave feedback with `m/feedback` if you want changes made!",'done','changelog')
+			except:
+				if len(''.join(globals.changes))>=1800:
+					await emformat.genericmsg(ctx.message.channel,"the changelog is too long for discord! either [view the changelog online]("+globals.apiurl+"changes.html) or check back later when it's been shortened.",'error','changelog')
+					await self.bot.get_channel(globals.feedbackchannel).send("<@!140297042709708800>, the changelog is too long! ("+str(len('\n'.join(globals.changes)))+")")
+	@changelog.command(pass_context=True, name='add')
+	async def changelogadd(self,ctx,*,text=None):
+		"""Add an entry to the changelog"""
+		print('changelog add command')
+		if ctx.message.author.id in globals.superusers:
+			if text:
+				globals.changes.extend(['\n'+t for t in '\n'.split(text)])
+				globals.save()
+				await ctx.message.channel.send("Appended to the changelog successfully!")
+		else:
+			await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","changelog")
 	
 	@commands.command(pass_context=True, no_pm=False)
 	async def announceupdate(self,ctx,*,msg=''):
@@ -348,6 +360,7 @@ class Admin(commands.Cog):
 				await ctx.message.channel.send('patch notes are required!')
 		else:
 			await emformat.genericmsg(ctx.message.channel,"this command is **super** restricted.","error","announcetoserverowner")
+	
 	@commands.command(pass_context=True, no_pm=False)
 	async def owneroptout(self,ctx):
 		"""Announces updates to the server owners."""

@@ -94,7 +94,7 @@ async def js(request):
 async def css(request):
 	if globals.verbose: print('GET /changes.html')
 	with open('templates/changes.html',encoding='utf8') as f:
-		file=f.read().replace('{$globals.ver}',globals.ver).replace('{$changes}','<li>'+'</li><li>'.join(globals.changes)+'</li>')
+		file=f.read().replace('{$globals.ver}',globals.ver).replace('{$changes}',''.join(globals.changes))
 	return web.Response(text=file,status=200,headers={'content-type':'text/html'})
 @routes.get("/changes.js")
 async def js(request):
