@@ -61,6 +61,7 @@ if globals.verbose: print('fun done!')
 
 #	meme
 import meme
+globals.memedbpass=os.environ.get("MemeDB")
 globals.modules['meme']=meme
 globals.meme = meme.Meme(bot)
 bot.add_cog(globals.meme)
@@ -107,7 +108,7 @@ class Reload(commands.Cog):
 	async def reload(self,ctx,*,module:str):
 		if ctx.message.author.id in globals.superusers:
 			if module=='webserver':
-				globals.modules['webserver'].stop()
+				await globals.modules['webserver'].stop()
 				webserver=importlib.reload(globals.modules[module])
 				await webserver.start()
 				await ctx.message.channel.send("reloaded `"+module+"` succesfully!")
@@ -313,11 +314,11 @@ async def janitor(msg):
 @bot.event
 async def on_raw_reaction_add(e):
 	if e.channel_id in sum(globals.memechannels.values(),[]) and e.user_id != bot.user.id:
-		await globals.meme.OnReaction(e.message_id,e.channel_id)
+		await globals.meme.OnReaction(True,e.message_id,e.user_id,e.channel_id,e.emoji)
 @bot.event
 async def on_raw_reaction_remove(e):
 	if e.channel_id in sum(globals.memechannels.values(),[]):
-		await globals.meme.OnReaction(e.message_id,e.channel_id)
+		await globals.meme.OnReaction(False,e.message_id,e.user_id)
 
 @bot.event
 async def on_error(*args):

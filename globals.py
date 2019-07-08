@@ -4,6 +4,7 @@ import configparser
 config=configparser.ConfigParser()
 stats=False
 meme=None
+memedbpass=''
 lockout={}
 commandlist={'main':['reload']}
 modules={'main':False,'reload':False}
@@ -12,19 +13,12 @@ store='merely_data/'
 dhelp={}
 connected=False
 
-memechannels={
-	0:[238976460063244288],
-	1:[360218645823094794],
-	2:[556933225985867857],
-	3:[563899031684775945]
-}
-
-verbose,logchannel,feedbackchannel,modchannel,emurl,webserver,apiurl,apiport=(0,)*8
-thonks,ver,lastver,changes,authusers,superusers=(0,)*6
+verbose,logchannel,feedbackchannel,modchannel,emurl,webserver,apiurl,apiport=(None,)*8
+thonks,ver,lastver,changes,authusers,superusers,memechannels=(None,)*7
 
 def reload():
 	global verbose,logchannel,feedbackchannel,modchannel,emurl,webserver,apiurl,apiport
-	global thonks,ver,lastver,changes,lockout,authusers,superusers
+	global thonks,ver,lastver,changes,lockout,authusers,superusers,memechannels
 	
 	print('reading config...')
 	config.read(store+'config.ini')
@@ -45,7 +39,7 @@ def reload():
 	#versioning
 	ver=config.get('settings','ver')
 	lastver=config.get('settings','lastver')
-	with open(store+'changes.txt', 'r', encoding='utf-8') as file:
+	with open(store+'changes.md', 'r', encoding='utf-8') as file:
 		changes=file.readlines()
 
 	#perms
@@ -53,16 +47,21 @@ def reload():
 
 	authusers=[int(authuser) for authuser in config.get('settings','authusers').split(',')]
 	superusers=[int(superuser) for superuser in config.get('settings','superusers').split(',')]
+	
+	memechannels={int(level):[int(channel) for channel in config.get('memechannels',level).split(',')] for level in config['memechannels']}
 	print('config read!')
 
 def save():
-	global lockout
+	global lockout,changes
 	#perms
 	for user,time in lockout.items():
 		config.set('lockout',user,time)
 	
 	with open(store+'config.ini','w') as f:
 		config.write(f)
+	
+	with open(store+'changes.md', 'w', encoding='utf-8') as file:
+		file.writelines(changes)
 	print('config saved!')
 
 reload()
