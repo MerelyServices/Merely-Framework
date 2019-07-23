@@ -73,11 +73,12 @@ class Fun(commands.Cog):
 	async def meme(self, ctx, *, said=''):
 		said=said.replace('#','get ').split(' ')
 		if len(said)>0 and said[0]=='add': #adds more memes to the meme machine
-			if len(said)==1 or len(said[1])<10 or said[1][:4]!='http':
+			"""if len(said)==1 or len(said[1])<10 or said[1][:4]!='http':
 				await ctx.message.channel.send("you need to provide a link to an image after the command!\nfor example; ```merely meme add https://cdn.discordapp.com/attachments/198337653412855808/283880728863703041/unknown.png```")
-				return
+				return"""
 			if globals.verbose: print('meme add command')
-			meme=said[1]
+			await ctx.message.channel.send("you can no longer add memes through this command, a new system will be phased in soon.")
+			"""meme=said[1]
 			meme=meme.replace("\n"," ")
 			with open(globals.store+'memes.txt',"r",encoding='utf8') as f:
 				memelist=f.readlines()
@@ -100,7 +101,7 @@ class Fun(commands.Cog):
 				await ctx.message.channel.send("i've added your meme to the list! (#"+str(x)+")")
 				await self.bot.get_channel(globals.modchannel).send(ctx.message.author.name+'#'+ctx.message.author.discriminator+
 				" just added a meme. if it's no good, `m/meme delet` it.\n#"+str(x)+': '+meme)
-				self.lastmeme[globals.modchannel]=meme
+				self.lastmeme[globals.modchannel]=meme"""
 		elif len(said)>0 and (said[0]=='delet' or said[0]=='delete'): #delete a broken or bad meme
 			if ctx.message.guild.id not in self.lastmeme or self.lastmeme[ctx.message.guild.id]==None:
 				await ctx.message.channel.send("i don't know what meme you're referring to, please select it first using `m/meme #<number>`.")

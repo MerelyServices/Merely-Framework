@@ -45,13 +45,13 @@ class Meme(commands.Cog):
 		print('BS: done')
 	
 	async def ReactionCrawler(self,message,channel):
-		result = None
+		result = -1
 		up = []
 		down = []
 		for reaction in message.reactions:
 			if '🔼' in str(reaction.emoji):
 				if not reaction.me:
-					result = await self.GetMessageUrl(message) if result == None else result
+					result = await self.GetMessageUrls(message) if result == -1 else result
 					if result:
 						await message.add_reaction('🔼')
 				async for user in reaction.users():
@@ -59,7 +59,7 @@ class Meme(commands.Cog):
 						up.append(user.id)
 			elif '🔽' in str(reaction.emoji):
 				if not reaction.me:
-					result = await self.GetMessageUrl(message) if result == None else result
+					result = await self.GetMessageUrls(message) if result == -1 else result
 					if result:
 						await message.add_reaction('🔽')
 				async for user in reaction.users():
@@ -67,46 +67,53 @@ class Meme(commands.Cog):
 						down.append(user.id)
 		if down or up:
 			if len(up)>=1:
-				result = await self.GetMessageUrl(message) if result == None else result
+				result = await self.GetMessageUrls(message) if result == -1 else result
 				self.RecordMeme(result,message,up,down)
 		else:
-			result = await self.GetMessageUrl(message) if result == None else result
+			result = await self.GetMessageUrls(message) if result == -1 else result
 			if result and len(message.reactions)<=18:
 				await message.add_reaction('🔼')
 				await message.add_reaction('🔽')
 	
 	def RecordMeme(self,result,message,up=[],down=[]):
-		if result:
-			mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=globals.memedbpass,database='meme')
-			cursor = mydb.cursor()
-			
-			# Add meme, in case it doesn't already exist
-			cursor.execute(f"CALL AddMeme({message.id},'{result[1]}',{result[2]},'{result[0]}',@MID);")
+		collection='LAST_INSERT_ID()' if len(result)>1 else 'NULL'
+		
+		mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=globals.memedbpass,database='meme')
+		cursor = mydb.cursor()
+		
+		# Add meme, in case it doesn't already exist
+		first=True
+		for meme in result:
+			if first:
+				first=False
+				cursor.execute(f"CALL AddMeme({message.id},'{meme[1]}',NULL,'{meme[0]}',@MID);")
+				mydb.commit()
+			else:
+				cursor.execute(f"CALL AddMeme({message.id},'{meme[1]}',@MID,'{meme[0]}',@notMID);")
+		if len(result)>1:
 			mydb.commit()
-			
-			# Add user, in case they don't exist
-			for voter in list(dict.fromkeys(up+down)):
-				cursor.execute(f"CALL AddUser({str(voter)},NULL,NULL);")
-			mydb.commit()
-			
-			# Add their vote, finally.
-			for voter in list(dict.fromkeys(up+down)):
-				try:
-					cursor.execute(f"CALL AddMemeVote(@MID,'{str(voter)}',{('1' if voter in up else '-1')});")
-				except:
-					print(cursor.statement)
-					raise
-			mydb.commit()
-			
-			# Add an edge rating from the bot based on where it is
-			edge = 4
-			for k,v in globals.memechannels.items():
-				if message.channel.id in v: edge = k
-			cursor.execute(f"CALL AddEdge(@MID,{self.bot.user.id},{edge});")
-			mydb.commit()
-			mydb.close()
-		else:
-			print("Unable to add a meme to the database! ("+str(message.id)+")")
+		
+		# Add user, in case they don't exist
+		for voter in list(dict.fromkeys(up+down)):
+			cursor.execute(f"CALL AddUser({str(voter)},NULL,NULL);")
+		mydb.commit()
+		
+		# Add their vote, finally.
+		for voter in list(dict.fromkeys(up+down)):
+			try:
+				cursor.execute(f"CALL AddMemeVote(@MID,'{str(voter)}',{('1' if voter in up else '-1')});")
+			except:
+				print(cursor.statement)
+				raise
+		mydb.commit()
+		
+		# Add an edge rating from the bot based on where it is
+		edge = 4
+		for k,v in globals.memechannels.items():
+			if message.channel.id in v: edge = k
+		cursor.execute(f"CALL AddEdge(@MID,{self.bot.user.id},{edge});")
+		mydb.commit()
+		mydb.close()
 	def RemoveVote(self,mid,uid):
 		mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=globals.memedbpass,database='meme')
 		cursor = mydb.cursor()
@@ -114,28 +121,28 @@ class Meme(commands.Cog):
 		mydb.commit()
 		mydb.close()
 	
-	async def GetMessageUrl(self,message):
+	async def GetMessageUrls(self,message):
 		urls = FindURLs(message.content)+[a.url for a in message.attachments]
 		if urls:
+			memes=[]
 			for url in urls:
 				try:
 					async with self.session.head(url) as clientresponse:
 						if 'content-type' in clientresponse.headers:
 							type = clientresponse.headers['content-type'].split(' ')[0]
 							if typeconverter(type):
-								return (url,typeconverter(type),0 if len(urls)==1 else 1)
-						else:
-							return None
+								memes.append([url,typeconverter(type)])
 				except:
-					return None
+					continue
+			return memes
 		else: return None
 
 	async def OnMemePosted(self,message):
-		result = await self.GetMessageUrl(message)
+		result = await self.GetMessageUrls(message)
 		if result:
 			await message.add_reaction('🔼')
 			await message.add_reaction('🔽')
-			return 'found type '+result[1]+' at '+result[0]
+			return 'found type '+result[0][1]+' at '+result[0][0]
 		return "couldn't find a meme!"
 	
 	async def OnReaction(self,add,message_id,user_id,channel_id=None,emoji=None):
