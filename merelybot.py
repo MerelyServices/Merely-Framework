@@ -94,7 +94,7 @@ if globals.verbose: print('webserver done!')
 # stats
 import stats
 globals.modules['stats']=stats
-globals.stats=stats.Stats()
+globals.stats=stats.Stats(bot)
 bot.add_cog(globals.stats)
 if globals.verbose: print('stats done!')
 
@@ -111,12 +111,6 @@ class Reload(commands.Cog):
 				await globals.modules['webserver'].stop()
 				webserver=importlib.reload(globals.modules[module])
 				await webserver.start()
-				await ctx.message.channel.send("reloaded `"+module+"` succesfully!")
-			elif module=='stats':
-				# globals.stats.stop()
-				stats=importlib.reload(globals.modules[module])
-				globals.stats=stats.Stats()
-				await globals.stats.runstats()
 				await ctx.message.channel.send("reloaded `"+module+"` succesfully!")
 			elif module=='globals' or module=='config':
 				globals.reload()
@@ -151,7 +145,6 @@ async def on_ready():
 	
 	if not globals.connected:
 		if globals.webserver: asyncio.ensure_future(webserver.start())
-		asyncio.ensure_future(globals.stats.runstats())
 		globals.connected=True
 	
 	with open(globals.store+"playing.txt","r") as file:

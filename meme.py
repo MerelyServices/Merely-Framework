@@ -48,6 +48,7 @@ class Meme(commands.Cog):
 		result = -1
 		up = []
 		down = []
+		verified = False
 		for reaction in message.reactions:
 			if '🔼' in str(reaction.emoji):
 				if not reaction.me:
@@ -57,6 +58,7 @@ class Meme(commands.Cog):
 				async for user in reaction.users():
 					if not user.bot:
 						up.append(user.id)
+						await reaction.remove(user)
 			elif '🔽' in str(reaction.emoji):
 				if not reaction.me:
 					result = await self.GetMessageUrls(message) if result == -1 else result
@@ -65,15 +67,27 @@ class Meme(commands.Cog):
 				async for user in reaction.users():
 					if not user.bot:
 						down.append(user.id)
+						await reaction.remove(user)
+			elif '☑' in str(reaction.emoji):
+				verified = True
 		if down or up:
 			if len(up)>=1:
 				result = await self.GetMessageUrls(message) if result == -1 else result
 				self.RecordMeme(result,message,up,down)
+				await message.add_reaction('☑')
 		else:
 			result = await self.GetMessageUrls(message) if result == -1 else result
 			if result and len(message.reactions)<=18:
 				await message.add_reaction('🔼')
 				await message.add_reaction('🔽')
+			if not verified:
+				mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=globals.memedbpass,database='meme')
+				cursor = mydb.cursor()
+				cursor.execute(f"SELECT Id FROM meme WHERE DiscordOrigin = {message.id}")
+				result = cursor.fetchone()
+				cursor.close()
+				if result != None:
+					await message.add_reaction('☑')
 	
 	def RecordMeme(self,result,message,up=[],down=[]):
 		collection='LAST_INSERT_ID()' if len(result)>1 else 'NULL'

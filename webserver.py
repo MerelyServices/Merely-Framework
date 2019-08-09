@@ -6,7 +6,7 @@ routes = web.RouteTableDef()
 
 @routes.get('/stats')
 async def stats(request):
-	if globals.verbose: print('GET /stats')
+	#if globals.verbose: print('GET /stats')
 	stats={
 		'status': globals.stats.status,
 		'exposure': globals.stats.exposure,
