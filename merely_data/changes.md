@@ -68,3 +68,7 @@
  - The meme background scanner has been tweaked, votes are now deleted once they're counted, and memes that were added to the website are given an additional tick react.
  - `m/stats` now calculates an accurate uptime percentage and tracks when the bot goes down.
  - `m/meme` is now a stub, no new memes can be added through the old method (`m/meme add`). All memes that were in `m/meme` are now in the memeDB. `m/meme` will show all memes from memeDB in the future.
+#### 0.6.2
+ - Fixed janitor, finally. - `m/janitor join (relaxed/strict)` is back in order.
+ - `m/clean` now has another feature; `m/clean n strict` will delete *n* posts indescriminately.
+ - Fixed an issue with the meme background scanner (for [meme.yiays.com](https://meme.yiays.com/)) not supporting multiple urls in the same message.
