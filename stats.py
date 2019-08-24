@@ -61,8 +61,8 @@ class Stats(commands.Cog):
 			i=0
 			sprint=0
 			for line in f.readlines():
-				ii=[(int(x) if int(x)<26059035 else int(x)-26059035) for x in line.split('-')] #further shrink file down by taking away the start date from all entries
-				if i+1!=ii[0]:
+				ii=[int(x) for x in line.split('-')]
+				if ii[0]>i+2:
 					self.upmins+=i-sprint
 					self.downmins+=ii[0]-i
 					savelines.append(str(sprint)+'-'+str(i))

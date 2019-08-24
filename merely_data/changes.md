@@ -58,9 +58,13 @@
 #### 0.5.2
  - `m/stats` and yiaysmc.noip.me are back online.
  - `m/image` now checks to see if google autocorrected your search before showing results.
- - `m/blacklist` now supports adding words that are already covered by the blacklist if they're not identical in order to make it possible to catch more mispellings of words that previously weren't blacklisted directly.
+ - `m/blacklist` now supports adding words that are already covered by the blacklist if they're not identical in order to make it possible to catch more misspellings of words that previously weren't blacklisted directly.
 ### 0.6.0
  - Fixed an issue that was preventing `m/playing` from persisting after a restart
  - Created a meme database and an [accompanying website](https://meme.yiays.com) for better `m/meme` results.
  - Created a background service that can scan specific channels for memes and allow members to vote which are added to the meme database.
  - Moved merely's documentation website to [merely.yiays.com](https://merely.yiays.com) and updated all links. Old links work for now, but will be removed in the future.
+#### 0.6.1
+ - The meme background scanner has been tweaked, votes are now deleted once they're counted, and memes that were added to the website are given an additional tick react.
+ - `m/stats` now calculates an accurate uptime percentage and tracks when the bot goes down.
+ - `m/meme` is now a stub, no new memes can be added through the old method (`m/meme add`). All memes that were in `m/meme` are now in the memeDB. `m/meme` will show all memes from memeDB in the future.

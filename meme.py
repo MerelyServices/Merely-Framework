@@ -20,7 +20,7 @@ def typeconverter(type):
 	return None
 
 def FindURLs(string):
-		urls = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', string)
+		urls = re.findall('(http[s]?:\/\/[A-z0-9/?.&%;:\-=@]+)', string)
 		return urls
 
 class Meme(commands.Cog):
@@ -69,7 +69,7 @@ class Meme(commands.Cog):
 						down.append(user.id)
 						await reaction.remove(user)
 			elif '☑' in str(reaction.emoji):
-				verified = True
+				verified = reaction
 		if down or up:
 			if len(up)>=1:
 				result = await self.GetMessageUrls(message) if result == -1 else result
@@ -80,14 +80,16 @@ class Meme(commands.Cog):
 			if result and len(message.reactions)<=18:
 				await message.add_reaction('🔼')
 				await message.add_reaction('🔽')
-			if not verified:
+				
 				mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=globals.memedbpass,database='meme')
 				cursor = mydb.cursor()
 				cursor.execute(f"SELECT Id FROM meme WHERE DiscordOrigin = {message.id}")
 				result = cursor.fetchone()
 				cursor.close()
-				if result != None:
+				if not verified and result != None:
 					await message.add_reaction('☑')
+				elif verified and result == None:
+					await verified.remove(self.bot.user)
 	
 	def RecordMeme(self,result,message,up=[],down=[]):
 		collection='LAST_INSERT_ID()' if len(result)>1 else 'NULL'
@@ -156,7 +158,10 @@ class Meme(commands.Cog):
 		if result:
 			await message.add_reaction('🔼')
 			await message.add_reaction('🔽')
-			return 'found type '+result[0][1]+' at '+result[0][0]
+			out = ''
+			for item in result:
+				out+='found type '+item[1]+' at '+item[0]+'\n'
+			return out
 		return "couldn't find a meme!"
 	
 	async def OnReaction(self,add,message_id,user_id,channel_id=None,emoji=None):

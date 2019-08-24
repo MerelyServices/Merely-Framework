@@ -11,6 +11,7 @@ class Admin(commands.Cog):
 	"""Admin related commands."""
 	def __init__(self, bot):
 		self.bot = bot
+		globals.janitor = self.janitorservice
 	
 	def printlist(self,list,n,limit):
 		s="page "+str(n+1)+" of "+str(math.ceil(len(list)/limit))+";```"+'\n'.join(list[n*limit:min(n*limit+limit,len(list))])+"```"
@@ -109,6 +110,24 @@ class Admin(commands.Cog):
 			globals.save()
 			await ctx.message.channel.send("removed and disabled the farewell message!")
 	
+	async def janitorservice(self,msg):
+		globals.config.read(globals.store+'config.ini')
+		if str(msg.channel.id) in globals.config.get('janitor','strict').split(' '):
+			await asyncio.sleep(30)
+			try:
+				await msg.delete()
+			except Exception as e:
+				print(e)
+				return
+		elif str(msg.channel.id) in globals.config.get('janitor','relaxed').split(' '):
+			if msg.author==bot.user or bot.user in msg.mentions or msg.content.lower().startswith('m/') or msg.content.lower().startswith('merely'):
+				await asyncio.sleep(30)
+				try:
+					await msg.delete()
+				except Exception as e:
+					print(e)
+					return
+	
 	@commands.group(pass_context=True, no_pm=False)
 	async def janitor(self,ctx):
 		"""Configure the janitor for your channel."""
@@ -123,7 +142,7 @@ class Admin(commands.Cog):
 		if ctx.message.author.id not in globals.authusers and ctx.message.author.id != ctx.message.guild.owner.id:
 			await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","janitor")
 			return
-		if ctx.message.channel.id in globals.config.get('janitor','strict').split(' ') or str(ctx.message.channel.id) in globals.config.get('janitor','relaxed').split(' '):
+		if str(ctx.message.channel.id) in globals.config.get('janitor','strict').split(' ') or str(ctx.message.channel.id) in globals.config.get('janitor','relaxed').split(' '):
 			await ctx.message.channel.send("this channel has already opted into the janitor service!")
 		elif mode not in ['strict','relaxed']:
 			await ctx.message.channel.send('you must specify whether you want a strict janitor or a relaxed janitor.\n*strict*; all messages from everyone are deleted after 30 seconds.\n*relaxed*; messages to and from merely are deleted after 30 seconds.')
@@ -166,14 +185,16 @@ class Admin(commands.Cog):
 		return True
 	
 	@commands.command(pass_context=True, no_pm=True, aliases=['clear'])
-	async def clean(self,ctx,n=50):
+	async def clean(self,ctx,n=50,strict=''):
 		"""Purge the channel of bot related messages"""
 		if globals.verbose: print('clean command')
 		if ctx.message.author.id in globals.authusers or ctx.message.author.id == ctx.message.guild.owner.id:
-			def is_delete(m):
-				if (len(m.content)>0 and m.content.lower().startswith('merely')) or m.content.lower().startswith('m/') or self.bot.user in m.mentions or m.author==self.bot.user or m.author==self.bot.get_user(265286478668496896) or len(m.content)==1 or m.type==discord.MessageType.pins_add:
+			if strict=='strict':
+				def is_delete(m):
 					return True
-				return False
+			else:
+				def is_delete(m):
+					return (len(m.content)>0 and m.content.lower().startswith('merely')) or m.content.lower().startswith('m/') or self.bot.user in m.mentions or m.author==self.bot.user or m.author==self.bot.get_user(265286478668496896) or len(m.content)==1 or m.type==discord.MessageType.pins_add
 			
 			try:
 				n=int(n)

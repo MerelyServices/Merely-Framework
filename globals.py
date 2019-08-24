@@ -4,6 +4,7 @@ import configparser
 config=configparser.ConfigParser()
 stats=False
 meme=None
+janitor=None
 memedbpass=''
 lockout={}
 commandlist={'main':['reload']}

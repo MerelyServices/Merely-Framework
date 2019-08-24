@@ -186,7 +186,8 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
-	await msglog(message)
+	asyncio.ensure_future(msglog(message))
+	asyncio.ensure_future(globals.janitor(message))
 	
 	ctx = await bot.get_context(message)
 	if ctx.prefix is not None:
@@ -205,12 +206,10 @@ async def on_message(message):
 			await bot.invoke(ctx)
 	if message.channel.id in sum(globals.memechannels.values(),[]):
 		await globals.meme.OnMemePosted(ctx.message)
-	
-	await janitor(message)
 
 async def send_ownerintro(server):
 	em=discord.Embed(title="introducing merely",type='rich',inline=False,
-	description="hello! i was just added to your server *"+server.name+"*! type `merely help` for a list of general commands, but as the owner of *"+server.name+"*, you have more commands available to you;",
+	description="hello! i was just added to your server! type `merely help` for a list of general commands, but as the owner of *"+server.name+"*, you have more commands available to you;",
 	color=discord.Colour(0x2C5ECA),url=globals.apiurl+'#/serverowner')
 	em.add_field(name='merely welcome',value=help.dhelp['welcome'])
 	em.add_field(name='merely farewell',value=help.dhelp['farewell'])
@@ -236,12 +235,13 @@ async def on_guild_join(server):
 	
 	await bot.change_presence(activity=discord.Game(name='merely help | m/help'))
 	await asyncio.sleep(30)
-	with open(globals.store+"playing.txt","r") as file:
-		playing=file.read()
-	if len(playing)>1:
-		await bot.change_presence(activity=discord.Game(name=playing))
-	else:
-		await bot.change_presence(activity=discord.Game(name='merely help'))
+	# 																																																			TODO: make universal playing function and use that
+	# with open(globals.store+"playing.txt","r") as file:
+		# playing=file.read()
+	# if len(playing)>1:
+		# await bot.change_presence(activity=discord.Game(name=playing))
+	# else:
+		# await bot.change_presence(activity=discord.Game(name='merely help'))
 
 @bot.event
 async def on_guild_remove(server):
@@ -285,24 +285,6 @@ async def msglog(msg):
 			
 			print(time.strftime("%H:%M:%S",time.localtime())+" - ["+channel+"] "+msg.author.name+"#"+msg.author.discriminator+": "+content)
 			if globals.logchannel: await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - ["+channel+"] "+msg.author.name+"#"+msg.author.discriminator+": "+fullcon)
-
-async def janitor(msg):
-	globals.config.read(globals.store+'config.ini')
-	if msg.channel.id in globals.config.get('janitor','strict').split(' '):
-		await asyncio.sleep(30)
-		try:
-			await msg.delete()
-		except Exception as e:
-			print(e)
-			return
-	elif msg.channel.id in globals.config.get('janitor','relaxed').split(' '):
-		if msg.author==bot.user or bot.user in msg.mentions or msg.content.lower().startswith('m/') or msg.content.lower().startswith('merely'):
-			await asyncio.sleep(30)
-			try:
-				await msg.delete()
-			except Exception as e:
-				print(e)
-				return
 
 @bot.event
 async def on_raw_reaction_add(e):

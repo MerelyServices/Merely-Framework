@@ -20,7 +20,7 @@ dhelp={
 	'help':"***merely help [(command)]***\nhelp offers a list of commands, if you follow merely help with a bot and a command, it'll describe the command in detail.",
 	'info':"***merely info***\nfind out exactly what merely can do and get relevant links.",
 	'stats':"***merely stats***\ntechnical information and interesting statistics.",
-	'clean':"***merely clean [limit]***\nclean deletes all messages that either activated merely or are from merely in the current channel.\n\n*note that all discord bots are only allowed to delete messages from the last 14 days.*",
+	'clean':"***merely clean [limit] [strict]***\nclean deletes all messages that either activated merely or are from merely in the current channel. If you provide a limit and the word 'strict' at the end, it will delete everything indescriminately.\n\n*note that all discord bots are only allowed to delete messages from the last 2 months.*",
 	'purge':"***merely purge first-id last-id [limit]***\npurge purges all messages that are within a range of ids. get message ids by enabling developer mode in discord and then clicking on the menu next to the messages.",
 	'playing':"***merely playing|watching|streaming [(status)]***\nchanges the playing status text to anything you desire, or alternatively resets the playing text if you provide no arguments.",
 	'command':"***merely command (search)***\nsearches the list of known commands for any command containing the query.",
