@@ -20,7 +20,7 @@ def typeconverter(type):
 	return None
 
 def FindURLs(string):
-		urls = re.findall('(http[s]?:\/\/[A-z0-9/?.&%;:\-=@]+)', string)
+		urls = re.findall(r'(http[s]?:\/\/[A-z0-9/?.&%;:\-=@]+)', string)
 		return urls
 
 class Meme(commands.Cog):
@@ -92,8 +92,6 @@ class Meme(commands.Cog):
 					await verified.remove(self.bot.user)
 	
 	def RecordMeme(self,result,message,up=[],down=[]):
-		collection='LAST_INSERT_ID()' if len(result)>1 else 'NULL'
-		
 		mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=globals.memedbpass,database='meme')
 		cursor = mydb.cursor()
 		

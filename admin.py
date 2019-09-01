@@ -5,7 +5,7 @@ import time, os, math, re
 from discord.ext import commands
 import emformat, help
 
-globals.commandlist['admin']=['welcome','farewell','janitor','die','clean','logcat','changelog','announceupdate','owneroptout']
+globals.commandlist['admin']=['welcome','farewell','janitor','die','clean','logcat','changelog','announceupdate','owneroptout','lockout']
 
 class Admin(commands.Cog):
 	"""Admin related commands."""
@@ -120,7 +120,7 @@ class Admin(commands.Cog):
 				print(e)
 				return
 		elif str(msg.channel.id) in globals.config.get('janitor','relaxed').split(' '):
-			if msg.author==bot.user or bot.user in msg.mentions or msg.content.lower().startswith('m/') or msg.content.lower().startswith('merely'):
+			if msg.author==self.bot.user or self.bot.user in msg.mentions or msg.content.lower().startswith('m/') or msg.content.lower().startswith('merely'):
 				await asyncio.sleep(30)
 				try:
 					await msg.delete()
@@ -315,12 +315,16 @@ class Admin(commands.Cog):
 		if ctx.message.author.id in globals.authusers or ctx.message.author.id == ctx.message.guild.owner.id:
 			pattern = re.compile(".*#[0-9]{4}")
 			if pattern.match(author):
+				uid = ctx.guild.get_member_named(author).id
+				if uid is None:
+					return await ctx.message.channel.send("unable to find any user with that username and discriminator!")
+				uid = str(uid)
 				sentence=int(sentence)
 				if sentence==0:
-					globals.lockout[author]=str(round(time.time())+2678400)
+					globals.lockout[uid]=str(round(time.time())+2678400)
 					await ctx.message.channel.send("locked out user "+author+" for a month.")
 				else:
-					globals.lockout[author]=str(round(time.time())+(int(sentence)*60))
+					globals.lockout[uid]=str(round(time.time())+(int(sentence)*60))
 					await ctx.message.channel.send("locked out user "+author+" for "+str(sentence)+" minutes.")
 				globals.save()
 			else:

@@ -192,14 +192,14 @@ async def on_message(message):
 	ctx = await bot.get_context(message)
 	if ctx.prefix is not None:
 		allowed=True
-		if message.author.name+"#"+message.author.discriminator in globals.lockout:
-			if int(globals.lockout[message.author.name+"#"+message.author.discriminator]) > time.time():
+		if str(message.author.id) in globals.lockout:
+			if int(globals.lockout[str(message.author.id)]) > time.time():
 				allowed=False
 				await message.channel.send("you've been banned from interacting with this bot. try again later, this may be temporary.")
 				print('user '+message.author.name+"#"+message.author.discriminator+' is locked out for another '+str(int(globals.lockout[message.author.name+"#"+message.author.discriminator])-time.time())+' seconds.')
 			else:
 				await message.channel.send("your ban is over. you may use commands again.")
-				globals.lockout.pop(message.author.name+"#"+message.author.discriminator,None)
+				globals.lockout.pop(str(message.author.id),None)
 				globals.save()
 		if allowed:
 			ctx.command = bot.get_command(ctx.invoked_with.lower())
