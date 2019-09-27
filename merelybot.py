@@ -220,7 +220,7 @@ async def send_ownerintro(server):
 	em.add_field(name='merely lockout',value=help.dhelp['lockout'])
 	em.add_field(name='merely feedback',value="this command isn't exclusive, but be sure to use it!\n"+help.dhelp['feedback'])
 	em.add_field(name='merely changelog',value="this command isn't exclusive, but be sure to use it!\n"+help.dhelp['changelog'])
-	em.add_field(name='for more information...',value='be sure to visit merely\s website! '+globals.apiurl+'#/serverowner')
+	em.add_field(name='for more information...',value='be sure to visit merely\'s website! '+globals.apiurl+'#/serverowner')
 	em.set_thumbnail(url=globals.emurl+"greet.gif")
 	em.set_footer(text="merely v"+globals.ver+" - created by Yiays#5930", icon_url="https://cdn.discordapp.com/avatars/309270899909984267/1d574f78b4d4acec14c1ef8290a543cb.png?size=64")
 	await server.owner.send(embed=em)
@@ -282,8 +282,12 @@ async def msglog(msg):
 			else:
 				channel=truncate(msg.guild.name,12)+'#'+truncate(msg.channel.name,12)
 			
+			embed = None
+			if len(msg.embeds)>0:
+				embed = msg.embeds[0]
+
 			print(time.strftime("%H:%M:%S",time.localtime())+" - ["+channel+"] "+msg.author.name+"#"+msg.author.discriminator+": "+content)
-			if globals.logchannel: await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - ["+channel+"] "+msg.author.name+"#"+msg.author.discriminator+": "+fullcon)
+			if globals.logchannel: await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - ["+channel+"] "+msg.author.name+"#"+msg.author.discriminator+": "+fullcon, embed=embed)
 
 @bot.event
 async def on_raw_reaction_add(e):

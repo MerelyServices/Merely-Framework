@@ -23,11 +23,22 @@ def FindURLs(string):
 		urls = re.findall(r'(http[s]?:\/\/[A-z0-9/?.&%;:\-=@]+)', string)
 		return urls
 
+EXCEPTIONS = [
+	'discordapp.com/channels',
+	'discord.gg/',
+	'meme.yiays.com',
+	'porn',
+	'xxx'
+]
+
+globals.commandlist['meme']=['meme']
+
 class Meme(commands.Cog):
 	"""In beta; a new database for automatically storing and indexing memes to make them easier to find"""
 	def __init__(self, bot):
 		self.bot = bot
 		self.session = aiohttp.ClientSession()
+		self.usedmemes = []
 	def __delete__(self,instance):
 		self.session.close()
 
@@ -141,6 +152,9 @@ class Meme(commands.Cog):
 			memes=[]
 			for url in urls:
 				try:
+					for exception in EXCEPTIONS:
+						if exception in url:
+							return None
 					async with self.session.head(url) as clientresponse:
 						if 'content-type' in clientresponse.headers:
 							type = clientresponse.headers['content-type'].split(' ')[0]
@@ -185,9 +199,76 @@ class Meme(commands.Cog):
 			await ctx.channel.send('Failed to complete service: ```py\n'+str(e)+'```')
 		else:
 			await ctx.channel.send('Background service ended.')
-		
 	
+	async def get_meme(self, channel, id=None):
+		if id is None:
+			query = \
+			"""
+				SELECT Id,Url,Type
+				FROM (meme AS r1 LEFT JOIN edge ON Id = edge.memeId)
+				JOIN (SELECT CEIL(RAND() * (SELECT MAX(Id) FROM meme)) AS maxId) AS r2
+				WHERE r1.Id >= r2.maxId AND (Type='image' OR Type='gif')
+				HAVING IFNULL(AVG(edge.Rating),4)<=1.5
+				ORDER BY r1.Id ASC
+				LIMIT 1
+			"""
+		elif id.isdigit():
+			query = \
+			f"""
+				SELECT Id,Url,Type
+				FROM meme LEFT JOIN edge ON meme.Id = edge.memeId
+				WHERE Id = {id}
+				HAVING IFNULL(AVG(edge.Rating),4)<=1.5
+				LIMIT 1
+			"""
+		else:
+			print('Invalid get_meme() request: '+id)
+		
+		mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=globals.memedbpass,database='meme')
+		cursor = mydb.cursor()
+		cursor.execute(query)
+		result = cursor.fetchone()
+		while result[0] in self.usedmemes:
+			cursor.execute(query)
+			result = cursor.fetchone()
+		self.usedmemes.append(result[0])
+		if len(self.usedmemes)>200:
+			self.usedmemes.pop(0)
+		mydb.close()
+		
+		if result is None:
+			await channel.send('there appears to be an issue with memeDB. please try again later.')
+			return
+		
+		embed = discord.Embed(color=discord.Color(0xf9ca24))#,url="https://meme.yiays.com/meme/"+str(result[0]),title="open in MemeDB")
+		embed.set_footer(text='powered by MemeDB (meme.yiays.com)',icon_url='https://meme.yiays.com/img/icon.png')
+		
+		extra = "https://meme.yiays.com/meme/"+str(result[0])
+		if result[2] in ['image']:
+			#embed.description = ""
+			embed.set_image(url=result[1])
+		elif result[2] == 'text':
+			embed.description = result[1]
+		else:
+			extra=result[1]+' - view online at https://meme.yiays.com/meme/'+str(result[0])
+			embed=None
+			
+		#embed.set_footer(text="merely v"+globals.ver+" - created by Yiays#5930", icon_url="https://cdn.discordapp.com/avatars/309270899909984267/1d574f78b4d4acec14c1ef8290a543cb.png?size=64")
+		await channel.send("#"+str(result[0])+": "+extra,embed=embed)
 
-
-
+	@commands.command(pass_context=True, no_pm=False, aliases=['memes','mem'])
+	async def meme(self, ctx, n='1'):
+		if n.isdigit():
+			n = min(int(n),10)
+			for i in range(n):
+				await self.get_meme(ctx.channel)
+				await asyncio.sleep(1)
+		elif n[0] == '#' and n[1:].isdigit():
+			await self.get_meme(ctx.channel,n[1:])
+		elif n.startswith('delet'):
+			await ctx.channel.send("deleting memes is no longer possible, you can however open the meme in MemeDB and downvote it.")
+		elif n.startswith('add'):
+			await ctx.channel.send("memes are no longer added by a command. they must appear on the official server and be upvoted.")
+		else:
+			await ctx.channel.send("search is to be implemented...")
 

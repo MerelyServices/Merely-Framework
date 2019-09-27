@@ -70,5 +70,16 @@
  - `m/meme` is now a stub, no new memes can be added through the old method (`m/meme add`). All memes that were in `m/meme` are now in the memeDB. `m/meme` will show all memes from memeDB in the future.
 #### 0.6.2
  - Fixed janitor, finally. - `m/janitor join (relaxed/strict)` is back in order.
- - `m/clean` now has another feature; `m/clean n strict` will delete *n* posts indescriminately.
+ - `m/clean` now has another feature; `m/clean n strict` will delete *n* posts indiscriminately.
  - Fixed an issue with the meme background scanner (for [meme.yiays.com](https://meme.yiays.com/)) not supporting multiple urls in the same message.
+### 0.7.0
+With this release, we are launching [MemeDB](https://meme.yiays.com) - an online database full of memes, designed to be easily searchable!
+ - `m/lockout` has a more reliable back-end now.
+ - Music bot functionality is back, use `m/play` to find out more.
+ - There are more restrictions on what can and can't be added to MemeDB.
+ - `m/dice` added. Roll as many dice with as many sides as you want.
+ - Merely now logs image search results, making improving the blacklist easier.
+ - `m/meme` is now powered by [MemeDB](https://meme.yiays.com)
+ - The meme background scanner *still* has issues with multiple urls.
+#### Pending
+ [ ] Collections support was fixed for real this time.

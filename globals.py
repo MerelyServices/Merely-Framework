@@ -14,12 +14,12 @@ store='merely_data/'
 dhelp={}
 connected=False
 
-verbose,logchannel,feedbackchannel,modchannel,emurl,webserver,apiurl,apiport=(None,)*8
-thonks,ver,lastver,changes,authusers,superusers,memechannels=(None,)*7
+verbose,logchannel,musicbuddy,feedbackchannel,modchannel,emurl,webserver,apiurl=(None,)*8
+apiport,thonks,ver,lastver,changes,authusers,superusers,memechannels=(None,)*8
 
 def reload():
-	global verbose,logchannel,feedbackchannel,modchannel,emurl,webserver,apiurl,apiport
-	global thonks,ver,lastver,changes,lockout,authusers,superusers,memechannels
+	global verbose,logchannel,musicbuddy,feedbackchannel,modchannel,emurl,webserver,apiurl
+	global apiport,thonks,ver,lastver,changes,lockout,authusers,superusers,memechannels
 	
 	print('reading config...')
 	config.read(store+'config.ini')
@@ -27,6 +27,7 @@ def reload():
 	#settings
 	verbose=config.getint('settings','verbose')
 	logchannel=config.getint('settings','logchannel')
+	musicbuddy=config.getint('settings','musicbuddy')
 	feedbackchannel=config.getint('settings','feedbackchannel')
 	modchannel=config.getint('settings','modchannel')
 	emurl=config.get('settings','emurl')
