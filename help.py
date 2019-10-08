@@ -130,14 +130,22 @@ class Help(commands.Cog):
 	@commands.command(pass_context=True, no_pm=False)
 	async def feedback(self,ctx,*,feedback):
 		if globals.verbose:print('feedback command')
-		try:
-			await self.bot.get_channel(globals.feedbackchannel).send("<@!140297042709708800>, feedback from @{}#{} in {};```{}```".format(ctx.message.author.name,ctx.message.author.discriminator,ctx.message.guild.name,feedback))
-		except Exception as e:
-			print(e)
-			await self.bot.get_channel(globals.feedbackchannel).send("<@!140297042709708800>, feedback from @{}#{};```{}```".format(ctx.message.author.name,ctx.message.author.discriminator,feedback))
-		await emformat.genericmsg(ctx.message.channel,"feedback sent!","done","feedback")
-		await ctx.message.author.send("thanks for your feedback.\nexpect a friend request from Yiays#5950 if the devs want to contact you.\n"+\
-		"alternatively, join merely's main discord server, and we can talk directly there; https://discord.gg/f6TnEJM")
+		owner=self.bot.get_user(globals.owner)
+		if globals.feedbackchannel:
+			try:
+				await self.bot.get_channel(globals.feedbackchannel).send("<@!140297042709708800>, feedback from @{}#{} in {};```{}```".format(ctx.message.author.name,ctx.message.author.discriminator,ctx.message.guild.name,feedback))
+			except Exception as e:
+				print(e)
+				await self.bot.get_channel(globals.feedbackchannel).send("<@!140297042709708800>, feedback from @{}#{};```{}```".format(ctx.message.author.name,ctx.message.author.discriminator,feedback))
+			await emformat.genericmsg(ctx.message.channel,"feedback sent!","done","feedback")
+			if owner is None or globals.invite is None:
+				await ctx.message.author.send("thanks for your feedback.\nthe owner of this bot hasn't provided contact details, however they may send a friend request if they require further information.")
+			else:
+				await ctx.message.author.send("thanks for your feedback.\nyou may receive a friend request from "+owner.username+'#'+owner.discriminator+" if further information is needed.\n"+\
+																			"alternatively, join merely's main discord server, and we can talk directly there; https://discord.gg/"+globals.invite)
+			await ctx.message.channel.send("feedback sent!")
+		else:
+			await ctx.message.channel.send("unfortunately, the administrator of merely currently doesn't have a channel in place for receiving feedback. the developers should find your feedback in the logs.")
 	@feedback.error
 	async def feedback_error(self,ctx,error):
 		print(error)

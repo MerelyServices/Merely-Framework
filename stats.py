@@ -44,7 +44,7 @@ class Stats(commands.Cog):
 			'modules': globals.stats.modules,
 			'library': globals.stats.library,
 			'core': globals.stats.core,
-			'memes': globals.stats.memes,
+			#'memes': globals.stats.memes,
 			'cpu usage': globals.stats.cpu_usage,
 			'ram usage': globals.stats.ram_usage,
 			'hardware': globals.stats.hardware,

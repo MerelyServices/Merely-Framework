@@ -20,16 +20,8 @@ def typeconverter(type):
 	return None
 
 def FindURLs(string):
-		urls = re.findall(r'(http[s]?:\/\/[A-z0-9/?.&%;:\-=@]+)', string)
-		return urls
-
-EXCEPTIONS = [
-	'discordapp.com/channels',
-	'discord.gg/',
-	'meme.yiays.com',
-	'porn',
-	'xxx'
-]
+	urls = re.findall(r'(http[s]?:\/\/[A-z0-9/?.&%;:\-=@]+)', string)
+	return urls
 
 globals.commandlist['meme']=['meme']
 
@@ -151,10 +143,41 @@ class Meme(commands.Cog):
 		if urls:
 			memes=[]
 			for url in urls:
+				trusted = 0
 				try:
-					for exception in EXCEPTIONS:
-						if exception in url:
-							return None
+					for block in globals.memesites['blocked']:
+						if block in url:
+							trusted = -1
+							return
+					for trust in globals.memesites['trusted']:
+						if trust in url:
+							trusted = 1
+					if trusted == -1: return
+					if trusted == 0:
+						if globals.modchannel:
+							modchannel = self.bot.get_channel(globals.modchannel)
+							await modchannel.send("a new memeurl pattern has been found!\n"+url+"\nshould it be trusted? (yes/no) *note, this regards the domain name as a whole, not the individual meme.*")
+							try:
+								msg = await self.bot.wait_for('message', check = lambda m: m.channel == modchannel and m.content in ['yes','no'], timeout=3600.0)
+							except asyncio.TimeoutError:
+								await modchannel.send('no response detected, ignoring memeurl and moving on...')
+								return
+							form = 'trusted' if msg.content=='yes' else 'blocked'
+							
+							await modchannel.send('alright, '+msg.author.mention+' please reply with the most significant part of the url that should be '+form+'; *(for example, `youtube.com/watch?`), type cancel to cancel.*')
+							try:
+								msg = await self.bot.wait_for('message', check = lambda m: m.channel == modchannel and m.author == msg.author, timeout=300)
+							except asyncio.TimeoutError:
+								await modchannel.send('no response detected, ignoring memeurl and moving on...')
+								return
+							if msg.content == 'cancel':
+								return
+							globals.memesites[form].append(msg.content)
+							await modchannel.send('done! `'+msg.content+'` is now a '+form+' url format!')
+								
+						else:
+							print("[WARN] skipped unknown memeurl because modchannel isn't set!")
+							return
 					async with self.session.head(url) as clientresponse:
 						if 'content-type' in clientresponse.headers:
 							type = clientresponse.headers['content-type'].split(' ')[0]

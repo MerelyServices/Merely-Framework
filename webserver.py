@@ -15,7 +15,7 @@ async def stats(request):
 		'modules': globals.stats.modules,
 		'library': globals.stats.library,
 		'core': globals.stats.core,
-		'memes': globals.stats.memes,
+		#'memes': globals.stats.memes,
 		'cpu_usage': globals.stats.cpu_usage,
 		'ram_usage': globals.stats.ram_usage,
 		'hardware': globals.stats.hardware,

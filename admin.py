@@ -111,15 +111,14 @@ class Admin(commands.Cog):
 			await ctx.message.channel.send("removed and disabled the farewell message!")
 	
 	async def janitorservice(self,msg):
-		globals.config.read(globals.store+'config.ini')
-		if str(msg.channel.id) in globals.config.get('janitor','strict').split(' '):
+		if str(msg.channel.id) in globals.config.get('janitor','strict',fallback='').split(' '):
 			await asyncio.sleep(30)
 			try:
 				await msg.delete()
 			except Exception as e:
 				print(e)
 				return
-		elif str(msg.channel.id) in globals.config.get('janitor','relaxed').split(' '):
+		elif str(msg.channel.id) in globals.config.get('janitor','relaxed',fallback='').split(' '):
 			if msg.author==self.bot.user or self.bot.user in msg.mentions or msg.content.lower().startswith('m/') or msg.content.lower().startswith('merely'):
 				await asyncio.sleep(30)
 				try:
@@ -178,7 +177,7 @@ class Admin(commands.Cog):
 			await emformat.genericmsg(ctx.message.channel,"shutting down...","bye","die")
 			with open(globals.store+'alive.txt','w') as f:
 				f.write(str(ctx.message.channel.id))
-			if globals.webserver: await globals.modules["webserver"].stop()
+			if globals.modules['webserver']: await globals.modules["webserver"].stop()
 			await self.bot.logout()
 		else:
 			await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","die")
@@ -315,10 +314,13 @@ class Admin(commands.Cog):
 		if ctx.message.author.id in globals.authusers or ctx.message.author.id == ctx.message.guild.owner.id:
 			pattern = re.compile(".*#[0-9]{4}")
 			if pattern.match(author):
-				uid = ctx.guild.get_member_named(author).id
-				if uid is None:
+				for g in self.bot.guilds:
+					user = g.get_member_named(author)
+					if user is not None:
+						break
+				if user is None:
 					return await ctx.message.channel.send("unable to find any user with that username and discriminator!")
-				uid = str(uid)
+				uid = str(user.id)
 				sentence=int(sentence)
 				if sentence==0:
 					globals.lockout[uid]=str(round(time.time())+2678400)
@@ -343,7 +345,7 @@ class Admin(commands.Cog):
 			except:
 				if len(''.join(globals.changes))>=1800:
 					await emformat.genericmsg(ctx.message.channel,"the changelog is too long for discord! either [view the changelog online]("+globals.apiurl+"changes.html) or check back later when it's been shortened.",'error','changelog')
-					await self.bot.get_channel(globals.feedbackchannel).send("<@!140297042709708800>, the changelog is too long! ("+str(len('\n'.join(globals.changes)))+")")
+					if globals.feedbackchannel: await self.bot.get_channel(globals.feedbackchannel).send("<@!140297042709708800>, the changelog is too long! ("+str(len('\n'.join(globals.changes)))+")")
 	@changelog.command(pass_context=True, name='add')
 	async def changelogadd(self,ctx,*,text=None):
 		"""Add an entry to the changelog"""
@@ -364,12 +366,10 @@ class Admin(commands.Cog):
 			if len(msg)>3:
 				async with ctx.message.channel.typing():
 					sent=[]
-					with open(globals.store+'owneroptout.txt','r',encoding='utf8') as f:
-						optout=f.readlines()
 					failed=0
 					ignored=0
 					for s in self.bot.guilds:
-						if s.owner.id not in sent and s.owner.id not in optout:
+						if s.owner.id not in sent and s.owner.id not in globals.owneroptout:
 							try:
 								await emformat.genericmsg(s.owner,"*hey there, server owner, merely's just been updated so here's a list of recent changes...*\n\n"+msg,'done','changelog')
 								await s.owner.send("for more information, please visit "+globals.apiurl+"#/serverowner .\n\n"+\
@@ -388,12 +388,15 @@ class Admin(commands.Cog):
 	
 	@commands.command(pass_context=True, no_pm=False)
 	async def owneroptout(self,ctx):
-		"""Announces updates to the server owners."""
+		"""Allows server owners to unsubscribe from all update news."""
 		print('owneroptout command')
 		if ctx.message.author.id in [s.owner.id for s in self.bot.guilds]:
-			with open(globals.store+'owneroptout.txt','a',encoding='utf8') as f:
-				f.write(str(ctx.message.author.id)+'\n')
-			msg = await ctx.message.channel.send('done! you will no longer get server owner-related PMs. if you wish to undo this, you will need to PM Yiays#5930')
-			await msg.pin()
+			if ctx.message.author.id not in globals.owneroptout:
+				globals.owneroptout.append(ctx.message.author.id)
+				globals.save()
+				msg = await ctx.message.channel.send('done! you will no longer get server owner-related PMs. if you wish to undo this, you will need to PM Yiays#5930')
+				await msg.pin()
+			else:
+				await ctx.message.channel.send("you've already opted out!")
 		else:
 			await ctx.message.channel.send('you don\'t appear to be a server owner!')
