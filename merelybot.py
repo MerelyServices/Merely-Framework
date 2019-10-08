@@ -33,104 +33,116 @@ bot.remove_command('help')
 globals.bot=bot
 
 if globals.verbose: print('importing modules...')
+if globals.verbose: print('main done!')
 
 # bot command modules
 # globals
 globals.modules['globals']=globals
+if globals.verbose: print('globals done!')
 
 # emformat
 globals.modules['emformat']=emformat
+if globals.verbose: print('emformat done!')
 
 #	help
-import help
-globals.modules['help']=help
-bot.add_cog(help.Help(bot))
-if globals.verbose: print('help done!')
+if globals.modules['help']:
+	import help
+	globals.modules['help']=help
+	bot.add_cog(help.Help(bot))
+	if globals.verbose: print('help done!')
 
 #	censor
-import censor
-globals.modules['censor']=censor
-bot.add_cog(censor.Censor(bot))
-if globals.verbose: print('censor done!')
+if globals.modules['censor']:
+	import censor
+	globals.modules['censor']=censor
+	bot.add_cog(censor.Censor(bot))
+	if globals.verbose: print('censor done!')
 
 #	fun
-import fun
-globals.modules['fun']=fun
-bot.add_cog(fun.Fun(bot))
-if globals.verbose: print('fun done!')
+if globals.modules['fun']:
+	import fun
+	globals.modules['fun']=fun
+	bot.add_cog(fun.Fun(bot))
+	if globals.verbose: print('fun done!')
 
 #	meme
-import meme
-globals.memedbpass=os.environ.get("MemeDB")
-globals.modules['meme']=meme
-globals.meme = meme.Meme(bot)
-bot.add_cog(globals.meme)
-if globals.verbose: print('meme done!')
+if globals.modules['meme']:
+	import meme
+	globals.memedbpass=os.environ.get("MemeDB")
+	globals.modules['meme']=meme
+	globals.meme = meme.Meme(bot)
+	bot.add_cog(globals.meme)
+	if globals.verbose: print('meme done!')
 
 #	search
-import search
-globals.modules['search']=search
-bot.add_cog(search.Search(bot))
-if globals.verbose: print('search done!')
+if globals.modules['search']:
+	import search
+	globals.modules['search']=search
+	bot.add_cog(search.Search(bot))
+	if globals.verbose: print('search done!')
 
 #	admin
-import admin
-globals.modules['admin']=admin
-bot.add_cog(admin.Admin(bot))
-if globals.verbose: print('admin done!')
+if globals.modules['admin']:
+	import admin
+	globals.modules['admin']=admin
+	bot.add_cog(admin.Admin(bot))
+	if globals.verbose: print('admin done!')
 
 #	obsolete
-import obsolete
-globals.modules['obsolete']=obsolete
-bot.add_cog(obsolete.Obsolete(bot))
-if globals.verbose: print('obsolete done!')
+if globals.modules['obsolete']:
+	import obsolete
+	globals.modules['obsolete']=obsolete
+	bot.add_cog(obsolete.Obsolete(bot))
+	if globals.verbose: print('obsolete done!')
 
 #	webserver
-if globals.webserver:
+if globals.modules['webserver']:
 	import webserver
 	globals.modules['webserver']=webserver
-if globals.verbose: print('webserver done!')
+	if globals.verbose: print('webserver done!')
 
 # stats
-import stats
-globals.modules['stats']=stats
-globals.stats=stats.Stats(bot)
-bot.add_cog(globals.stats)
-if globals.verbose: print('stats done!')
+if globals.modules['stats']:
+	import stats
+	globals.modules['stats']=stats
+	globals.stats=stats.Stats(bot)
+	bot.add_cog(globals.stats)
+	if globals.verbose: print('stats done!')
 
-#	reload
-globals.commandlist['reload']=['reload']
-
-class Reload(commands.Cog):
-	def __init__(self, bot):
-		bot = bot
-	@commands.command(pass_context=True,no_pm=False)
-	async def reload(self,ctx,*,module:str):
-		if ctx.message.author.id in globals.superusers:
-			if module=='webserver':
-				await globals.modules['webserver'].stop()
-				webserver=importlib.reload(globals.modules[module])
-				await webserver.start()
-				await ctx.message.channel.send("reloaded `"+module+"` succesfully!")
-			elif module=='globals' or module=='config':
-				globals.reload()
-				await ctx.message.channel.send("reloaded `"+module+"` succesfully!")
-			elif module in globals.modules and globals.modules[module]:
-				try:
-					bot.remove_cog(module.capitalize())
-					loadedmodule=importlib.reload(globals.modules[module])
-					bot.add_cog(getattr(loadedmodule,module.capitalize())(bot))
-				except AttributeError:
-					importlib.reload(globals.modules[module])
-				except Exception as e: print(e)
-				finally:
-					await ctx.message.channel.send("reloaded `"+module+"` succesfully!")
+if globals.modules['reload']:
+	class Reload(commands.Cog):
+		def __init__(self, bot):
+			bot = bot
+		@commands.command(pass_context=True,no_pm=False)
+		async def reload(self,ctx,*,module:str):
+			if ctx.message.author.id in globals.superusers:
+				if module in globals.modules and globals.modules[module]:
+					if module=='webserver':
+						await globals.modules['webserver'].stop()
+						webserver=importlib.reload(globals.modules['webserver'])
+						globals.modules['webserver']=webserver
+						await webserver.start()
+						await ctx.message.channel.send("reloaded `webserver` succesfully!")
+					elif module=='config':
+						globals.reload()
+						await ctx.message.channel.send("reloaded `config` succesfully!")
+					else:
+						try:
+							bot.remove_cog(module.capitalize())
+							loadedmodule=importlib.reload(globals.modules[module])
+							bot.add_cog(getattr(loadedmodule,module.capitalize())(bot))
+						except AttributeError:
+							importlib.reload(globals.modules[module])
+							print('note: unable to reload '+module+' with discord.ext.commands support')
+						except Exception as e: print(e)
+						finally:
+							await ctx.message.channel.send("reloaded `"+module+"` succesfully!")
+				else:
+					await ctx.message.channel.send('`'+module+"` isn't available for reloading.")
 			else:
-				await ctx.message.channel.send('`'+module+"` isn't available for reloading.")
-		else:
-			await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","reload")
-bot.add_cog(Reload(bot))
-if globals.verbose: print('reload done!')
+				await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","reload")
+	bot.add_cog(Reload(bot))
+	if globals.verbose: print('reload done!')
 
 @bot.event
 async def on_connect():
@@ -144,7 +156,7 @@ async def on_ready():
 	print('------')
 	
 	if not globals.connected:
-		if globals.webserver: asyncio.ensure_future(webserver.start())
+		if globals.modules['webserver']: asyncio.ensure_future(webserver.start())
 		globals.connected=True
 	
 	with open(globals.store+"playing.txt","r") as file:
@@ -268,7 +280,7 @@ def truncate(str ,l):
 
 async def msglog(msg):
 	if globals.logchannel and msg.channel.id != globals.logchannel:
-		if isinstance(msg.channel,discord.abc.PrivateChannel) or msg.author==bot.user or bot.user in msg.mentions or msg.content.startswith('m/') or msg.content.startswith('merely'):
+		if isinstance(msg.channel,discord.abc.PrivateChannel) or msg.author==bot.user or msg.author.id == globals.musicbuddy or bot.user in msg.mentions or msg.content.startswith('m/') or msg.content.startswith('merely'):
 			if msg.author==bot.user:
 				globals.stats.sentcount+=1
 			else:

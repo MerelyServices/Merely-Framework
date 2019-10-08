@@ -178,7 +178,7 @@ class Admin(commands.Cog):
 			await emformat.genericmsg(ctx.message.channel,"shutting down...","bye","die")
 			with open(globals.store+'alive.txt','w') as f:
 				f.write(str(ctx.message.channel.id))
-			if globals.webserver: await globals.modules["webserver"].stop()
+			if globals.modules['webserver']: await globals.modules["webserver"].stop()
 			await self.bot.logout()
 		else:
 			await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","die")
@@ -315,10 +315,13 @@ class Admin(commands.Cog):
 		if ctx.message.author.id in globals.authusers or ctx.message.author.id == ctx.message.guild.owner.id:
 			pattern = re.compile(".*#[0-9]{4}")
 			if pattern.match(author):
-				uid = ctx.guild.get_member_named(author).id
-				if uid is None:
+				for g in self.bot.guilds:
+					user = g.get_member_named(author)
+					if user is not None:
+						break
+				if user is None:
 					return await ctx.message.channel.send("unable to find any user with that username and discriminator!")
-				uid = str(uid)
+				uid = str(user.id)
 				sentence=int(sentence)
 				if sentence==0:
 					globals.lockout[uid]=str(round(time.time())+2678400)
@@ -343,7 +346,7 @@ class Admin(commands.Cog):
 			except:
 				if len(''.join(globals.changes))>=1800:
 					await emformat.genericmsg(ctx.message.channel,"the changelog is too long for discord! either [view the changelog online]("+globals.apiurl+"changes.html) or check back later when it's been shortened.",'error','changelog')
-					await self.bot.get_channel(globals.feedbackchannel).send("<@!140297042709708800>, the changelog is too long! ("+str(len('\n'.join(globals.changes)))+")")
+					if globals.feedbackchannel: await self.bot.get_channel(globals.feedbackchannel).send("<@!140297042709708800>, the changelog is too long! ("+str(len('\n'.join(globals.changes)))+")")
 	@changelog.command(pass_context=True, name='add')
 	async def changelogadd(self,ctx,*,text=None):
 		"""Add an entry to the changelog"""
