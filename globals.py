@@ -19,14 +19,6 @@ store='merely_data/'
 dhelp={}
 connected=False
 
-<<<<<<< Updated upstream
-verbose,logchannel,feedbackchannel,modchannel,emurl,webserver,apiurl,apiport=(None,)*8
-thonks,ver,lastver,changes,authusers,superusers,memechannels=(None,)*7
-
-def reload():
-	global verbose,logchannel,feedbackchannel,modchannel,emurl,webserver,apiurl,apiport
-	global thonks,ver,lastver,changes,lockout,authusers,superusers,memechannels
-=======
 owner=None
 invite=None
 
@@ -53,7 +45,6 @@ def reload():
 	global memesites,owner,invite
 	
 	create = False
->>>>>>> Stashed changes
 	
 	print('reading config...')
 	if not (os.path.exists(store+'config.ini') and os.path.isfile(store+'config.ini')):
@@ -71,16 +62,6 @@ def reload():
 	modules.update({str(module):config.getint('modules',module,fallback=False) for module in config['modules']})
 
 	#settings
-<<<<<<< Updated upstream
-	verbose=config.getint('settings','verbose')
-	logchannel=config.getint('settings','logchannel')
-	feedbackchannel=config.getint('settings','feedbackchannel')
-	modchannel=config.getint('settings','modchannel')
-	emurl=config.get('settings','emurl')
-	webserver=config.getboolean('settings','webserver')
-	apiurl=config.get('settings','apiurl')
-	apiport=config.getint('settings','apiport')
-=======
 	verbose=config.getint('settings','verbose',fallback=False)
 	logchannel=config.getint('settings','logchannel',fallback=None)
 	musicbuddy=config.getint('settings','musicbuddy',fallback=None)
@@ -89,7 +70,6 @@ def reload():
 	emurl=config.get('settings','emurl',fallback='https://yiays.com/img/merely/em-')
 	apiurl=config.get('settings','apiurl',fallback='https://merely.yiays.com/')
 	apiport=config.getint('settings','apiport',fallback=8080)
->>>>>>> Stashed changes
 
 	#hmm
 	thonks=config.get('settings','thonks',fallback='')

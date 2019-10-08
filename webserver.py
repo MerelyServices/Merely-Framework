@@ -19,7 +19,7 @@ async def stats(request):
 		'cpu_usage': globals.stats.cpu_usage,
 		'ram_usage': globals.stats.ram_usage,
 		'hardware': globals.stats.hardware,
-		'generated time': globals.stats.gentime,
+		'gentime': globals.stats.gentime,
 		'raw':{
 			'servers':len(globals.bot.guilds),
 			'members':sum([len(s.members) for s in globals.bot.guilds]),
@@ -52,11 +52,8 @@ async def dhelp(request):
 @routes.get("/index.html")
 async def index(request):
 	if globals.verbose: print('GET /')
-	with open(globals.store+'memes.txt','r',encoding='utf8') as m:
-		memelist=m.readlines()
-	meme=memelist[random.choice(range(len(memelist)))]
 	with open('templates/index.html',encoding='utf8') as f:
-		file=f.read().replace('{$globals.ver}',globals.ver).replace('{$meme}',meme)
+		file=f.read().replace('{$globals.ver}',globals.ver)
 	return web.Response(text=file,status=200,headers={'Access-Control-Allow-Origin':'https://merely.yiays.com','content-type':'text/html'})
 @routes.get("/main.css")
 async def css(request):

@@ -117,7 +117,7 @@ class Search(commands.Cog):
 						"https://cdn.discordapp.com/avatars/309270899909984267/1d574f78b4d4acec14c1ef8290a543cb.png?size=64",
 						"http://www.google.com/search?q="+urllib.parse.quote(query,safe='').replace('%20','+'))
 				else:
-					await ctx.message.channel.send("no results! ¯\_(ツ)_/¯")
+					await ctx.message.channel.send("no results! ¯\\_(ツ)_/¯")
 	@google.error
 	async def google_error(self,ctx,error):
 		print(error)
