@@ -143,22 +143,22 @@ class Meme(commands.Cog):
 		if urls:
 			memes=[]
 			for url in urls:
-				pass = 0
+				trusted = 0
 				try:
 					for block in globals.memesites['blocked']:
 						if block in url:
-							pass = -1
+							trusted = -1
 							return
 					for trust in globals.memesites['trusted']:
 						if trust in url:
-							pass = 1
-					if pass == -1: return
-					if pass == 0:
+							trusted = 1
+					if trusted == -1: return
+					if trusted == 0:
 						if globals.modchannel:
 							modchannel = self.bot.get_channel(globals.modchannel)
 							await modchannel.send("a new memeurl pattern has been found!\n"+url+"\nshould it be trusted? (yes/no) *note, this regards the domain name as a whole, not the individual meme.*")
 							try:
-								msg = await self.bot.wait_for('message', check=lambda m: return m.channel == modchannel and m.content in ['yes','no'], timeout=3600.0)
+								msg = await self.bot.wait_for('message', check = lambda m: m.channel == modchannel and m.content in ['yes','no'], timeout=3600.0)
 							except asyncio.TimeoutError:
 								await modchannel.send('no response detected, ignoring memeurl and moving on...')
 								return
@@ -166,7 +166,7 @@ class Meme(commands.Cog):
 							
 							await modchannel.send('alright, '+msg.author.mention+' please reply with the most significant part of the url that should be '+form+'; *(for example, `youtube.com/watch?`), type cancel to cancel.*')
 							try:
-								msg = await self.bot.wait_for('message', check=lambda m: return m.channel == modchannel and m.author == msg.author, timeout=300)
+								msg = await self.bot.wait_for('message', check = lambda m: m.channel == modchannel and m.author == msg.author, timeout=300)
 							except asyncio.TimeoutError:
 								await modchannel.send('no response detected, ignoring memeurl and moving on...')
 								return

@@ -10,6 +10,7 @@ from discord.ext import commands
 import emformat, globals
 
 #stdout to file
+if not os.path.exists(globals.store+'logs'): os.makedirs(globals.store+'logs')
 class Logger(object):
 	def __init__(self,err=False):
 		self.terminal = sys.stdout
@@ -37,11 +38,9 @@ if globals.verbose: print('main done!')
 
 # bot command modules
 # globals
-globals.modules['globals']=globals
 if globals.verbose: print('globals done!')
 
 # emformat
-globals.modules['emformat']=emformat
 if globals.verbose: print('emformat done!')
 
 #	help
@@ -188,18 +187,19 @@ async def on_ready():
 	with open(globals.store+'alive.txt','w') as f:
 		f.write('')
 	
-	if globals.logchannel: await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - starting background service...")
-	try:
-		await globals.meme.BackgroundService()
-	except Exception as e:
-		if globals.logchannel: await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - background service failed to complete!```"+str(e)+"```")
-	else:
-		if globals.logchannel: await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - background service ended.")
+	if globals.modules['meme']:
+		if globals.logchannel: await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - starting background service...")
+		try:
+			await globals.meme.BackgroundService()
+		except Exception as e:
+			if globals.logchannel: await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - background service failed to complete!```"+str(e)+"```")
+		else:
+			if globals.logchannel: await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - background service ended.")
 
 @bot.event
 async def on_message(message):
 	asyncio.ensure_future(msglog(message))
-	asyncio.ensure_future(globals.janitor(message))
+	if globals.modules['admin']: asyncio.ensure_future(globals.janitor(message))
 	
 	ctx = await bot.get_context(message)
 	if ctx.prefix is not None:
@@ -320,7 +320,8 @@ async def on_error(*args):
 if globals.verbose: print('events done!')
 
 print('connecting...')
-bot.run(os.environ.get("Merely"))
+if globals.beta: bot.run(os.environ.get("MerelyBeta"))
+else: bot.run(os.environ.get("Merely"))
 
 #shutdown
 
