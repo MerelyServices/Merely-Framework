@@ -2,7 +2,7 @@ import globals, emformat
 from discord.ext import commands
 import time, random, asyncio
 
-globals.commandlist['help']=['help','command','hint','info','stats','about','feedback']
+globals.commandlist['help']=['help','command','hint','info','stats','feedback']
 
 helpdict={
 	':grey_question: help':'```help, command, hint, feedback```',
@@ -13,33 +13,33 @@ helpdict={
 	':new: new':'```changelog, vote, dice```'
 }
 dhelp={
-	'welcome':"***merely welcome [get|clear|set (welcome message)]***\n**SERVER OWNERS ONLY** - get the welcome message for the server or set it, use `merely welcome get` for instructions on how to set a welcome message.",
-	'farewell':"***merely farewell [get|clear|set (farewell message)]***\n**SERVER OWNERS ONLY** - get the farewell message for the server or set it, use `merely farewell get` for instructions on how to set a farewell message.",
+	'welcome':"***merely welcome [get|clear|set (welcome message)]***\n**SERVER OWNERS ONLY** - get the welcome message for the server or set it, use `merely welcome set` for instructions on how to set a welcome message.",
+	'farewell':"***merely farewell [get|clear|set (farewell message)]***\n**SERVER OWNERS ONLY** - get the farewell message for the server or set it, use `merely farewell set` for instructions on how to set a farewell message.",
 	'janitor':"***merely janitor [leave|join (strict|relaxed)]***\n**SERVER OWNERS ONLY** - opt into or opt out of the janitor service, the janitor deletes all messages after 30 seconds. in relaxed mode, janitor only deletes messages to and from merely.",
 	'feedback':"***merely feedback (feedback)***\nthis forwards the feedback to the developer so that they can further improve the bot.",
 	'help':"***merely help [(command)]***\nhelp offers a list of commands, if you follow merely help with a bot and a command, it'll describe the command in detail.",
 	'info':"***merely info***\nfind out exactly what merely can do and get relevant links.",
 	'stats':"***merely stats***\ntechnical information and interesting statistics.",
-	'clean':"***merely clean [limit] [strict]***\nclean deletes all messages that either activated merely or are from merely in the current channel. If you provide a limit and the word 'strict' at the end, it will delete everything indescriminately.\n\n*note that all discord bots are only allowed to delete messages from the last 2 months.*",
-	'purge':"***merely purge first-id last-id [limit]***\npurge purges all messages that are within a range of ids. get message ids by enabling developer mode in discord and then clicking on the menu next to the messages.",
-	'playing':"***merely playing|watching|streaming [(status)]***\nchanges the playing status text to anything you desire, or alternatively resets the playing text if you provide no arguments.",
+	'clean':"***merely clean [limit] [strict]***\n**MODERATORS ONLY** - clean deletes all messages that either activated merely or are from merely in the current channel. If you provide a limit and the word 'strict' at the end, it will delete everything indescriminately.\n\n*note that all discord bots are only allowed to delete messages from the last 2 months.*",
+	'purge':"***merely purge (first message id) (last message id) [limit]***\n**MODS ONLY** - purge purges all messages that are within a range of ids. get message ids by enabling developer mode in discord and then clicking on the menu next to the messages.",
+	'playing':"***merely playing|watching|streaming [(status)]***\nchanges the playing status text to anything you desire, or alternatively resets the playing text if you provide no arguments. is subject to censorship from the blacklist.",
 	'command':"***merely command (search)***\nsearches the list of known commands for any command containing the query.",
-	'image':"***merely image more|(search)***\nsearches google images for your query and returns the top image. more returns 5 results.",
+	'image':"***merely image more|(search)***\nsearches google images for your query and returns the top image. `m/image more` returns 5 more results, `m/images` returns 5 from the begining.",
 	'google':"***merely google more|(search)***\nsearches google for your query and returns the top search result. more returns the top 5 results.",
 	'meme':"***merely meme [n | #(number)]***\nsends a random meme to the channel. n specifies how many you want, #(number) specifies the id of a meme you've seen before.\n\n*merely meme is designed to avoid repeating memes for as long as possible*",
-	'thonk':"***merely thonk***\nit just posts a thonking emoji.",
-	'vote':"***merely vote question? answer 1, answer 2, as many more answers as you want** - spaces, question marks and commas are important!*\nhold a vote with the given options, if you add a number at the end, that will be the time limit in minutes before the results are finalised. it might be possible for a vote to last forever in the near future...",
-	'blacklist':"***merely blacklist [add|remove (word|url)]***\nblacklist lists all banned words. you can also add or remove one word at a time to the blacklist\n\n*note that the blacklist exists to prevent users from searching for nsfw content on non-nsfw channels in line with discord's terms of service.*",
-	'whitelist':"***merely whitelist [add|remove (word|url)]***\nwhitelist lists all words that are exempt to the blacklist. you can also add or remove one word at a time to the whitelist.\n\n*note that the whitelist exists because the blacklist may mistake valid words as mispellings of bad words. as a server owner, you are allowed to fix this.*",
+	'thonk':"***merely thonk***\nit just posts a random thonking emoji.",
+	'vote':"***merely vote question? answer 1, answer 2, as many more answers as you want** - spaces, question marks and commas are important!*\ncreate an interactive, multi-choice poll with the given options, if you add a number at the end, that will be the time limit in minutes before the results are finalised. the longer a poll is running, the more likely it may fail to complete.",
+	'blacklist':"***merely blacklist [add|remove (word|url)]***\n**SERVER OWNERS ONLY** - blacklist lists all banned words. you can also add or remove one word at a time to your server's local blacklist\n\n*note that the blacklist exists to prevent users from searching for nsfw content on non-nsfw channels in line with discord's terms of service.*",
+	'whitelist':"***merely whitelist [add|remove (word|url)]***\n**SERVER OWNERS ONLY** - whitelist lists all words that are exempt to the blacklist. you can also add or remove one word at a time to your server's local whitelist.\n\n*note that the whitelist exists because the blacklist may mistake valid words as mispellings of bad words. as a server owner, you are allowed to fix this.*",
 	'hint':"***merely hint***\ngives you handy hints on how to better use this bot.",
-	'echo':"***merely echo (echo)***\nrepeats whatever you say to it. and no, it will not echo itself or other bots.",
-	'dice':"***merely dice [(dice1sides) (dice2sides) (dice3sides) (dice4sides) (dice5sides) etc...]***\ndice will roll a 6 sided dice by default, but you can specify how many sides if you want, just leave a number, if you want to roll more than one dice, just leave more than one number.",
-	'lockout':"***merely lockout (user#discriminator) [time in minutes]***\nprevents any user from interacting with the bot if it appears they are trying to abuse it.",
+	'echo':"***merely echo (echo)***\nrepeats whatever you say to it. and no, it will not echo itself or other bots. is subject to censorship rules in the blacklist.",
+	'dice':"***merely dice [(dice1sides) (dice2sides) (dice3sides) (dice4sides) (dice5sides) etc...]***\ndice will roll a 6 sided dice by default, but you can specify how many sides if you want, just leave a number, if you want to roll more than one dice, just leave more than one number separated by spaces.",
+	'lockout':"***merely lockout (user#discriminator) [time in minutes]***\n**SERVER OWNERS ONLY** - prevents any user from interacting with the bot if it appears they are trying to abuse it.",
 	'servers':"***merely servers***\nlists all the servers merely is in with an interactive page list system. also shows how many members each server has.",
-	'logcat':"***merely logcat***\noutputs the last 10 lines in the log, for the sake of debugging.",
-	'reload':"***merely reload (module)***\nthis command reloads changes made to merely's code without restarting the bot. available only to Yiays.",
+	'logcat':"***merely logcat (lines)***\noutputs the last 10 lines, by default, in the log, for the sake of debugging.",
+	'reload':"***merely reload (module)***\n**MERELY SUPERUSERS ONLY** - this command reloads changes made to merely's code without restarting the bot.",
 	'changelog':"***merely changelog***\nlists all the recent changes made to merely over the previous few updates.",
-	'die':"***merely die***\nshuts down merely if you have permission to do so. merely will restart in 30 seconds. this fixes issues with the bot being unresponsive."
+	'die':"***merely die***\n**MERELY SUPERUSERS ONLY** - shuts down merely safely."
 }
 globals.dhelp=dhelp
 

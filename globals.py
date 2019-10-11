@@ -84,7 +84,7 @@ def reload():
 		'lastver':lastver
 	})
 	verbose=config.getboolean('settings','verbose',fallback=verbose)
-	beta=config.getboolean('settings','verbose',fallback=beta)
+	beta=config.getboolean('settings','beta',fallback=beta)
 	logchannel=config.getint('settings','logchannel',fallback=logchannel)
 	musicbuddy=config.getint('settings','musicbuddy',fallback=musicbuddy)
 	feedbackchannel=config.getint('settings','feedbackchannel',fallback=feedbackchannel)
@@ -144,6 +144,8 @@ def save():
 		config.set('lockout',user,time)
 	
 	config.set('settings','owneroptout',','.join([str(a) for a in owneroptout]))
+	config.set('memesites','trusted',','.join([str(a) for a in memesites['trusted']]))
+	config.set('memesites','blocked',','.join([str(a) for a in memesites['blocked']]))
 	
 	with open(store+'config.ini','w', encoding='utf-8') as f:
 		config.write(f)
@@ -170,7 +172,7 @@ def failsafelist(_list, _type):
 	out = []
 	for x in _list:
 		try:
-			out += (_type)(x)
+			out.append((_type)(x))
 		except ValueError:
 			continue
 	return out

@@ -81,5 +81,10 @@ With this release, we are launching [MemeDB](https://meme.yiays.com) - an online
  - Merely now logs image search results, making improving the blacklist easier.
  - `m/meme` is now powered by [MemeDB](https://meme.yiays.com)
  - The meme background scanner *still* has issues with multiple urls.
-#### Pending
+#### 0.7.1
+ - Plenty of progress has been put towards making it easier for developers to download merely and set up their own bot for testing.
+ - Mods on [Merely's official server](https://discord.gg/f6TnEJM) can now blacklist and whitelist the types of urls that are considered memes.
+ - `m/lockout` had an issue where it couldn't be used to ban members on another server, this has been fixed.
+ - The meme count in `m/stats` has been discontinued. Also, `m/stats` appears to be malfunctioning.
+### WIP
  [ ] Collections support was fixed for real this time.

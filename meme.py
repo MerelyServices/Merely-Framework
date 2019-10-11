@@ -173,6 +173,7 @@ class Meme(commands.Cog):
 							if msg.content == 'cancel':
 								return
 							globals.memesites[form].append(msg.content)
+							globals.save()
 							await modchannel.send('done! `'+msg.content+'` is now a '+form+' url format!')
 								
 						else:
@@ -283,7 +284,7 @@ class Meme(commands.Cog):
 	async def meme(self, ctx, n='1'):
 		if n.isdigit():
 			n = min(int(n),10)
-			for i in range(n):
+			for _ in range(n):
 				await self.get_meme(ctx.channel)
 				await asyncio.sleep(1)
 		elif n[0] == '#' and n[1:].isdigit():

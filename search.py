@@ -96,7 +96,7 @@ class Search(commands.Cog):
 		else:
 			if globals.verbose: print('google command')
 			if query=='':
-				await emformat.genericmsg(ctx.message.channel,dhelp['google'],'help','google')
+				await emformat.genericmsg(ctx.message.channel,globals.dhelp['google'],'help','google')
 				return
 			danger=censor.dangerous(query)
 			if danger and not ctx.message.channel.is_nsfw():
@@ -128,7 +128,7 @@ class Search(commands.Cog):
 		"""Search Google Images"""
 		if globals.verbose: print('google images command')
 		if query=='':
-			await emformat.genericmsg(ctx.message.channel,dhelp['image'],'help','image')
+			await emformat.genericmsg(ctx.message.channel,globals.dhelp['image'],'help','image')
 		if query=='more' and ctx.message.guild.id in self.imgs and self.imgs[ctx.message.guild.id]!=None:
 			await ctx.message.delete()
 			await self.sendimgs(ctx.message.channel,self.imgs[ctx.message.guild.id],5)
@@ -173,11 +173,10 @@ class Search(commands.Cog):
 	async def sendimgs(self,channel,imglist,count):
 		if len(imglist)>=1:
 			if channel.guild.get_member(self.bot.user.id).permissions_in(channel).embed_links:
-				for i in range(0 if count==1 else 1,min(count,len(imglist))):
+				for _ in range(0 if count==1 else 1,min(count,len(imglist))):
 					em=discord.Embed(type='rich')
 					em.set_image(url=imglist[0 if count==1 else 1])
 					await channel.send(embed=em)
-					otpt=''
 					if count>1: del imglist[1]
 					
 				if count==1 and random.choice(range(3))==1: await channel.send("you can get more results by typing `merely image more`")

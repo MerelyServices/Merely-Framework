@@ -3,6 +3,8 @@ import globals, emformat
 from discord import __version__ as discordversion
 from discord.ext import commands,tasks
 
+globals.commandlist['stats']=['stats']
+
 class Stats(commands.Cog):
 	def __init__(self,bot):
 		self.bot=bot
