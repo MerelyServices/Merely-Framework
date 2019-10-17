@@ -43,7 +43,7 @@ class Admin(commands.Cog):
 			await ctx.message.channel.send("you need to set the welcome message in the channel that it will appear in!")
 			return
 		if message=='':
-			await ctx.message.channel.send('you need to write a welcome message! for example; `merely welcome Welcome, {}, to {}!`, where the first `{}` will become the name of the new user and the second `{}` will be the server name.\nto remove the welcome message, use `merely welcome clear`.')
+			await ctx.message.channel.send('in the channel where you want the alerts: `merely welcome set Welcome, {}, to {}!`, where the first `{}` will become the name of the new user and the optional second `{}` will be the server name.\nto remove the welcome message, use `merely welcome clear`.')
 			return
 		else:
 			if str(ctx.message.guild.id) not in globals.config:
@@ -89,7 +89,7 @@ class Admin(commands.Cog):
 			await ctx.message.channel.send("sorry, you need to set the farewell message in the channel that it will appear in!")
 			return
 		if message=='':
-			await ctx.message.channel.send('you need to write a farewell message! for example; `merely farewell {} has left the server!`, where `{}` will become the name of the departed user. to remove the farewell message, use `merely farewell clear`.')
+			await ctx.message.channel.send('in the channel where you want the alerts: `merely farewell set {} has left the server!`, where `{}` will become the name of the departed user. to remove the farewell message, use `merely farewell clear`.')
 			return
 		else:
 			if str(ctx.message.guild.id) not in globals.config:
