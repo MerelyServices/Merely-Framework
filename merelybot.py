@@ -7,7 +7,7 @@
 import os, sys, traceback, asyncio, time, importlib
 import discord
 from discord.ext import commands
-import emformat, globals
+import emformat, globals, utils
 
 #stdout to file
 if not os.path.exists(globals.store+'logs'): os.makedirs(globals.store+'logs')
@@ -207,7 +207,7 @@ async def on_message(message):
 		if str(message.author.id) in globals.lockout:
 			if int(globals.lockout[str(message.author.id)]) > time.time():
 				allowed=False
-				await message.channel.send(f"you're banned from using this bot for {int(int(globals.lockout[str(message.author.id)])-time.time())} more seconds.")
+				await message.channel.send(f"you're banned from using this bot for {utils.time_fold(int(globals.lockout[str(message.author.id)])-time.time())}.")
 			else:
 				await message.channel.send("your ban is over. you may use commands again.")
 				globals.lockout.pop(str(message.author.id),None)
