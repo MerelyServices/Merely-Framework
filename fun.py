@@ -253,9 +253,9 @@ class Fun(commands.Cog):
 						if v[option]>=max(v.values()):
 							winners.append(f'{option} for {v[option]} vote{"s" if v[option]!=1 else ""}')
 					if max(v.values())>0:
-						await ctx.message.channel.send(f'the vote `{q}` has expired. the winner{"s are tied at" if len(winners)!=1 else " is"}```{chr(10).join(winners)}```')
+						await ctx.message.channel.send(f'the vote `{q}` has ended. the winner{"s are tied at" if len(winners)!=1 else " is"}```{chr(10).join(winners)}```')
 					else:
-						await ctx.message.channel.send(f'the vote `{q}` has expired. there was no votes.')
+						await ctx.message.channel.send(f'the vote `{q}` has ended. there was no votes.')
 					done=True
 		else:
 			await emformat.genericmsg(ctx.message.channel,help.dhelp['vote'],'help','vote')
