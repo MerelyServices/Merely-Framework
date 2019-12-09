@@ -199,7 +199,7 @@ class Fun(commands.Cog):
 	# 					footer="merely v"+globals.ver+" - created by Yiays#5930"
 	# 				)
 
-	@commands.command(pass_context=True, no_pm=False, aliases=['say','repeat'])
+	@commands.command(pass_context=True, no_pm=False, aliases=['say'])
 	async def echo(self,ctx,*,msg=''):
 		"""Repeat after me"""
 		if globals.verbose: print('echo command')

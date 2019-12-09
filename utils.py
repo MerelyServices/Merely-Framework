@@ -11,8 +11,11 @@ timedividers = {
 }
 
 def time_fold(s:int):
+	o = ''
+	n = s
 	for m,a in sorted(timedividers.items(),reverse=True):
 		if s>m:
-			ns = round(s/a[0])
-			return str(ns)+' '+(a[1] if ns==1 else (a[2] if len(a)>2 else a[1]+'s'))
-	return str(s)+' second'+('s' if s!=1 else '')
+			ns = round(n/a[0])
+			n -= ns*a[0]
+			o += str(ns)+' '+(a[1] if ns==1 else (a[2] if len(a)>2 else a[1]+'s'))+' '
+	return (str(round(s))+' second'+('s' if s!=1 else '')) if not len(o) else o

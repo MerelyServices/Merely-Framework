@@ -8,11 +8,9 @@ class Obsolete(commands.Cog):
 	def __init__(self, bot):
 		self.bot = bot
 
-	@commands.command(pass_context=True, no_pm=False, aliases=['join','summon','disconnect','play','pause'])
+	@commands.command(pass_context=True, no_pm=False, aliases=['join','summon','disconnect','play','pause','ping','settings','lyrics','nowplaying','np','playlists','queue','remove','scsearch','shuffle','skip','forceremove','forceskip','playnext','repeat','loop','skipto','stop','volume','vol'])
 	async def music(self, ctx):
-		if globals.musicbuddy:
-			if ctx.guild.get_member(globals.musicbuddy) is None:
-				await ctx.message.channel.send(f"to use merely for music, please add the merely music bot!\nhttps://discordapp.com/oauth2/authorize?client_id={globals.musicbuddy}&scope=bot&permissions=0")
+		await ctx.message.channel.send(f"to use merely for music, please add the merely music bot!\nhttps://discordapp.com/oauth2/authorize?client_id={globals.musicbuddy}&scope=bot&permissions=0")
 	@commands.command(pass_context=True, no_pm=False)
 	async def nsfw(self, ctx):
 		await ctx.message.channel.send('merely supports nsfw through using the `m/images` command in an nsfw channel.')

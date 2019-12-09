@@ -22,6 +22,7 @@ modules={
 	'obsolete':False,
 	'search':False,
 	'stats':False,
+	'utils':False,
 	'webserver':False
 }
 bot=False

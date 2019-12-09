@@ -198,25 +198,40 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
+	# determine if the message should be logged and log it
 	asyncio.ensure_future(msglog(message))
-	if globals.modules['admin']: asyncio.ensure_future(globals.janitor(message))
+	# determine if janitor should run on this message and run it
+	if globals.modules['admin']:
+		asyncio.ensure_future(globals.janitor(message))
+	# determine if message was posted in a meme channel, and if so determine if it is a meme
+	if globals.modules['meme'] and message.channel.id in sum(globals.memechannels.values(),[]):
+		asyncio.ensure_future(globals.meme.OnMemePosted(message))
 	
 	ctx = await bot.get_context(message)
+	
+	# ignore messages that clearly weren't directed at merely
 	if ctx.prefix is not None:
-		allowed=True
-		if str(message.author.id) in globals.lockout:
-			if int(globals.lockout[str(message.author.id)]) > time.time():
-				allowed=False
-				await message.channel.send(f"you're banned from using this bot for {utils.time_fold(int(globals.lockout[str(message.author.id)])-time.time())}.")
-			else:
-				await message.channel.send("your ban is over. you may use commands again.")
-				globals.lockout.pop(str(message.author.id),None)
-				globals.save()
-		if allowed:
-			ctx.command = bot.get_command(ctx.invoked_with.lower())
-			await bot.invoke(ctx)
-	if message.channel.id in sum(globals.memechannels.values(),[]):
-		await globals.meme.OnMemePosted(ctx.message)
+		ctx.command = bot.get_command(ctx.invoked_with.lower())
+		# detect if the message was recognised as a command
+		if ctx.command is not None:
+			allowed=True
+			# detect if the command was directed at the music bot
+			if ctx.command.name == "music":
+				if not (globals.musicbuddy and ctx.guild.get_member(globals.musicbuddy) is None):
+					# the music bot will handle this one
+					return
+			if str(message.author.id) in globals.lockout:
+				if int(globals.lockout[str(message.author.id)]) > time.time():
+					allowed=False
+					await message.channel.send(f"you're banned from using this bot for {utils.time_fold(int(globals.lockout[str(message.author.id)])-time.time())}.")
+				else:
+					await message.channel.send("your ban is over. you may use commands again.")
+					globals.lockout.pop(str(message.author.id),None)
+					globals.save()
+			if allowed:
+				await bot.invoke(ctx)
+		else:
+			await log("Unknown command: ```"+message.content+"```")
 
 async def send_ownerintro(server):
 	em=discord.Embed(title="introducing merely",type='rich',inline=False,
@@ -278,28 +293,35 @@ async def on_member_remove(member):
 def truncate(str ,l):
 	return (str[:l] + '...') if len(str) > l+3 else str
 
-async def msglog(msg):
-	if globals.logchannel and msg.channel.id != globals.logchannel:
-		if isinstance(msg.channel,discord.abc.PrivateChannel) or msg.author==bot.user or msg.author.id == globals.musicbuddy or bot.user in msg.mentions or msg.content.startswith('m/') or msg.content.startswith('merely'):
-			if msg.author==bot.user:
-				globals.stats.sentcount+=1
-			else:
-				globals.stats.recievedcount+=1
-			
-			content=truncate(msg.content.encode('utf-8').decode('ascii','ignore'),64)
-			fullcon=truncate(msg.content,64).replace('http','')
-			
-			if isinstance(msg.channel,discord.abc.PrivateChannel):
-				channel='PM'
-			else:
-				channel=truncate(msg.guild.name,12)+'#'+truncate(msg.channel.name,12)
-			
-			embed = None
-			if len(msg.embeds)>0:
-				embed = msg.embeds[0]
+async def msglog(msg:discord.Message):
+	# Determines if message should be logged, and logs it.
+	# Criteria for appearing in the log: message isn't in the logchannel, DMs to the bot, messages sent by the bot or the musicbot companion, merely is mentioned or message has a merelybot prefix.
+	if msg.channel.id != globals.logchannel and (isinstance(msg.channel,discord.abc.PrivateChannel) or msg.author==bot.user or msg.author.id == globals.musicbuddy or bot.user in msg.mentions or msg.content.startswith('m/') or msg.content.startswith('merely')):
+		if msg.author==bot.user:
+			globals.stats.sentcount+=1
+		else:
+			globals.stats.recievedcount+=1
+		
+		content=truncate(msg.content.encode('utf-8').decode('ascii','ignore'),64)
+		fullcon=truncate(msg.content,64).replace('http','')
+		
+		if isinstance(msg.channel,discord.abc.PrivateChannel):
+			channel='PM'
+		else:
+			channel=truncate(msg.guild.name,12)+'#'+truncate(msg.channel.name,12)
+		
+		embed = None
+		if len(msg.embeds)>0:
+			embed = msg.embeds[0]
+		
+		if globals.logchannel:
+			await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - ["+channel+"] "+msg.author.name+"#"+msg.author.discriminator+": "+fullcon, embed=embed)
+		print(time.strftime("%H:%M:%S",time.localtime())+" - ["+channel+"] "+msg.author.name+"#"+msg.author.discriminator+": "+content)
 
-			print(time.strftime("%H:%M:%S",time.localtime())+" - ["+channel+"] "+msg.author.name+"#"+msg.author.discriminator+": "+content)
-			if globals.logchannel: await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - ["+channel+"] "+msg.author.name+"#"+msg.author.discriminator+": "+fullcon, embed=embed)
+async def log(msg:str):
+	print(time.strftime("%H:%M:%S",time.localtime())+": "+msg)
+	if globals.logchannel:
+		await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+": "+msg)
 
 @bot.event
 async def on_raw_reaction_add(e):
