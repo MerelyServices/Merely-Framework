@@ -10,7 +10,7 @@ from discord.ext import commands
 import emformat
 import help
 
-globals.commandlist['censor']=['blacklist','whitelist']
+globals.commandlist['censor']=['blacklist','whitelist','censor']
 
 def dangerous(text,train=0):
 	blacklist=Censor.get_blacklist(globals.modules['censor'])
@@ -48,10 +48,9 @@ def dangerous(text,train=0):
 	if matches: pprint(matches)
 	return matches
 
-def sass(name):
-	return random.choice(["i can't search for *that*!","*gasp* you perv!","i don't want that in my browser history.","*what would u're mom say?*",
-												"this isn't a game "+name+".","get Zo to do your dirty work, not me!","that isn't going to happen anytime soon...",
-												"*gasp* "+name+" has some weird fetishes...","i wasn't made for that!","i'm not gonna search for that outside of a nsfw channel..."])
+def sass():
+	return random.choice(["keep that in an nsfw channel, filthy weeb.","merely has *standards*","degenerates.","I'm not just gonna let you post filth in a sfw channel.",
+												"you people disgust me","merely found a naughty word in this one.","saving the mods from a second of wasted time.","no thank you."])
 
 class Censor(commands.Cog):
 	"""Censor related commands."""
@@ -65,6 +64,28 @@ class Censor(commands.Cog):
 	def get_whitelist(self):
 		with open(globals.store+'whitelist.txt','r',encoding='utf-8') as f:
 			return f.read().splitlines()
+	
+	async def send_list(self,wordlist,intro,channel):
+		introdone = False
+		iterations = 0
+		while len(wordlist)>0 and iterations < 5:
+			if len(wordlist)>1900:
+				end = 1900
+				while wordlist[end]!=' ': end -= 1
+				send = wordlist[:end]
+				wordlist = wordlist[end+1:]
+			else:
+				send = wordlist
+				wordlist = ''
+			if not introdone:
+				send = intro + " ```"+send+"```"
+				introdone = True
+			else:
+				send = "```"+send+"```"
+			await channel.send(send)
+			iterations += 1
+		if iterations == 5:
+			await channel.send("there's even more, but I don't want to spam this channel anymore.")
 
 	@commands.command(pass_context=True, no_pm=False, aliases=['bl'])
 	async def blacklist(self, ctx, *, mode=None):
@@ -146,9 +167,8 @@ class Censor(commands.Cog):
 			wordprint=''
 			for word in self.get_blacklist():
 				wordprint+=word+", "
-			await ctx.message.channel.send("here's the current list of blacklisted words;```"+wordprint[:1900]+"```")
-			if len(wordprint)>1900: await ctx.message.channel.send("```"+wordprint[1900:3800]+"```")
-			if len(wordprint)>3800: await ctx.message.channel.send("the blacklist is too long!")
+			
+			await self.send_list(wordprint,"here's the current list of blacklisted words;",ctx.message.channel)
 	
 	@commands.command(pass_context=True, no_pm=False, aliases=['wl'])
 	async def whitelist(self, ctx, *, mode=None):
@@ -225,7 +245,8 @@ class Censor(commands.Cog):
 			wordprint=''
 			for word in self.get_whitelist():
 				wordprint+=word+", "
-			await ctx.message.channel.send("here's the current list of whitelisted words;```"+wordprint+"```")
+			
+			await self.send_list(wordprint,"here's the current list of whitelisted words;",ctx.message.channel)
 	
 	@commands.command(pass_context=True, no_pm=False)
 	async def censor(self, ctx, *, text):

@@ -297,10 +297,11 @@ async def msglog(msg:discord.Message):
 	# Determines if message should be logged, and logs it.
 	# Criteria for appearing in the log: message isn't in the logchannel, DMs to the bot, messages sent by the bot or the musicbot companion, merely is mentioned or message has a merelybot prefix.
 	if msg.channel.id != globals.logchannel and (isinstance(msg.channel,discord.abc.PrivateChannel) or msg.author==bot.user or msg.author.id == globals.musicbuddy or bot.user in msg.mentions or msg.content.startswith('m/') or msg.content.startswith('merely')):
-		if msg.author==bot.user:
-			globals.stats.sentcount+=1
-		else:
-			globals.stats.recievedcount+=1
+		if globals.modules['stats']:
+			if msg.author==bot.user:
+				globals.stats.sentcount+=1
+			else:
+				globals.stats.recievedcount+=1
 		
 		content=truncate(msg.content.encode('utf-8').decode('ascii','ignore'),64)
 		fullcon=truncate(msg.content,64).replace('http','')

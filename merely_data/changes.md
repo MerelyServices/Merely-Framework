@@ -86,5 +86,9 @@ With this release, we are launching [MemeDB](https://meme.yiays.com) - an online
  - Mods on [Merely's official server](https://discord.gg/f6TnEJM) can now blacklist and whitelist the types of urls that are considered memes.
  - `m/lockout` had an issue where it couldn't be used to ban members on another server, this has been fixed.
  - The meme count in `m/stats` has been discontinued. Also, `m/stats` appears to be malfunctioning.
+#### 0.7.2
+ - Image search has been improved again! Merely will now try harder to avoid coming up empty at random when you search, and will give a detailed explaination of what went wrong when it does.
+ - Merely's sass when catching someone out with the censor has been updated and is now a little less cringe.
+ - `m/blacklist` and `m/whitelist` have been improved so that they will work no matter the character length. (with a sane limit of 9500 characters at most)
 ### WIP
  [ ] Collections support was fixed for real this time.

@@ -29,15 +29,15 @@ class Stats(commands.Cog):
 		self.lastuptime=0
 		
 		self.inituptime()
-		self.runstats.start()
+		asyncio.ensure_future(self.runstats.start())
 	
 	def cog_unload(self):
-		self.runstats.cancel()
+		asyncio.ensure_future(self.runstats.cancel())
 	
 	@commands.command(pass_context=True, no_pm=False, aliases=['status','ver','version'])
 	async def stats(self,ctx):
 		if globals.verbose:print('stats command')
-		await emformat.make_embed(ctx.message.channel,'for constantly updating stats, go to '+globals.apiurl+'.',
+		await emformat.make_embed(ctx.message.channel,'for constantly updating stats, go to '+globals.apiurl+'stats.html',
 		'merely stats','',0x2C5ECA,'',globals.emurl+'greet.gif',
 		{
 			'exposure': globals.stats.exposure,

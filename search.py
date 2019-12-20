@@ -22,20 +22,31 @@ class Search(commands.Cog):
 		url="https://www.google.com/search?q="+urllib.parse.quote(query,safe='')+"&source=lnms&tbm=isch"
 		url=url.replace('%20','+')
 		header={'User-Agent':"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.134 Safari/537.36"}
+		attempts = 0
 		async with aiohttp.ClientSession() as session:
-			async with session.get(url,headers=header) as r:
-				if r.status == 200:
-					a = await r.text()
-					with open(globals.store+"imgscrape.html",'w',encoding='utf-8') as file:
-						file.write(a)
-					autocorrect=re.search('Showing results for.+?<i>(.+?)</i>',a)
-					if autocorrect!=None: autocorrect=autocorrect.group()
-					else: autocorrect=''
-					image_list = re.findall(',"ou":"([A-z0-9:/?&.%_()-]*?)","ow":',a)
-					return (image_list,autocorrect)
-				else:
-					print('image search: error '+str(r.status))
-					return ({query:[]},'')
+			while attempts < 4:
+				async with session.get(url,headers=header) as r:
+					if r.status == 200:
+						a = await r.text()
+						with open(globals.store+"imgscrape.html",'w',encoding='utf-8') as file:
+							file.write(a)
+						autocorrect=re.search('Showing results for.+?<i>(.+?)</i>',a)
+						if autocorrect!=None: autocorrect=autocorrect.group()
+						else: autocorrect=''
+						image_list = re.findall(""","ou":"(http[s]?://[A-z0-9:/?&.%_()-]*?)","ow":""",a)
+						if(len(image_list)):
+							return (image_list,autocorrect)
+						else:
+							redirect = re.findall(r"""Please click <a href="(\/search\?q=[\w\d+&;=-]+)">here<\/a> if you are not redirected within a few seconds\.""",a)
+							if len(redirect):
+								url = "https://www.google.com"+redirect[0]
+								print("Detecting another redirect! "+url)
+								attempts += 1
+							else:
+								raise Exception("ImageSearch: Couldn't find any images. On adition to that, merely also couldn't a path towards more images.")
+					else:
+						raise Exception("ImageSearch: GET {} failed: Error code {}".format(url,r.status))
+			raise Exception("ImageSearch: After following {} redirects, merely still wasn't able to find any images.".format(attempts))
 	
 	def html2discord(self,input):
 		input=input.replace('<i>','*')
@@ -100,7 +111,7 @@ class Search(commands.Cog):
 				return
 			danger=censor.dangerous(query)
 			if danger and not ctx.message.channel.is_nsfw():
-				nope=censor.sass(ctx.message.author.name)
+				nope=censor.sass()
 				nope+="\ni found these filthy words in your search; `"+(', '.join({*danger}))+"`"
 				await emformat.genericmsg(ctx.message.channel,nope,'error','google')
 				return
@@ -137,7 +148,7 @@ class Search(commands.Cog):
 				danger=censor.dangerous(query)
 			else: danger=False
 			if danger: #cancel search if the query is dangerous
-				nope=censor.sass(ctx.message.author.name)
+				nope=censor.sass()
 				nope+="\ni found these filthy words in your search; `"+(', '.join({*danger}))+"`"
 				await emformat.genericmsg(ctx.message.channel,nope,'error','image')
 			else:
@@ -155,7 +166,7 @@ class Search(commands.Cog):
 						danger=censor.dangerous(autocorrect)
 					else: danger=False
 					if danger: #don't show search results if google autocorrected them to something nefarious.
-						nope=censor.sass(ctx.message.author.name)
+						nope=censor.sass()
 						nope+="\ni found these filthy words in your *autocorrected* search; `"+(', '.join({*danger}))+"`"
 						await emformat.genericmsg(ctx.message.channel,nope,'error','image')
 					else:
@@ -168,7 +179,7 @@ class Search(commands.Cog):
 	@image.error
 	async def image_error(self,ctx,error):
 		print(error)
-		await emformat.genericmsg(ctx.message.channel,"something went wrong when trying to fulfil your image search! please try another search term.","error","image")
+		await emformat.genericmsg(ctx.message.channel,"something went wrong when trying to fulfil your image search! please try another search term.\n```"+str(error)+"```","error","image")
 	
 	async def sendimgs(self,channel,imglist,count):
 		if len(imglist)>=1:
