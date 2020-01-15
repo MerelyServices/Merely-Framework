@@ -92,5 +92,6 @@ With this release, we are launching [MemeDB](https://meme.yiays.com) - an online
  - Image search has been improved again! Merely will now try harder to avoid coming up empty at random when you search, and will give a detailed explaination of what went wrong when it does.
  - Merely's sass when catching someone out with the censor has been updated and is now a little less cringe.
  - `m/blacklist` and `m/whitelist` have been improved so that they will work no matter the character length. (with a sane limit of 9500 characters at most)
-### WIP
- [ ] Collections support was fixed for real this time.
+#### 0.7.3
+ - Meme has been updated to automatically download memes to the CDN immediately after adding them to the database.
+ - Collections support has finally been fixed completely.

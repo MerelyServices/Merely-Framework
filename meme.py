@@ -76,7 +76,7 @@ class Meme(commands.Cog):
 		if down or up:
 			if len(up)>=1:
 				result = await self.GetMessageUrls(message) if result == -1 else result
-				self.RecordMeme(result,message,up,down)
+				await self.RecordMeme(result,message,up,down)
 				await message.add_reaction('☑')
 		else:
 			result = await self.GetMessageUrls(message) if result == -1 else result
@@ -94,7 +94,7 @@ class Meme(commands.Cog):
 				elif verified and result == None:
 					await verified.remove(self.bot.user)
 	
-	def RecordMeme(self,result,message,up=[],down=[]):
+	async def RecordMeme(self,result,message,up=[],down=[]):
 		mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=globals.memedbpass,database='meme')
 		cursor = mydb.cursor()
 		
@@ -105,10 +105,16 @@ class Meme(commands.Cog):
 				first=False
 				cursor.execute(f"CALL AddMeme({message.id},'{meme[1]}',NULL,'{meme[0]}',@MID);")
 				mydb.commit()
+				cursor.execute(f"SELECT @MID;")
 			else:
-				cursor.execute(f"CALL AddMeme({message.id},'{meme[1]}',@MID,'{meme[0]}',@notMID);")
-		if len(result)>1:
-			mydb.commit()
+				cursor.execute(f"CALL AddMeme({message.id},'{meme[1]}',(SELECT @MID),'{meme[0]}',@notMID);")
+				mydb.commit()
+				cursor.execute(f"SELECT @notMID;")
+			result = cursor.fetchone()
+			if not result is None:
+				mid = result[0]
+				async with self.session.get("https://cdn.yiays.com/meme/dl.php?singledl="+str(mid)) as clientresponse:
+					print("[CDN] "+str(clientresponse.status)+": "+await clientresponse.text('utf-8'))
 		
 		# Add user, in case they don't exist
 		for voter in list(dict.fromkeys(up+down)):
@@ -252,6 +258,11 @@ class Meme(commands.Cog):
 		cursor = mydb.cursor()
 		cursor.execute(query)
 		result = cursor.fetchone()
+		
+		if result is None:
+			await channel.send('there appears to be an issue with memeDB. please try again later.')
+			return
+		
 		while result[0] in self.usedmemes:
 			cursor.execute(query)
 			result = cursor.fetchone()
@@ -259,10 +270,6 @@ class Meme(commands.Cog):
 		if len(self.usedmemes)>200:
 			self.usedmemes.pop(0)
 		mydb.close()
-		
-		if result is None:
-			await channel.send('there appears to be an issue with memeDB. please try again later.')
-			return
 		
 		embed = discord.Embed(color=discord.Color(0xf9ca24))#,url="https://meme.yiays.com/meme/"+str(result[0]),title="open in MemeDB")
 		embed.set_footer(text='powered by MemeDB (meme.yiays.com)',icon_url='https://meme.yiays.com/img/icon.png')
