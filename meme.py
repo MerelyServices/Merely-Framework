@@ -86,7 +86,7 @@ class Meme(commands.Cog):
 				
 				mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=globals.memedbpass,database='meme')
 				cursor = mydb.cursor()
-				cursor.execute(f"SELECT Id FROM meme WHERE DiscordOrigin = {message.id}")
+				cursor.execute(f"SELECT Id FROM meme WHERE DiscordOrigin = {message.id} AND CollectionParent IS NULL LIMIT 1")
 				result = cursor.fetchone()
 				cursor.close()
 				if not verified and result != None:
