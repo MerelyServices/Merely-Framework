@@ -87,6 +87,13 @@ if globals.modules['admin']:
 	bot.add_cog(admin.Admin(bot))
 	if globals.verbose: print('admin done!')
 
+#	tools
+if globals.modules['tools']:
+	import tools
+	globals.modules['tools']=tools
+	bot.add_cog(tools.Tools(bot))
+	if globals.verbose: print('tools done!')
+
 #	obsolete
 if globals.modules['obsolete']:
 	import obsolete

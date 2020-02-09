@@ -19,7 +19,7 @@ class Search(commands.Cog):
 		self.imgs={}
 	
 	async def imgscrape(self,query):
-		url="https://www.google.com/search?q="+urllib.parse.quote(query,safe='')+"&source=lnms&tbm=isch"
+		url="https://www.google.com/search?q="+urllib.parse.quote(query,safe='')+"&source=lnms&tbm=isch&gws_rd=cr"
 		url=url.replace('%20','+')
 		header={'User-Agent':"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.134 Safari/537.36"}
 		attempts = 0
@@ -46,7 +46,7 @@ class Search(commands.Cog):
 								raise Exception("ImageSearch: Couldn't find any images. On adition to that, merely also couldn't a path towards more images.")
 					else:
 						raise Exception("ImageSearch: GET {} failed: Error code {}".format(url,r.status))
-			raise Exception("ImageSearch: After following {} redirects, merely still wasn't able to find any images.".format(attempts))
+			raise Exception("ImageSearch: It appears that google has completely blocked this bot.")
 	
 	def html2discord(self,input):
 		input=input.replace('<i>','*')
@@ -66,7 +66,7 @@ class Search(commands.Cog):
 		url=url.replace('%20','+')
 		header={'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.0.7) Gecko/2009021910 Firefox/3.0.7'}
 		async with aiohttp.ClientSession() as session:
-			async with session.get("http://www.google.com/search?q="+url,headers=header) as r:
+			async with session.get("http://www.google.com/search?q="+url+"&gws_rd=cr",headers=header) as r:
 				if r.status == 200:
 					a = await r.text()
 					a = a.replace('\n',' ')
@@ -128,7 +128,7 @@ class Search(commands.Cog):
 						"https://cdn.discordapp.com/avatars/309270899909984267/1d574f78b4d4acec14c1ef8290a543cb.png?size=64",
 						"http://www.google.com/search?q="+urllib.parse.quote(query,safe='').replace('%20','+'))
 				else:
-					await ctx.message.channel.send("no results! ¯\\_(ツ)_/¯")
+					await ctx.message.channel.send("it appears that google has completely blocked this bot.")
 	@google.error
 	async def google_error(self,ctx,error):
 		print(error)

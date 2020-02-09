@@ -95,3 +95,7 @@ With this release, we are launching [MemeDB](https://meme.yiays.com) - an online
 #### 0.7.3
  - Meme has been updated to automatically download memes to the CDN immediately after adding them to the database.
  - Collections support has finally been fixed completely.
+#### 0.7.4
+ - Sadly, `m/google` and `m/image` have been blocked by google, so they no longer work.
+ - Added in a link shortener which uses the new https://l.yiays.com service.
+ - Tweaked the featured commands in `m/help` and https://merely.yiays.com

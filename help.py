@@ -7,10 +7,10 @@ globals.commandlist['help']=['help','command','hint','info','stats','feedback']
 helpdict={
 	':grey_question: help':'```help, command, hint, feedback```',
 	':information_source:':'```info, stats, servers, changelog```',
-	':mag_right: search':'```command, google, image```',
-	':joy: fun':'```playing, meme, echo, thonk, vote```',
-	':see_no_evil: censor':'```blacklist, whitelist, clean, purge```',
-	':new: new':'```changelog, vote, dice```'
+	':joy: fun':'```playing, meme, echo, thonk, vote, dice```',
+	':tools: tools':'```shorten```',
+	':levitate: admin':'```blacklist, whitelist, clean, purge```',
+	':new: new':'```changelog, dice, shorten```'
 }
 dhelp={
 	'welcome':"***merely welcome [get|clear|set (welcome message)]***\n**SERVER OWNERS ONLY** - get the welcome message for the server or set it, use `merely welcome set` for instructions on how to set a welcome message.",
@@ -39,6 +39,7 @@ dhelp={
 	'logcat':"***merely logcat (lines)***\noutputs the last 10 lines, by default, in the log, for the sake of debugging.",
 	'reload':"***merely reload (module)***\n**MERELY SUPERUSERS ONLY** - this command reloads changes made to merely's code without restarting the bot.",
 	'changelog':"***merely changelog***\nlists all the recent changes made to merely over the previous few updates.",
+	'shorten':"***merely shorten (long link) [short name]***\ntakes the provided long link and shortens it using https://l.yiays.com.",
 	'die':"***merely die***\n**MERELY SUPERUSERS ONLY** - shuts down merely safely."
 }
 globals.dhelp=dhelp

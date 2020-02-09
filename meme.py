@@ -6,6 +6,8 @@ import mysql.connector
 import aiohttp
 import re
 
+globals.commandlist['meme']=['meme']
+
 def typeconverter(type):
 	if type.startswith('image'):
 		if type.startswith('image/gif'):
@@ -22,8 +24,6 @@ def typeconverter(type):
 def FindURLs(string):
 	urls = re.findall(r'(http[s]?:\/\/[A-z0-9/?.&%;:\-=@]+)', string)
 	return urls
-
-globals.commandlist['meme']=['meme']
 
 class Meme(commands.Cog):
 	"""In beta; a new database for automatically storing and indexing memes to make them easier to find"""

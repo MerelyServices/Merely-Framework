@@ -3,6 +3,8 @@ import configparser
 
 # objects waiting to be shared between modules
 config=configparser.ConfigParser()
+
+# defaults, should the ini file be missing or corrupted
 stats=None
 meme=None
 janitor=None
@@ -22,6 +24,7 @@ modules={
 	'obsolete':False,
 	'search':False,
 	'stats':False,
+	'tools':False,
 	'utils':False,
 	'webserver':False
 }
