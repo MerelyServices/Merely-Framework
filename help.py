@@ -39,7 +39,7 @@ dhelp={
 	'logcat':"***merely logcat (lines)***\noutputs the last 10 lines, by default, in the log, for the sake of debugging.",
 	'reload':"***merely reload (module)***\n**MERELY SUPERUSERS ONLY** - this command reloads changes made to merely's code without restarting the bot.",
 	'changelog':"***merely changelog***\nlists all the recent changes made to merely over the previous few updates.",
-	'shorten':"***merely shorten (long link) [short name]***\ntakes the provided long link and shortens it using https://l.yiays.com.",
+	'shorten':"***merely shorten (long link) [short name]***\ntakes the provided long link and shortens it using https://l.yiays.com. If the requested short link is *0*, the short link will be randomized.",
 	'die':"***merely die***\n**MERELY SUPERUSERS ONLY** - shuts down merely safely."
 }
 globals.dhelp=dhelp
