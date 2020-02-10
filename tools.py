@@ -6,6 +6,7 @@ from discord.ext import commands
 import mysql.connector
 import random
 import re
+import urllib.parse
 
 globals.commandlist['tools']=['shorten']
 
@@ -33,15 +34,18 @@ class Tools(commands.Cog):
 				await ctx.channel.send("the provided url is invalid.")
 			else:
 				rand = False
+				taken = False
 				done = False
-				if short == '':
-					msg = await ctx.channel.send("if you would like a custom name for the url, say it now. ie. l.yiays.com/*merely* (type 0 if you would like a random url)")
-					def check(m):
-						return m.channel == ctx.channel and m.author == ctx.message.author
-					msg = await self.bot.wait_for('message', check=check)
-					short = msg.content
 				mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=globals.memedbpass,database='linkshortener')
+				short = str.replace(str.replace(urllib.parse.quote(short, safe = ''), '%20', '+'), '%2F', '+')
 				while not done:
+					if short == '' or taken:
+						if taken: msg = await ctx.channel.send("sorry, but the shortened url you requested was taken. please type a new one *or 0 for a random one*")
+						else: msg = await ctx.channel.send("if you would like a custom name for the url, say it now. ie. l.yiays.com/*merely* (type 0 if you would like a random url)")
+						def check(m):
+							return m.channel == ctx.channel and m.author == ctx.message.author
+						msg = await self.bot.wait_for('message', check=check)
+						short = str.replace(str.replace(urllib.parse.quote(msg.content, safe = ''), '%20', '+'), '%2F', '+')
 					if short == '0' or rand:
 						rand = True
 						chars = [chr(i) for i in list(range(48,57)) + list(range(65,90)) + list(range(97,122))]
@@ -55,3 +59,5 @@ class Tools(commands.Cog):
 						cursor.close()
 						await ctx.channel.send("done - *shortened by {} character(s)*: {}".format(len(long)-(len(short)+12),"https://l.yiays.com/"+short))
 						done = True
+					elif not rand:
+						taken = True
