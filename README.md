@@ -1,15 +1,16 @@
+![merely logo](profile.png)
 # merelybot
 merely is a discord bot intended to be highly modular and able to enhance a [discord server](https://discord.gg/f6TnEJM) it is invited to with useful commands like...
- - `m/shorten` to shorten URLs
- - `m/vote` to hold live multichoice polls in a channel
- - `m/welcome` and `m/farewell` to create custom messages when people leave or join
- - `m/clean` and `m/purge` to quickly clear messages in a channel
- - `m/janitor` to make tidy channels where bot spam is automatically removed
- - `m/dice` to roll as many custom dice as your heart desires
- - `m/meme` to bring the power of a [meme database](https://meme.yiays.com/) to a discord server
-> for interactive tutorials on how to use these commands, please refer to the [web UI](https://merely.yiays.com)
+ - `m/shorten` to shorten URLs | [demo](https://merely.yiays.com/#/shorten)
+ - `m/vote` to hold live multichoice polls in a channel | [demo](https://merely.yiays.com/#/vote)
+ - `m/welcome` and `m/farewell` to create custom messages when people leave or join | [demo](https://merely.yiays.com/#/welcome)
+ - `m/clean` and `m/purge` to quickly clear messages in a channel | [clean demo](https://merely.yiays.com/#/clean) | [purge demo](https://merely.yiays.com/#/purge)
+ - `m/janitor` to make tidy channels where bot spam is automatically removed | [demo](https://merely.yiays.com/#/janitor)
+ - `m/dice` to roll as many custom dice as your heart desires | [demo](https://merely.yiays.com/#/dice)
+ - `m/meme` to bring the power of a [meme database](https://meme.yiays.com/) to a discord server | [demo](https://merely.yiays.com/#/meme)
+> [visit the webUI >](https://merely.yiays.com/)
 
-> you can add merely to your discord server using the link [here](https://discordapp.com/oauth2/authorize?client_id=309270899909984267&scope=bot&permissions=0)
+> [add merely to your server >](https://discordapp.com/oauth2/authorize?client_id=309270899909984267&scope=bot&permissions=0)
 
 ## news
 merely is approaching three years of development and simultaneously the 1.0.0 update. merely has reached a high level of stability, scalability and modularity.
@@ -25,7 +26,7 @@ you can read the up to date changelog [here](https://merely.yiays.com/changes.ht
  - give merely the token with
    - `export MerelyBeta="TOKEN"` on linux
    - `setx MerelyBeta "TOKEN"` on windows
-   - *it's recommended you create a .bat or .sh file which assigns these variables *
+   - *it's recommended you create a .bat or .sh file which assigns these variables whenever you start the bot*
  - run it with `python3 merelybot.py`
 
 after the first run, you can enable commands by editing the file at merely_data/config.ini in order to enable modules. simply switch the value of each module you want from `False` to `True`, note that the meme module has external dependencies and will not work in a local environment yet.
@@ -37,12 +38,10 @@ work is being done towards making merely customisible, with custom prefixes and 
 
 feel free to fix any bugs or add new features to a fork, and send me a pull request, pretty standard github stuff.
 
-> keep in mind this lowercase thing is a theme of merely, consider it appealing to the customs of discord.
-
 ## modules
 | module | description | added |
 | ------ | ----------- | ----- |
-| [main](merelybot.py)* | imports all modules, creates some global variables, and runs the main loop | 0.0.1 |
+| [main](merelybot.py)* | imports all modules, creates some global variables, establishes a log, and runs the main loop | 0.0.1 |
 | [globals](globals.py)* | contains global variables and configuration data | 0.0.1 |
 | [help](help.py)<sup>1</sup> | help contains help strings for all commands, lists of commands, lists of hints and other documentation. | 0.0.1 |
 | [admin](admin.py) | commands restricted to mods and server owners | <0.5.0 |
