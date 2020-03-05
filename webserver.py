@@ -5,7 +5,7 @@ from aiohttp import web
 routes = web.RouteTableDef()
 
 @routes.get('/stats')
-async def stats(request):
+async def statsapi(request):
 	#if globals.verbose: print('GET /stats')
 	stats={
 		'status': globals.stats.status,
@@ -34,8 +34,7 @@ async def stats(request):
 		}
 	}
 	return web.Response(text=json.dumps(stats),status=200,headers={'Access-Control-Allow-Origin':'https://merely.yiays.com',
-																						 'Cache-Control':'no-store, no-cache, must-revalidate, max-age=0',
-																						 'Cache-Control':'post-check=0, pre-check=0',
+																						 'Cache-Control':'no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0',
 																						 'Pragma':'no-cache',
 																						 'content-type':'application/json'})
 
@@ -43,8 +42,7 @@ async def stats(request):
 async def dhelp(request):
 	if globals.verbose: print('GET /dhelp')
 	return web.Response(text=json.dumps(globals.dhelp),status=200,headers={'Access-Control-Allow-Origin':'https://merely.yiays.com',
-																										 'Cache-Control':'no-store, no-cache, must-revalidate, max-age=0',
-																										 'Cache-Control':'post-check=0, pre-check=0',
+																										 'Cache-Control':'no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0',
 																										 'Pragma':'no-cache',
 																										 'content-type':'application/json'})
 
@@ -56,45 +54,45 @@ async def index(request):
 		file=f.read().replace('{$globals.ver}',globals.ver)
 	return web.Response(text=file,status=200,headers={'Access-Control-Allow-Origin':'https://merely.yiays.com','content-type':'text/html'})
 @routes.get("/main.css")
-async def css(request):
+async def maincss(request):
 	if globals.verbose: print('GET /main.css')
 	with open('templates/main.css',encoding='utf8') as f:
 		file=f.read()
 	return web.Response(text=file,status=200,headers={'content-type':'text/css'})
 @routes.get("/main.js")
-async def js(request):
+async def mainjs(request):
 	if globals.verbose: print('GET /main.js')
 	with open('templates/main.js',encoding='utf8') as f:
 		file=f.read()
 	return web.Response(text=file,status=200,headers={'content-type':'application/javascript'})
 
 @routes.get("/stats.html")
-async def css(request):
+async def stats(request):
 	if globals.verbose: print('GET /stats.html')
 	with open('templates/stats.html',encoding='utf8') as f:
 		file=f.read()
 	return web.Response(text=file,status=200,headers={'content-type':'text/html'})
 @routes.get("/stats.css")
-async def css(request):
+async def statscss(request):
 	if globals.verbose: print('GET /stats.css')
 	with open('templates/stats.css',encoding='utf8') as f:
 		file=f.read()
 	return web.Response(text=file,status=200,headers={'content-type':'text/css'})
 @routes.get("/stats.js")
-async def js(request):
+async def statsjs(request):
 	if globals.verbose: print('GET /stats.js')
 	with open('templates/stats.js',encoding='utf8') as f:
 		file=f.read()
 	return web.Response(text=file,status=200,headers={'content-type':'application/javascript'})
 	
 @routes.get("/changes.html")
-async def css(request):
+async def changes(request):
 	if globals.verbose: print('GET /changes.html')
 	with open('templates/changes.html',encoding='utf8') as f:
 		file=f.read().replace('{$globals.ver}',globals.ver).replace('{$changes}',''.join(globals.changes))
 	return web.Response(text=file,status=200,headers={'content-type':'text/html'})
 @routes.get("/changes.js")
-async def js(request):
+async def changesjs(request):
 	if globals.verbose: print('GET /changes.js')
 	with open('templates/changes.js',encoding='utf8') as f:
 		file=f.read()

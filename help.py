@@ -62,8 +62,8 @@ class Help(commands.Cog):
 				"https://cdn.discordapp.com/avatars/309270899909984267/1d574f78b4d4acec14c1ef8290a543cb.png?size=64",
 				globals.apiurl+'#/help'
 			)
-			if random.random() < 1/3:
-				await ctx.message.channel.send('consider upvoting merely on the discord bot list; https://discordbots.org/bot/309270899909984267')
+			#if random.random() < 1/3:
+				#await ctx.message.channel.send('consider upvoting merely on the discord bot list; https://discordbots.org/bot/309270899909984267')
 		else: #detailed help
 			if search in dhelp: await emformat.genericmsg(ctx.message.channel,dhelp[search],"help","help")
 			else: await emformat.genericmsg(ctx.message.channel,"either the command, `"+search+"`, doesn't exist, or it doesn't have any documentation yet.","error","help")
@@ -89,21 +89,20 @@ class Help(commands.Cog):
 		if globals.verbose: print('hint command')
 		await emformat.make_embed(ctx.message.channel,'',title="Did you know...",
 				description=random.choice(
-				["`merely help` followed by a command name explains the command in more detail...",
-				 "click the title of any command's message to be taken to the online docs.",
-				 "`merely clean [n]` scans the last [n] messages for messages to and from merely and deletes matches.",
+				["`merely help` followed by a command name explains the command in more detail. eg. `m/help meme`",
+				 "click the title of any command's message to be taken to the online docs, which includes interactive tutorials for each command!",
+				 "`merely clean [n]` scans the last [n] messages for messages to and from merely and deletes matches. only mods can use this.",
 				 "`merely clean [n] strict` deletes all of the last [n] messages. only admins can use this.",
-				 "search for commands with `merely command <search>`!",
+				 "search for commands with `merely command <search>` - it'll try its best to match you with the command you're looking for!",
 				 "tired of typing `merely`? `m/` also works as a prefix, as does `@merely`. use whichever is easiest.",
 				 "`merely info` shows off the features of merely and gives you a few relevant links.",
 				 "`merely stats` shows technical information about what the bot runs on and how much work it's doing.",
-				 "set the playing status of merely with `merely playing <status>.`",
-				 #"`m/blacklist`, `m/whitelist` and `m/meme` have a public list and a private list, changes made on your server effect only your server.",
-				 "`m/thonk` is objectively the most valuable command on this bot. it makes use of Discord Nitro to bring you the best emoji.",
-				 "`m/vote` is one of the most advanced commands made yet! it supports live updating polls, countdown timers and helps decide a winner.",
-				 "`m/vote supports holding a vote for up to 4 hours, though the longer a poll is running the more likely that it may fail.`",
-				 "like merely? consider upvoting merely on the discord bot list; https://discordbots.org/bot/309270899909984267",
-				 "*no hints for you lol*"]),
+				 "set the playing status of merely with `merely (playing|watching|streaming|listening) (status)`",
+				 #"`m/blacklist`, `m/whitelist` and `m/meme` have a public list and a private list, changes made on your server affect only your server.",
+				 "`m/thonk` is the best command. it makes use of Discord Nitro to bring you 50+ thinking emoji.",
+				 "`m/vote` is one of the most advanced commands made yet! it supports live updating polls, countdown timers and helps decide a winner."#,
+				 #"like merely? consider upvoting merely on the discord bot list; https://discordbots.org/bot/309270899909984267"
+				]),
 				color=0xf4e242,
 				author='Handy Hints with merely',
 				footer="merely v"+globals.ver+" - created by Yiays#5930"
@@ -120,11 +119,11 @@ class Help(commands.Cog):
 		{
 		'🆕 fantastic features!':"merely can do lots of stuff, it currently has **"+str(len(dhelp))+"** commands available to **"+str(len(self.bot.guilds))+"** servers.\ntype `merely help` for a full list of commands or type `merely changelog` to see all the recent additions and fixes!",
 		'😊🤖 mobile and human friendly!':"merely is activated by 3 prefixes; `merely <command>`, `m/<command>` and `@merely <command>` pick whichever is easiest for you to type on your device.",
-		'📚 detailed documentation!':"if you're unsure what a command does; `merely help <command>`. if you can't find a command; `merely commands <search>`. if you want to learn something new; `merely hint`. if you still need help, you can click the title of the embed for online documentation (<:soon:233642257817927680>)!",
+		'📚 detailed documentation!':"if you're unsure what a command does; `merely help <command>`. if you can't find a command; `merely commands <search>`. if you want to learn something new; `merely hint`. if you still need help, you can click the title of the embed for online documentation!",
 		'⬆️ frequent updates!':'merely is updated with more features automatically all the time, almost seamlessly. thanks to sharding (coming soon) and modular design, merely can stay online 24/7 even when being updated!\n merely has been online constantly for '+str(round(h))+" hours, "+str(round(m))+" minutes and "+str(round(s))+" seconds.",
 		#'👥 sharding! <:soon:233642257817927680>':"merely will provide optimal service to all users in the future by being hosted on multiple servers around the world! the fastest and slowest bots will dynamically connect to your server based on demand!",
-		'➕ add now!':"[click here](https://discordapp.com/oauth2/authorize?client_id=309270899909984267&scope=bot&permissions=104131650) to add merely to your server with minimal permissions. *note that merely may have to ask for more permissions later on.*",
-		'💡 keep the lights on':"consider voting for this bot at [discordbots.org](https://discordbots.org/bot/309270899909984267) if you enjoy it's services! the developers would really appreciate it!"
+		'➕ add now!':"[click here](https://discordapp.com/oauth2/authorize?client_id=309270899909984267&scope=bot&permissions=104131650) to add merely to your server with minimal permissions. *note that merely may need to ask for more permissions later on.*"#,
+		#'💡 keep the lights on':"consider voting for this bot at [discordbots.org](https://discordbots.org/bot/309270899909984267) if you enjoy its services! the developers would really appreciate it!"
 		},
 		'','',globals.apiurl)
 	
@@ -150,5 +149,5 @@ class Help(commands.Cog):
 	@feedback.error
 	async def feedback_error(self,ctx,error):
 		print(error)
-		await emformat.genericmsg(ctx.message.channel,"unfortunately there was an error when trying to send your feedback, but the developers will read this error and find your feedback here.","error","feedback")
+		await emformat.genericmsg(ctx.message.channel,"unfortunately there was an error when trying to send your feedback, but the developers should read this error and find your feedback.","error","feedback")
 	

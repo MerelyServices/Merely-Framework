@@ -113,8 +113,9 @@ class Meme(commands.Cog):
 			result = cursor.fetchone()
 			if not result is None:
 				mid = result[0]
-				async with self.session.get("https://cdn.yiays.com/meme/dl.php?singledl="+str(mid)) as clientresponse:
-					print("[CDN] "+str(clientresponse.status)+": "+await clientresponse.text('utf-8'))
+				await self.session.get("https://cdn.yiays.com/meme/dl.php?singledl="+str(mid))
+				await self.session.get("https://cdn.yiays.com/meme/"+str(mid)+".thumb.jpg")
+				await self.session.get("https://cdn.yiays.com/meme/"+str(mid)+".mini.jpg")
 		
 		# Add user, in case they don't exist
 		for voter in list(dict.fromkeys(up+down)):
@@ -299,7 +300,7 @@ class Meme(commands.Cog):
 		elif n.startswith('delet'):
 			await ctx.channel.send("deleting memes is no longer possible, you can however open the meme in MemeDB and downvote it.")
 		elif n.startswith('add'):
-			await ctx.channel.send("memes are no longer added by a command. they must appear on the official server and be upvoted.")
+			await ctx.channel.send("memes are no longer added by a command. they must appear on the official discord server ( https://discord.gg/f6TnEJM ) and be upvoted.")
 		else:
 			await ctx.channel.send("search is to be implemented...")
 

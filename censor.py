@@ -184,7 +184,7 @@ class Censor(commands.Cog):
 				if word==None:
 					await ctx.message.channel.send(help.dhelp['whitelist'])
 					return
-				matches=dangerous(word)
+				#matches=dangerous(word)
 				if ' ' in word:
 					await emformat.genericmsg(ctx.message.channel,"please list one word at a time, and make sure that each word doesn't have legitimate uses","error","whitelist")
 				#elif not matches:

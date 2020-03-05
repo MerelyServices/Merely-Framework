@@ -5,7 +5,7 @@ import time, os, math, re
 from discord.ext import commands
 import emformat, help
 
-globals.commandlist['admin']=['welcome','farewell','janitor','die','clean','logcat','changelog','announceupdate','owneroptout','lockout']
+globals.commandlist['admin']=['welcome','farewell','janitor','die','clean','purge','logcat','servers','lockout','changelog','announceupdate','owneroptout','lockout']
 
 class Admin(commands.Cog):
 	"""Admin related commands."""

@@ -29,10 +29,10 @@ class Stats(commands.Cog):
 		self.lastuptime=0
 		
 		self.inituptime()
-		asyncio.ensure_future(self.runstats.start())
+		self.runstats.start()
 	
 	def cog_unload(self):
-		asyncio.ensure_future(self.runstats.cancel())
+		self.runstats.cancel()
 	
 	@commands.command(pass_context=True, no_pm=False, aliases=['status','ver','version'])
 	async def stats(self,ctx):

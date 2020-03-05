@@ -1,21 +1,32 @@
-timedividers = {
-	300 : [60,'minute'],
-	7200 : [3600,'hour'],
-	172800 : [86400,'day'],
-	2592000 : [2592000,'month'],
-	31104000 : [31104000,'year'],
-	311040000 : [311040000,'decade'],
-	3110400000 : [3110300000,'century','centuries'],
-	31104000000 : [31103000000,'millenia','millenia'],
-	31104000000000000 : [31104000000000000,'eon','eons']
-}
+import collections
+
+timedivider = collections.namedtuple('timedivider', ['threshold', 'divider', 'unit', 'unitplural'], defaults=[0, 0, 'null', None])
+
+timedividers = [
+	timedivider(threshold=0, divider=1, unit='second'),
+	timedivider(threshold=300, divider=60, unit='minute'),
+	timedivider(threshold=7200, divider=3600, unit='hour'),
+	timedivider(threshold=172800, divider=86400, unit='day'),
+	timedivider(threshold=2592000, divider=2592000, unit='month'),
+	timedivider(threshold=31104000, divider=31104000, unit='year'),
+	timedivider(threshold=311040000, divider=311040000, unit='decade'),
+	timedivider(threshold=31104000000, divider=31103000000, unit='millenia', unitplural='millenia'),
+	timedivider(threshold=31104000000000000, divider=31104000000000000, unit='eon', unitplural='eons')
+]
 
 def time_fold(s:int):
-	o = ''
+	output = ''
 	n = s
-	for m,a in sorted(timedividers.items(),reverse=True):
-		if s>m:
-			ns = round(n/a[0])
-			n -= ns*a[0]
-			o += str(ns)+' '+(a[1] if ns==1 else (a[2] if len(a)>2 else a[1]+'s'))+' '
-	return (str(round(s))+' second'+('s' if s!=1 else '')) if not len(o) else o
+	for td in reversed(timedividers):
+		if s>td.threshold:
+			# divide by the divider and return the remainder
+			ns, n = divmod(n, td.divider)
+			ns = int(ns)
+			
+			if ns == 1:
+				plural = td.unit
+			else:
+				plural = f"{td.unit}s" if td.unitplural == None else td.unitplural
+			
+			output += f"{ns} {plural}, "
+	return output[:-2]

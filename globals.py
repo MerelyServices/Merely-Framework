@@ -28,7 +28,7 @@ modules={
 	'utils':False,
 	'webserver':False
 }
-bot=False
+bot={}
 store='merely_data/'
 dhelp={}
 connected=False
