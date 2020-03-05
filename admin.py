@@ -175,7 +175,7 @@ class Admin(commands.Cog):
 		if globals.verbose: print('die command')
 		if ctx.message.author.id in globals.authusers:
 			#await emformat.genericmsg(ctx.message.channel,"shutting down...","bye","die")
-			await emformat.make_embed(ctx.message.channel, "", "merely die", "shutting down...", thumbnail="https://tenor.com/view/terminator-thumbsup-gif-4872100", footer="merely v"+globals.ver+" - created by Yiays#5930", icon=globals.iconurl, link=globals.apiurl+"#/die")
+			await emformat.make_embed(ctx.message.channel, "", "merely die", "shutting down...", image="https://media.discordapp.net/attachments/302695523360440322/685087322844299284/tenor.gif", footer="merely v"+globals.ver+" - created by Yiays#5930", icon=globals.iconurl, link=globals.apiurl+"#/die")
 			with open(globals.store+'alive.txt','w') as f:
 				f.write(str(ctx.message.channel.id))
 			if globals.modules['webserver']: await globals.modules["webserver"].stop()
