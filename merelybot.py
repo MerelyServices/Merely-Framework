@@ -256,7 +256,7 @@ async def send_ownerintro(server):
 	em.add_field(name='merely changelog',value="this command isn't exclusive, but be sure to use it!\n"+help.dhelp['changelog'])
 	em.add_field(name='for more information...',value='be sure to visit merely\'s website! '+globals.apiurl+'#/serverowner')
 	em.set_thumbnail(url=globals.emurl+"greet.gif")
-	em.set_footer(text="merely v"+globals.ver+" - created by Yiays#5930", icon_url="https://cdn.discordapp.com/avatars/309270899909984267/1d574f78b4d4acec14c1ef8290a543cb.png?size=64")
+	em.set_footer(text="merely v"+globals.ver+" - created by Yiays#5930", icon_url=globals.iconurl)
 	await server.owner.send(embed=em)
 	
 @bot.event

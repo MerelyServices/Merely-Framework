@@ -285,7 +285,7 @@ class Meme(commands.Cog):
 			extra=result[1]+' - view online at https://meme.yiays.com/meme/'+str(result[0])
 			embed=None
 			
-		#embed.set_footer(text="merely v"+globals.ver+" - created by Yiays#5930", icon_url="https://cdn.discordapp.com/avatars/309270899909984267/1d574f78b4d4acec14c1ef8290a543cb.png?size=64")
+		#embed.set_footer(text="merely v"+globals.ver+" - created by Yiays#5930", icon_url=globals.iconurl)
 		await channel.send("#"+str(result[0])+": "+extra,embed=embed)
 
 	@commands.command(pass_context=True, no_pm=False, aliases=['memes','mem'])

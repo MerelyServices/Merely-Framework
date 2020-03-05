@@ -101,7 +101,7 @@ class Search(commands.Cog):
 				query,"showing the top 5 results.",0x4385F6,'google.com',globals.emurl+'result.gif',
 				results,
 				"merely v"+globals.ver+" - created by Yiays#5930",
-				"https://cdn.discordapp.com/avatars/309270899909984267/1d574f78b4d4acec14c1ef8290a543cb.png?size=64",
+				globals.iconurl,
 				"http://www.google.com/search?q="+urllib.parse.quote(query,safe='').replace('%20','+'))
 			self.results[ctx.message.guild.id]=None
 		else:
@@ -125,7 +125,7 @@ class Search(commands.Cog):
 						0x4385F6,'google.com',globals.emurl+'result.gif',
 						{self.results[ctx.message.guild.id]['title'][0]:self.results[ctx.message.guild.id]['description'][0]+' - [read more](https://www.google.com'+self.results[ctx.message.guild.id]['url'][0]+')'},
 						"merely v"+globals.ver+" - created by Yiays#5930",
-						"https://cdn.discordapp.com/avatars/309270899909984267/1d574f78b4d4acec14c1ef8290a543cb.png?size=64",
+						globals.iconurl,
 						"http://www.google.com/search?q="+urllib.parse.quote(query,safe='').replace('%20','+'))
 				else:
 					await ctx.message.channel.send("it appears that google has completely blocked this bot.")

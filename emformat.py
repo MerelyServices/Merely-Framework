@@ -4,7 +4,7 @@ async def genericmsg(channel,content,status,command):
 	embed = discord.Embed(colour=discord.Colour(0x2C5ECA),url=globals.apiurl+"#/"+command,title="merely "+command,description=content)
 
 	embed.set_thumbnail(url=globals.emurl+"result.gif")
-	embed.set_footer(text="merely v"+globals.ver+" - created by Yiays#5930", icon_url="https://cdn.discordapp.com/avatars/309270899909984267/1d574f78b4d4acec14c1ef8290a543cb.png?size=64")
+	embed.set_footer(text="merely v"+globals.ver+" - created by Yiays#5930", icon_url=globals.iconurl)
 
 	try:
 		msg = await channel.send(embed=embed)
@@ -16,7 +16,7 @@ async def genericmsg(channel,content,status,command):
 async def make_embed(channel,message,title,description,color=0x0063B1,author='',thumbnail='',fields={},footer='',icon='',link='',**kwargs):
 	em=discord.Embed(title=title,type='rich',inline=False,description=description,color=color,url=link)
 	if author!='': em.set_author(name=author,icon_url=icon)
-	else: em.set_author(name='merely',icon_url="https://cdn.discordapp.com/avatars/309270899909984267/1d574f78b4d4acec14c1ef8290a543cb.png?size=64")
+	else: em.set_author(name='merely',icon_url=globals.iconurl)
 	if thumbnail!='': em.set_thumbnail(url=thumbnail)
 	for field in fields:
 		em.add_field(name=field+' ',value=fields[field]+' ',inline=True if len(fields[field])<12 else False)

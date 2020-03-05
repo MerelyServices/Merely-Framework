@@ -45,6 +45,7 @@ modchannel=0
 emurl='https://yiays.com/img/merely/em-'
 apiurl='https://merely.yiays.com/'
 apiport=8080
+iconurl="https://cdn.discordapp.com/avatars/309270899909984267/1d574f78b4d4acec14c1ef8290a543cb.png?size=64"
 thonks=''
 ver='0.0.0'
 lastver='0.0.0'
@@ -57,7 +58,7 @@ memesites={'trusted':[],'blocked':[]}
 
 def reload():
 	global modules,verbose,logchannel,musicbuddy,feedbackchannel,modchannel,emurl,apiurl
-	global apiport,thonks,ver,lastver,changes,lockout,authusers,superusers,memechannels
+	global apiport,iconurl,thonks,ver,lastver,changes,lockout,authusers,superusers,memechannels
 	global memesites,owner,invite,beta,owneroptout
 	
 	print('reading config...')
@@ -83,6 +84,7 @@ def reload():
 		'emurl':emurl,
 		'apiurl':apiurl,
 		'apiport':apiport,
+		'iconurl':iconurl,
 		'thonks':thonks,
 		'ver':ver,
 		'lastver':lastver

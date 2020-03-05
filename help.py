@@ -59,7 +59,7 @@ class Help(commands.Cog):
 				"\n:bulb: for hints, use `merely hint`\n:point_up_2: click *'merely help'* above to go to the official website with even more information!*\n",
 				0x2C5ECA,'',globals.apiurl+"#/help",helpdict,
 				"merely v"+globals.ver+" - created by Yiays#5930",
-				"https://cdn.discordapp.com/avatars/309270899909984267/1d574f78b4d4acec14c1ef8290a543cb.png?size=64",
+				globals.iconurl,
 				globals.apiurl+'#/help'
 			)
 			#if random.random() < 1/3:

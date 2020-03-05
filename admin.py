@@ -174,7 +174,8 @@ class Admin(commands.Cog):
 		"""Shut down the bot for 30 seconds"""
 		if globals.verbose: print('die command')
 		if ctx.message.author.id in globals.authusers:
-			await emformat.genericmsg(ctx.message.channel,"shutting down...","bye","die")
+			#await emformat.genericmsg(ctx.message.channel,"shutting down...","bye","die")
+			await emformat.make_embed(ctx.message.channel, "", "merely die", "shutting down...", thumbnail="https://tenor.com/view/terminator-thumbsup-gif-4872100", footer="merely v"+globals.ver+" - created by Yiays#5930", icon=globals.iconurl, link=globals.apiurl+"#/die")
 			with open(globals.store+'alive.txt','w') as f:
 				f.write(str(ctx.message.channel.id))
 			if globals.modules['webserver']: await globals.modules["webserver"].stop()
