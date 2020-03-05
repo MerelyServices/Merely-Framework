@@ -7,6 +7,9 @@ html,body{
 h1,h2,h3,h4,h5,h6{
   color:#fff;
 }
+h3{
+	font-size: 1.5rem;
+}
 a:link,a:visited{
 	color:#fff;
 }
@@ -98,9 +101,13 @@ footer {
 	text-align:center;
 }
 code{
-	font-size:0.9em;
-	color:#ddd;
-	background:#000;
+	font-size: 0.9em;
+	color: #eee;
+	line-height: 1;
+	background: rgba(0,0,0,0.25);
+	padding: 0.1em;
+	border-radius: 0.1em;
+	display: inline-block;
 }
 #cmdnfo .modal-dialog{
 	max-width:760px;

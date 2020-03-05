@@ -1,10 +1,10 @@
 ![merely logo](profile.png)
 # merelybot
-merely is a discord bot intended to be highly modular and able to enhance a [discord server](https://discord.gg/f6TnEJM) it is invited to with useful commands like...
+merely is a discord bot intended to be highly modular and able to enhance a [discord server](https://discord.gg/f6TnEJM) it's invited to with useful commands like...
  - `m/shorten` to shorten URLs | [demo](https://merely.yiays.com/#/shorten)
  - `m/vote` to hold live multichoice polls in a channel | [demo](https://merely.yiays.com/#/vote)
  - `m/welcome` and `m/farewell` to create custom messages when people leave or join | [demo](https://merely.yiays.com/#/welcome)
- - `m/clean` and `m/purge` to quickly clear messages in a channel | [clean demo](https://merely.yiays.com/#/clean) | [purge demo](https://merely.yiays.com/#/purge)
+ - `m/clean` and `m/purge` to quickly clean up a text channel | [clean demo](https://merely.yiays.com/#/clean) | [purge demo](https://merely.yiays.com/#/purge)
  - `m/janitor` to make tidy channels where bot spam is automatically removed | [demo](https://merely.yiays.com/#/janitor)
  - `m/dice` to roll as many custom dice as your heart desires | [demo](https://merely.yiays.com/#/dice)
  - `m/meme` to bring the power of a [meme database](https://meme.yiays.com/) to a discord server | [demo](https://merely.yiays.com/#/meme)

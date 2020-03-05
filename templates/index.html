@@ -6,14 +6,14 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>merelybot</title>
-		<meta name="description" content="merely is a discord chatbot that helps with administration while also adding useful and fun features while also offering a uniquely user friendly and beautiful experience.">
+		<meta name="description" content="merely is a discord bot intended to be highly modular and able to enhance a discord server it is invited to with useful commands like m/shorten, m/dice and m/meme.">
 		<meta name="keywords" content="merely, discord, discord bot, admin, administration, automation, meme, fun, censor, search, google, images">
 		<meta name="author" content="Yiays">
 		
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/css/tether.min.css">
 		
-    <link rel="stylesheet" href="main.css?v=5" type="text/css" />
+    <link rel="stylesheet" href="main.css?v=7" type="text/css" />
   </head>
   <body>
 		<div class="outtadate">
@@ -26,15 +26,18 @@
 					<video width="360" height="360" playsinline autoplay muted loop>
 						<source src="https://yiaysnet.000webhostapp.com/img/merely/merelyfull_web.webm" type="video/webm">
 						<source src="https://yiaysnet.000webhostapp.com/img/merely/merelyfull_web.mp4" type="video/mp4">
-						<em>the merely animation reel is unable to play on your device</em>
+						merely logo
 					</video>
 					<h1>merely v{$globals.ver}</h1>
-					<p>merely is a chatbot on <em>discord</em> that provides...</p>
+					<p>merely is a discord bot intended to be highly modular and able to enhance a discord server it's invited to with useful commands like...</p>
 					<ul>
-						<li>tools for <em>server administration</em></li>
-						<li>image and google <em>search</em> functionality for entertainment</li>
-						<li>a <em>meme</em> database for lazy shitposting</li>
-						<li>a beautiful, intuitive, <em>user friendly experience</em> for the average user.</li>
+						<li><code>m/shorten</code> to shorten URLs</li>
+						<li><code>m/vote</code> to bring live polls to discord</li>
+						<li><code>m/welcome</code> and <code>m/farewell</code> for custom server leave/join messages</li>
+						<li><code>m/clean</code> and <code>m/purge</code> to quickly clean up a channel</li>
+						<li><code>m/janitor</code> so merely can clean automatically</li>
+						<li><code>m/dice</code> to roll as many custom dice as your heart desires</li>
+						<li><code>m/meme</code> to bring the power of a <a href="https://meme.yiays.com/">meme</a> database to your server</li>
 					</ul>
 				</div>
 			</div>
@@ -68,15 +71,14 @@
 			</div>
 		</header>
     <div class="container">
-			<h2 id="help">help</h2>
-			<p>here's everything you need to know about merely!</p>
+			<h2 id="help">commands</h2>
 			<p>
-				merely runs on a set of commands, if you know what they are and how to use them, you're all set.
-				<br><i>note that square brackets mean an <code>[optional]</code> argument, brackets mean a <code>(required)</code>
-				argument and vertical lines mean <code>two|choices</code>.</i>
+				<ul>
+					<li>to use a merely command, start your command with <code>merely </code>, <code>@merely </code> or <code>m/</code>.</li>
+					<li>the syntax to a command is like so: <code>merely command (required1 | required2) [optional]</code> where <code>|</code> means <code>or</code>.</li>
+				</ul>
 			</p>
-			<p>keeping that in mind, just click on any of the buttons below to get detailed instructions on how those key commands work.</p>
-			<div class="row container">
+			<div class="row" style="padding-left:15px">
 				<div class="col-sm-6 col-lg-3 list-group">
 					<h3>❔ help</h3>
 					<a href="#/help" class="list-group-item list-group-item-action">merely help</a>
@@ -106,8 +108,8 @@
 					<a href="#/shorten" class="list-group-item list-group-item-action">merely shorten 🆕</a>
 				</div>
 			</div>
-			<p>For server owners, there's more information available <a href="#/serverowner">here</a>...</p>
-			<p>hopefully that's everything you need.</p>
+			<br>
+			<a class="btn btn-primary" href="#/serverowner">additional info for server owners</a>
 			<h2>stats</h2>
 			<p>here's how merely has been performing recently...</p>
 			<div class="row">
