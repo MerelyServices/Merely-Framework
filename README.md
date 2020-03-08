@@ -44,18 +44,17 @@ feel free to fix any bugs or add new features to a fork, and send me a pull requ
 | [main](merelybot.py)* | imports all modules, creates some global variables, establishes a log, and runs the main loop | 0.0.1 |
 | [globals](globals.py)* | contains global variables and configuration data | 0.0.1 |
 | [help](help.py)<sup>1</sup> | help contains help strings for all commands, lists of commands, lists of hints and other documentation. | 0.0.1 |
-| [admin](admin.py) | commands restricted to mods and server owners | <0.5.0 |
-| [censor](censor.py) | the blacklist, whitelist and algorithms used to determine if blacklisted words are in a string, also sass | <0.5.0 |
-| [emformat](emformat.py) | useful functions for formatting strings into discord embeds | <0.5.0 |
-| [fun](fun.py) | fun commands available to everyone, like `m/echo`, `m/vote` and `m/dice` | <0.5.0 |
-| [meme](meme.py) | connects to [MemeDB](https://meme.yiays.com/) and provides commands and react buttons to interact with it. *legacy: stores and shares memes in a local database* | <0.5.0 |
-| [search](search.py) | google, google images and help search libraries/commands | <0.5.0 |
-| [stats](stats.py)<sup>1</sup> | statistics collection and storage, `m/stats` and [the stats page](https://merely.yiays.com/stats.html) (currently broken) | <0.5.0 |
-| [webserver](webserver.py)<sup>1</sup> | serves [merely.yiays.com](https://merely.yiays.com/) | <0.5.0 |
-| [obsolete](obsolete.py) | stores stubs for old obsolete commands and promotes merely music when someone attempts to use musicbot commands | <0.5.0 |
+| [search](search.py) | google, google images and help search libraries/commands | 0.0.1 |
+| [admin](admin.py) | commands restricted to mods and server owners | 0.0.1 |
+| [censor](censor.py) | the blacklist, whitelist and algorithms used to determine if blacklisted words are in a string, also sass | 0.0.1 |
+| [emformat](emformat.py) | useful functions for formatting strings into discord embeds | 0.0.1 |
+| [fun](fun.py) | fun commands available to everyone, like `m/echo`, `m/vote` and `m/dice` | 0.0.1 |
+| [meme](meme.py) | connects to [MemeDB](https://meme.yiays.com/) and provides commands and react buttons to interact with it. *legacy: stores and shares memes in a local database* | 0.0.1 |
+| [webserver](webserver.py)<sup>1</sup> | serves [merely.yiays.com](https://merely.yiays.com/) | 0.2.0 |
+| [stats](stats.py)<sup>1</sup> | statistics collection and storage, `m/stats` and [the stats page](https://merely.yiays.com/stats.html) | 0.2.0 |
+| [obsolete](obsolete.py) | stores stubs for old obsolete commands and promotes merely music when someone attempts to use musicbot commands | 0.2.3 |
 | [utils](utils.py) | provides useful general functions for programming merely | 0.7.3 |
 | [tools](tools.py) | provides tools for all users (unlike admin, which is for mods and server owners) like `m/shorten` | 0.7.4 |
 
  - \* = must be imported for minimal functionality
  - <sup>n</sup> = these modules are codependant - they must be enabled together
- - Updates before 0.5.0 weren't tracked, so some information from before then is missing

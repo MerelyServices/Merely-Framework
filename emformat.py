@@ -13,7 +13,7 @@ async def genericmsg(channel,content,status,command):
 		msg = await channel.send(content)
 	
 	return msg
-async def make_embed(channel,message,title,description,color=0x0063B1,author='',image='',thumbnail='',fields={},footer='',icon='',link='',**kwargs):
+async def make_embed(channel,message,title,description='',color=0x0063B1,author='',image='',thumbnail='',fields={},footer='',icon='',link='', **kwargs):
 	em=discord.Embed(title=title,type='rich',inline=False,description=description,color=color,url=link)
 	if author!='': em.set_author(name=author,icon_url=icon)
 	else: em.set_author(name='merely',icon_url=globals.iconurl)

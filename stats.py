@@ -14,14 +14,13 @@ class Stats(commands.Cog):
 		self.responses="0/0 messages responded to since last reboot."
 		self.sentcount=0
 		self.recievedcount=0
-		self.memecount=0
 		self.starttime=time.time()
 		self.uptime="calculating..."
 		self.d=self.h=self.m=self.s=0
 		self.modules='populating...'
 		self.library="discord.py v"+discordversion
 		self.core="merelybot v"+globals.ver
-		self.memes="calculating..."
+		self.memes="unavailable"
 		self.cpu_usage='0%'
 		self.ram_usage='0MB/0MB (0%)'
 		self.hardware='merely is running on a custom windows server.'
@@ -38,8 +37,8 @@ class Stats(commands.Cog):
 	async def stats(self,ctx):
 		if globals.verbose:print('stats command')
 		await emformat.make_embed(ctx.message.channel,'for constantly updating stats, go to '+globals.apiurl+'stats.html',
-		'merely stats','',0x2C5ECA,'',globals.emurl+'greet.gif',
-		{
+		'merely stats','',color=0x2C5ECA,thumbnail=globals.emurl+'greet.gif',
+		fields={
 			'exposure': globals.stats.exposure,
 			'responses': globals.stats.responses,
 			'uptime': globals.stats.uptime,
@@ -52,7 +51,7 @@ class Stats(commands.Cog):
 			'hardware': globals.stats.hardware,
 			'generated time': globals.stats.gentime
 		},
-		'','',globals.apiurl)
+		icon=globals.iconurl,footer="merely v"+globals.ver+" - created by Yiays#5930",link=globals.apiurl)
 
 	def inituptime(self):
 		with open(globals.store+'uptime.txt','r') as f:
@@ -77,23 +76,23 @@ class Stats(commands.Cog):
 
 	@tasks.loop(seconds=1.0)
 	async def runstats(self):
-		if round(time.time())%60==0 and round(time.time()/60)!=self.lastuptime:
-			self.lastuptime=round(time.time()/60)
-			with open(globals.store+'uptime.txt','a') as f:
-				f.write(str(round(time.time()/60)-26059035)+'\n')
-			self.upmins+=1
-		
-		with open(globals.store+'memes.txt','r',encoding='utf8') as f:
-			self.memecount=len(f.readlines())
-		self.m, self.s = divmod(time.time()-self.starttime, 60)
-		self.h, self.m = divmod(self.m, 60)
-		self.d, self.h = divmod(self.h, 24)
-		
-		self.exposure="**"+str(len(self.bot.guilds))+"** servers with **"+str(sum([len(s.members) for s in self.bot.guilds]))+"** members."
-		self.responses=str(self.sentcount)+"/"+str(self.recievedcount)+" messages responded to since last reboot."
-		self.modules=', '.join(list(globals.modules.keys()))
-		self.memes=str(self.memecount)
-		self.uptime=str(round((self.upmins*100)/max(self.upmins+self.downmins,1),2))+'%'
-		self.cpu_usage=str(psutil.cpu_percent())+'%'
-		self.ram_usage=str(round(psutil.virtual_memory().used/1000000))+'MB ('+str(round((psutil.virtual_memory().used*100)/psutil.virtual_memory().total))+'%)'
-		self.gentime=time.asctime(time.localtime())+'+1300'
+		try:
+			if round(time.time())%60==0 and round(time.time()/60)!=self.lastuptime:
+				self.lastuptime=round(time.time()/60)
+				with open(globals.store+'uptime.txt','a') as f:
+					f.write(str(round(time.time()/60)-26394323)+'\n')
+				self.upmins+=1
+			
+			self.m, self.s = divmod(time.time()-self.starttime, 60)
+			self.h, self.m = divmod(self.m, 60)
+			self.d, self.h = divmod(self.h, 24)
+			
+			self.exposure="**"+str(len(self.bot.guilds))+"** servers with **"+str(sum([len(s.members) for s in self.bot.guilds]))+"** members."
+			self.responses=str(self.sentcount)+"/"+str(self.recievedcount)+" messages responded to since last reboot."
+			self.modules=', '.join(list(globals.modules.keys()))
+			self.uptime=str(round((self.upmins*100)/max(self.upmins+self.downmins,1),2))+'%'
+			self.cpu_usage=str(psutil.cpu_percent())+'%'
+			self.ram_usage=str(round(psutil.virtual_memory().used/1000000))+'MB ('+str(round((psutil.virtual_memory().used*100)/psutil.virtual_memory().total))+'%)'
+			self.gentime=time.asctime(time.localtime())+'+1300'
+		except Exception as e:
+			print(repr(e))

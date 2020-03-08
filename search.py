@@ -98,11 +98,11 @@ class Search(commands.Cog):
 			for i in range(max(5,len(self.results[ctx.message.guild.id]['title']))):
 				results[self.results[ctx.message.guild.id]['title'][i]]=self.results[ctx.message.guild.id]['description'][i]+' - [read more](https://www.google.com'+self.results[ctx.message.guild.id]['url'][i]+')'
 			await emformat.make_embed(ctx.message.channel,"here's some more results...",
-				query,"showing the top 5 results.",0x4385F6,'google.com',globals.emurl+'result.gif',
-				results,
-				"merely v"+globals.ver+" - created by Yiays#5930",
-				globals.iconurl,
-				"http://www.google.com/search?q="+urllib.parse.quote(query,safe='').replace('%20','+'))
+				query,"showing the top 5 results.",color=0x4385F6,author='google.com',thumbnail=globals.emurl+'result.gif',
+				fields=results,
+				footer="merely v"+globals.ver+" - created by Yiays#5930",
+				icon=globals.iconurl,
+				link="http://www.google.com/search?q="+urllib.parse.quote(query,safe='').replace('%20','+'))
 			self.results[ctx.message.guild.id]=None
 		else:
 			if globals.verbose: print('google command')
@@ -122,11 +122,11 @@ class Search(commands.Cog):
 				if self.results[ctx.message.guild.id]['title']:
 					await emformat.make_embed(ctx.message.channel,"here's what I found...",
 						query,"showing the top result.\ntype `merely google more` for more results.",
-						0x4385F6,'google.com',globals.emurl+'result.gif',
-						{self.results[ctx.message.guild.id]['title'][0]:self.results[ctx.message.guild.id]['description'][0]+' - [read more](https://www.google.com'+self.results[ctx.message.guild.id]['url'][0]+')'},
-						"merely v"+globals.ver+" - created by Yiays#5930",
-						globals.iconurl,
-						"http://www.google.com/search?q="+urllib.parse.quote(query,safe='').replace('%20','+'))
+						color=0x4385F6,author='google.com',thumbnail=globals.emurl+'result.gif',
+						fields={self.results[ctx.message.guild.id]['title'][0]:self.results[ctx.message.guild.id]['description'][0]+' - [read more](https://www.google.com'+self.results[ctx.message.guild.id]['url'][0]+')'},
+						footer="merely v"+globals.ver+" - created by Yiays#5930",
+						icon=globals.iconurl,
+						link="http://www.google.com/search?q="+urllib.parse.quote(query,safe='').replace('%20','+'))
 				else:
 					await ctx.message.channel.send("it appears that google has completely blocked this bot.")
 	@google.error

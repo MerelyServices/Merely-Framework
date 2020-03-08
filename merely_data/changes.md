@@ -94,8 +94,13 @@ With this release, we are launching [MemeDB](https://meme.yiays.com) - an online
  - `m/blacklist` and `m/whitelist` have been improved so that they will work no matter the character length. (with a sane limit of 9500 characters at most)
 #### 0.7.3
  - Meme has been updated to automatically download memes to the CDN immediately after adding them to the database.
- - Collections support has finally been fixed completely.
+ - Collections support has finally been fixed completely. Multiple URLs or uploaded images in one message will be grouped together as one collection when upvoted.
 #### 0.7.4
  - Sadly, `m/google` and `m/image` have been blocked by google, so they no longer work.
  - Added in a link shortener which uses the new https://l.yiays.com service.
  - Tweaked the featured commands in `m/help` and https://merely.yiays.com
+#### 0.7.5
+ - `m/stats` is working once again!
+ - Wording in help commands and information about merely has been updated to be more accurate.
+ - Merely will now preload thumbnails as soon as a meme is upvoted, ensuring they're ready for anyone to view right away.
+ - The blocked message in `m/lockout` now shows the correct waiting time.

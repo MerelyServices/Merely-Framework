@@ -18,7 +18,7 @@ class Admin(commands.Cog):
 		print(s)
 		return s
 
-	@commands.group(pass_context=True, no_pm=True)
+	@commands.group(pass_context=True, no_pm=True, aliases=['hello', 'hi'])
 	async def welcome(self,ctx):
 		"""Configure the welcome message for your server."""
 		globals.config.read(globals.store+'config.ini')
@@ -64,7 +64,7 @@ class Admin(commands.Cog):
 			globals.save()
 			await ctx.message.channel.send("removed and disabled the welcome message!")
 	
-	@commands.group(pass_context=True, no_pm=True)
+	@commands.group(pass_context=True, no_pm=True, aliases=['goodbye', 'bye'])
 	async def farewell(self,ctx):
 		"""Configure the farewell message for your server. Not obsolete, just can't be in the same script as m/welcome"""
 		globals.config.read(globals.store+'config.ini')

@@ -56,11 +56,11 @@ class Help(commands.Cog):
 		if search == None:
 			await emformat.make_embed(ctx.message.channel,'go to '+globals.apiurl+' to learn more!',
 				"merely help",":grey_question: for specific help, use `merely help [command]`\n:mag_right: to search for commands, use `merely command [search]`"+\
-				"\n:bulb: for hints, use `merely hint`\n:point_up_2: click *'merely help'* above to go to the official website with even more information!*\n",
-				0x2C5ECA,'',globals.apiurl+"#/help",helpdict,
-				"merely v"+globals.ver+" - created by Yiays#5930",
-				globals.iconurl,
-				globals.apiurl+'#/help'
+				"\n:bulb: for hints, use `merely hint`\n:point_up_2: click *'merely help'* above to go to the official website with even more information!\n",
+				color=0x2C5ECA,thumbnail=globals.emurl+"help.gif",fields=helpdict,
+				footer="merely v"+globals.ver+" - created by Yiays#5930",
+				icon=globals.iconurl,
+				link=globals.apiurl+'#/help'
 			)
 			#if random.random() < 1/3:
 				#await ctx.message.channel.send('consider upvoting merely on the discord bot list; https://discordbots.org/bot/309270899909984267')
@@ -105,6 +105,7 @@ class Help(commands.Cog):
 				]),
 				color=0xf4e242,
 				author='Handy Hints with merely',
+				icon=globals.iconurl,
 				footer="merely v"+globals.ver+" - created by Yiays#5930"
 			)
 	
@@ -115,8 +116,8 @@ class Help(commands.Cog):
 		m, s = divmod(time.time()-globals.stats.starttime, 60)
 		h, m = divmod(m, 60)
 		
-		await emformat.make_embed(ctx.message.channel,'go to '+globals.apiurl+' to learn more!','merely info','',0x2C5ECA,'',globals.emurl+'greet.gif',
-		{
+		await emformat.make_embed(ctx.message.channel,'go to '+globals.apiurl+' to learn more!','merely info','',color=0x2C5ECA,thumbnail=globals.emurl+'greet.gif',
+		fields={
 		'🆕 fantastic features!':"merely can do lots of stuff, it currently has **"+str(len(dhelp))+"** commands available to **"+str(len(self.bot.guilds))+"** servers.\ntype `merely help` for a full list of commands or type `merely changelog` to see all the recent additions and fixes!",
 		'😊🤖 mobile and human friendly!':"merely is activated by 3 prefixes; `merely <command>`, `m/<command>` and `@merely <command>` pick whichever is easiest for you to type on your device.",
 		'📚 detailed documentation!':"if you're unsure what a command does; `merely help <command>`. if you can't find a command; `merely commands <search>`. if you want to learn something new; `merely hint`. if you still need help, you can click the title of the embed for online documentation!",
@@ -125,7 +126,9 @@ class Help(commands.Cog):
 		'➕ add now!':"[click here](https://discordapp.com/oauth2/authorize?client_id=309270899909984267&scope=bot&permissions=104131650) to add merely to your server with minimal permissions. *note that merely may need to ask for more permissions later on.*"#,
 		#'💡 keep the lights on':"consider voting for this bot at [discordbots.org](https://discordbots.org/bot/309270899909984267) if you enjoy its services! the developers would really appreciate it!"
 		},
-		'','',globals.apiurl)
+		link=globals.apiurl,
+		icon=globals.iconurl,
+		footer="merely v"+globals.ver+" - created by Yiays#5930")
 	
 	@commands.command(pass_context=True, no_pm=False)
 	async def feedback(self,ctx,*,feedback):

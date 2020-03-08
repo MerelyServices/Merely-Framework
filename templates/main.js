@@ -90,7 +90,7 @@ function getstats(){
 			$('#mem').text(data.ram_usage+' memory usage');
 			$('#modules').html('the modules<br><code>'+data.modules+'</code><br>are currently running and enabled.');
 			$('#sentrecieved').text(data.raw.sentcount+' sent / '+data.raw.recievedcount+' recieved');
-			$('#gentime').text('generated on '+data.gentime);
+			$('#gentime').text('last update: '+data.gentime);
 			$('#lib').text(data.library);
 			$('#hardware').html("<i>"+data.hardware+"</i>");
 		},
