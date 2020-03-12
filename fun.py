@@ -50,6 +50,9 @@ class Fun(commands.Cog):
 		}.get(mode,discord.ActivityType.unknown)
 		if globals.verbose: print(mode+' command')
 		if len(status)>0:
+			if globals.dangerous == None:
+				await emformat.genericmsg(ctx.message.channel, "the censor module isn't running, so this command can't be used.","error",mode)
+				return
 			danger=globals.dangerous(status)
 			if danger:
 				await emformat.genericmsg(ctx.message.channel,

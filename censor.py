@@ -18,11 +18,9 @@ def sass():
 
 class Xlist():
 	def __init__(self, guild=None):
-		self.file = globals.store + 'xlist.txt'
+		self.file = None
 		self.guildfile = None
 		self.guild = guild
-		if guild:
-			self.guildfile = f"{globals.store}xlist.{guild}.txt"
 	
 	def get(self, onlymain=False):
 		""" Generic get method for blacklists/whitelists - if configured as a guildlist, it returns the blacklist with guild modifications. """
@@ -98,17 +96,15 @@ class Xlist():
 
 class Whitelist(Xlist):
 	def __init__(self, guild=None):
+		super().__init__(guild)
 		self.file = globals.store + 'whitelist.txt'
-		self.guildfile = None
-		self.guild = guild
 		if guild:
 			self.guildfile = f"{globals.store}whitelist.{guild}.txt"
 
 class Blacklist(Xlist):
 	def __init__(self, guild=None):
+		super().__init__(guild)
 		self.file = globals.store + 'blacklist.txt'
-		self.guildfile = None
-		self.guild = guild
 		if guild:
 			self.guildfile = f"{globals.store}blacklist.{guild}.txt"
 	
