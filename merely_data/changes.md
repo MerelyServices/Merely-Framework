@@ -104,3 +104,5 @@ With this release, we are launching [MemeDB](https://meme.yiays.com) - an online
  - Wording in help commands and information about merely has been updated to be more accurate.
  - Merely will now preload thumbnails as soon as a meme is upvoted, ensuring they're ready for anyone to view right away.
  - The blocked message in `m/lockout` now shows the correct waiting time.
+### 0.8.0
+ - Massive overhaul of the censor module, each guild now has a local blacklist and whitelist which server owners can modify.

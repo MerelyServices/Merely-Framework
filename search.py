@@ -109,7 +109,7 @@ class Search(commands.Cog):
 			if query=='':
 				await emformat.genericmsg(ctx.message.channel,globals.dhelp['google'],'help','google')
 				return
-			danger=censor.dangerous(query)
+			danger=globals.dangerous(query)
 			if danger and not ctx.message.channel.is_nsfw():
 				nope=censor.sass()
 				nope+="\ni found these filthy words in your search; `"+(', '.join({*danger}))+"`"
@@ -145,7 +145,7 @@ class Search(commands.Cog):
 			await self.sendimgs(ctx.message.channel,self.imgs[ctx.message.guild.id],5)
 		else:
 			if not ctx.message.channel.is_nsfw():
-				danger=censor.dangerous(query)
+				danger=globals.dangerous(query)
 			else: danger=False
 			if danger: #cancel search if the query is dangerous
 				nope=censor.sass()
@@ -163,7 +163,7 @@ class Search(commands.Cog):
 					
 					if len(autocorrect)>0 and autocorrect!=query[:nsfw] and not ctx.message.channel.is_nsfw():
 						if globals.verbose: print(f"'{query}' was autocorrected to '{autocorrect}'!")
-						danger=censor.dangerous(autocorrect)
+						danger=globals.dangerous(autocorrect)
 					else: danger=False
 					if danger: #don't show search results if google autocorrected them to something nefarious.
 						nope=censor.sass()

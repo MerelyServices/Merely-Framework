@@ -4,7 +4,7 @@ import random
 import discord
 import math, re, time
 from discord.ext import commands
-import emformat, censor
+import emformat
 import help
 
 globals.commandlist['fun']=['playing','thonk','vote','dice','echo']
@@ -50,7 +50,7 @@ class Fun(commands.Cog):
 		}.get(mode,discord.ActivityType.unknown)
 		if globals.verbose: print(mode+' command')
 		if len(status)>0:
-			danger=censor.dangerous(status)
+			danger=globals.dangerous(status)
 			if danger:
 				await emformat.genericmsg(ctx.message.channel,
 				"can't set the status with such filthy language like `"+' ,'.join(danger)+"`","error",mode)
