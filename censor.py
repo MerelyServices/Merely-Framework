@@ -23,7 +23,7 @@ class Xlist():
 		self.guild = guild
 	
 	def get(self, onlymain=False):
-		""" Generic get method for blacklists/whitelists - if configured as a guildlist, it returns the blacklist with guild modifications. """
+		""" Generic get method for blacklists/whitelists - if configured as a guildlist, it returns the xlist with guild modifications. """
 		result = []
 		try:
 			with open(self.file,'r',encoding='utf-8') as f:
@@ -44,55 +44,73 @@ class Xlist():
 		
 		return result
 	
-	def add(self, word):
+	def add(self, words):
 		""" Generic add method for blacklists/whitelists - if configured as a guildlist, it looks for contradictions in the guild list, removes them, and then adds the word locally. """
+		if isinstance(words, str):
+			words = [words]
+		
 		if not self.guild:
 			with open(self.file,'a',encoding='utf-8') as f:
-				f.writeline(word + "\n")
-			return True
+				for word in words:
+					f.writeline(word+'\n')
+			return words
+		
 		else:
-			permanent = self.get(onlymain=True)
 			keep = []
 			try:
 				with open(self.guildfile,'r',encoding='utf-8') as f:
 					for line in f.read().splitlines():
-						if line != '-'+word:
+						if line not in ['-'+word for word in words]:
 							keep.append(line+'\n')
 			except FileNotFoundError:
 				pass
-			if word not in permanent:
-				keep.append('+'+word+'\n')
+			permanent = self.get(onlymain=True)
+			for word in words:
+				if word not in permanent:
+					keep.append('+'+word+'\n')
 			with open(self.guildfile,'w',encoding='utf-8') as f:
 				f.writelines(keep)
+			return words
+		
+		return []
 	
-	def remove(self, word):
+	def remove(self, words):
 		""" Generic remove method for blacklists/whitelists - if configured as a guild, it looks for contradictions in the guild list, removes them, and then removes the word locally. """
+		if isinstance(words, str):
+			words = [words]
 		keep = []
+		
 		if not self.guild:
 			try:
 				with open(self.file,'r',encoding='utf-8') as f:
 					for line in f.read().splitlines():
-						if word != line:
-							keep.append(line+'\n')
+						for word in words:
+							if word != line:
+								keep.append(line+'\n')
 			except FileNotFoundError:
 				pass
-			with open(self.file,'w',encoding='utf-8') as f:
-				f.writelines(keep)
-			return True
+			else:
+				with open(self.file,'w',encoding='utf-8') as f:
+					f.writelines(keep)
+			return words
+		
 		else:
-			permanent = self.get(onlymain=True)
 			try:
 				with open(self.guildfile,'r',encoding='utf-8') as f:
 					for line in f.read().splitlines():
-						if line != '+'+word:
+						if line not in ['+'+word for word in words]:
 							keep.append(line+'\n')
 			except FileNotFoundError:
 				pass
-			if word in permanent:
-				keep.append('-'+word+'\n')
+			permanent = self.get(onlymain=True)
+			for word in words:
+				if word in permanent:
+					keep.append('-'+word)
 			with open(self.guildfile,'w',encoding='utf-8') as f:
 				f.writelines(keep)
-			return True
+			return words
+		
+		return []
 
 class Whitelist(Xlist):
 	def __init__(self, guild=None):
@@ -108,37 +126,19 @@ class Blacklist(Xlist):
 		if guild:
 			self.guildfile = f"{globals.store}blacklist.{guild}.txt"
 	
-	def remove(self, word):
+	def remove(self, words):
 		""" Remove method for blacklists - removes all matches in the blacklist, not just exact matches. """
-		keep = []
-		remove = globals.dangerous(word, guild=self.guild)
+		if isinstance(words, str):
+			words = [words]
+		
+		print('blacklist remove')
+		
+		remove = []
+		for word in words:
+			remove.extend(globals.dangerous(word, guild=self.guild))
+		remove = list(set(remove))
 		if remove:
-			if not self.guild:
-				try:
-					with open(self.file,'r',encoding='utf-8') as f:
-						for line in f.read().splitlines():
-							if line not in remove:
-								keep.append(line+'\n')
-				except FileNotFoundError:
-					pass
-				with open(self.file,'w',encoding='utf-8') as f:
-					f.writelines(keep)
-				return remove
-			else:
-				permanent = self.get(onlymain=True)
-				try:
-					with open(self.guildfile,'r',encoding='utf-8') as f:
-						for line in f.read().splitlines():
-							if line not in ['+'+i for i in remove]:
-								keep.append(line+'\n')
-				except FileNotFoundError:
-					pass
-				for rword in remove:
-					if rword in permanent:
-						keep.append('-'+rword+'\n')
-				with open(self.guildfile,'w',encoding='utf-8') as f:
-					f.writelines(keep)
-				return remove
+			return super().remove(remove)
 		return []
 
 class Censor(commands.Cog):
@@ -204,7 +204,7 @@ class Censor(commands.Cog):
 		return matches
 
 	@commands.command(pass_context=True, no_pm=True, aliases=['blacklist','whitelist'])
-	async def xlist(self, ctx, mode=None, *, word=None):
+	async def xlist(self, ctx, mode=None, *, words=None):
 		"""View and manage the blacklist or whitelist."""
 		
 		black = None
@@ -218,10 +218,11 @@ class Censor(commands.Cog):
 		blacklist = self.blacklist[ctx.guild.id]
 		whitelist = self.whitelist[ctx.guild.id]
 		
-		words = None
-		if word != None:
-			if len(' '.split(word)) > 1:
-				words = ' '.split(word)
+		if words != None:
+			if len(words.split(' ')) > 1:
+				words = list(set(words.split(' ')))
+			else:
+				words = [words]
 		
 		
 		if mode!=None:
@@ -231,64 +232,72 @@ class Censor(commands.Cog):
 			if ctx.message.author.id not in globals.authusers and ctx.message.author.id != ctx.message.guild.owner.id:
 				await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","blacklist")
 				return
-			if word==None:
+			if words==None:
 				await ctx.channel.send(help.dhelp[('black' if black else 'white')+'list'])
 				return
 			
+			warnings = []
+			
 			if mode == 'add':
-				if words!=None:
-					await emformat.genericmsg(ctx.message.channel,"please list one word at a time","error",('black' if black else 'white')+"list")
-					return
-				
 				if black: # blacklist add
-					if word in blacklist.get():
-						await emformat.genericmsg(ctx.message.channel,"this word is already in the blacklist!","error","blacklist")
-						return
-					if word in whitelist.get():
-						await emformat.genericmsg(ctx.message.channel,"this word is in the whitelist - a direct contradiction is not allowed.","error","blacklist")
-						return
+					for word in words:
+						if word in blacklist.get():
+							warnings.append(f"'{word}' is already in the blacklist!")
+							words.remove(word)
+							continue
+						if word in whitelist.get():
+							warnings.append(f"'{word}' is already in the whitelist and contradictions aren't allowed.")
+							words.remove(word)
+							continue
+						danger = self.dangerous(word, guild=ctx.guild.id)
+						if danger:
+							warnings.append(f"'{word}' was already covered by {', '.join(danger)}, but is now blacklisted directly!")
 					
-					matches = self.dangerous(word, guild=ctx.guild.id)
-					blacklist.add(word)
-					if matches:
-						await emformat.genericmsg(ctx.message.channel,"*'"+word+"'* was already covered by `"+', '.join(matches)+"`, but is now blacklisted directly!","done","blacklist")
-					else:
-						await emformat.genericmsg(ctx.message.channel,"*'"+word+"'* is now blacklisted!","done","blacklist")
-					return
+					result = blacklist.add(words) if words else []
 				
 				else: # whitelist add
-					if word in whitelist.get():
-						await emformat.genericmsg(ctx.message.channel,"this word is already in the whitelist!","error","whitelist")
-						return
-					if word in blacklist.get():
-						await emformat.genericmsg(ctx.message.channel,"this word is already in the blacklist - a direct contradiction is not allowed.","error","whitelist")
-						return
-					if not self.dangerous(word, guild=ctx.guild.id):
-						await emformat.genericmsg(ctx.message.channel,"this word isn't blocked, no need to whitelist it.","error","whitelist")
-						return
+					for word in words:
+						if word in whitelist.get():
+							warnings.append(f"'{word}' is already in the whitelist!")
+							words.remove(word)
+							continue
+						if word in blacklist.get():
+							warnings.append(f"'{word}' is already in the blacklist and contradictions aren't allowed.")
+							words.remove(word)
+							continue
+						if not self.dangerous(word, guild=ctx.guild.id):
+							warnings.append(f"'{word}' isn't blocked, no need to whitelist it.")
+							words.remove(word)
+							continue
 					
-					whitelist.add(word)
-					await emformat.genericmsg(ctx.message.channel,"*'"+word+"'* is now whitelisted!","done","whitelist")
-					return
+					result = whitelist.add(words) if words else []
+				
+				if result: await emformat.genericmsg(ctx.message.channel,f"{'the words ' if len(result)>1 else ''}*'{', '.join(result)}'* {'is' if len(result)==1 else 'are'} now {'black' if black else 'white'}listed{'!' if len(warnings)==0 else ' with some warnings;```'+chr(10).join(warnings)+'```'}","done",('black' if black else 'white')+"list")
+				else: await emformat.genericmsg(ctx.message.channel,f"no changes were made! {'these warnings' if len(warnings)>1 else 'this warning'} might explain why...```{chr(10).join(warnings)}```","error",('black' if black else 'white')+"list")
+				return
 				
 			elif mode == 'remove':
-				if words!=None:
-					await emformat.genericmsg(ctx.message.channel,"please list one word at a time","error",('black' if black else 'white')+"list")
-					return
-				
 				if black: # blacklist remove
-					matches = blacklist.remove(word)
-					if not matches:
-						await emformat.genericmsg(ctx.message.channel,"this word isn't in the blacklist!","error","blacklist")
-						return
-					await emformat.genericmsg(ctx.message.channel,"the word(s) `"+" ".join(matches)+"` have been unbanned!","done","blacklist")
+					for word in words:
+						if word not in blacklist.get():
+							warnings.append(f"'{word}' isn't in the blacklist!")
+							words.remove(word)
+							continue
+					
+					result = blacklist.remove(words) if words else []
 						
 				else: # whitelist remove
-					if word not in whitelist.get():
-						await emformat.genericmsg(ctx.message.channel,"this word isn't in the whitelist!","error","whitelist")
-						return
-					whitelist.remove(word)
-					await emformat.genericmsg(ctx.message.channel,"the word `"+word+"` has been removed from the whitelist!","done","blacklist")
+					for word in words:
+						if word not in whitelist.get():
+							warnings.append(f"'{word}' isn't in the whitelist!")
+							words.remove(word)
+							continue
+					
+					result = whitelist.remove(words) if words else []
+				
+				if result: await emformat.genericmsg(ctx.message.channel,f"{'the words ' if len(result)>1 else ''}*'{', '.join(result)}'* {'is' if len(words)==1 else 'are'} no longer {'black' if black else 'white'}listed{'!' if len(warnings)==0 else ' with some warnings;```'+chr(10).join(warnings)+'```'}","done",('black' if black else 'white')+"list")
+				else: await emformat.genericmsg(ctx.message.channel,f"no changes were made! {'these warnings' if len(warnings)>1 else 'this warning'} might explain why...```{chr(10).join(warnings)}```","error",('black' if black else 'white')+"list")
+				return
 			
 			elif mode == 'train':
 				ctx.channel.send("this command is currently unavailable. please try again later.")
