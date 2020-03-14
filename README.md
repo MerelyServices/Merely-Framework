@@ -1,6 +1,6 @@
 ![merely logo](profile.png)
 # merelybot
-![Python build status](https://github.com/yiays/merely/workflows/Python%20application/badge.svg?branch=master)
+![Python build status](https://github.com/yiays/merely/workflows/merelybot/badge.svg?branch=master)
 
 merely is a discord bot intended to be highly modular and able to enhance a [discord server](https://discord.gg/f6TnEJM) it's invited to with useful commands like...
  - `m/shorten` to shorten URLs | [demo](https://merely.yiays.com/#/shorten)

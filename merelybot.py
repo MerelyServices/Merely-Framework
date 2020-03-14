@@ -349,9 +349,11 @@ async def on_error(*args):
 		await channel.send(time.strftime("%H:%M:%S",time.localtime())+" - **encountered an error;**\n```"+truncate(error,1950)+'```')
 if globals.verbose: print('events done!')
 
-print('connecting...')
-if globals.beta: bot.run(os.environ.get("MerelyBeta"))
-else: bot.run(os.environ.get("Merely"))
+if ('Merely' in os.environ and not globals.beta) or ('MerelyBeta' in os.environ and globals.beta):
+	print('connecting...')
+	bot.run(os.environ.get('Merely' if not globals.beta else 'MerelyBeta'))
+else:
+	print('ERROR: you must supply a token as an environment variable before merely can start.')
 
 #shutdown
 
