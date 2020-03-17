@@ -106,3 +106,5 @@ With this release, we are launching [MemeDB](https://meme.yiays.com) - an online
  - The blocked message in `m/lockout` now shows the correct waiting time.
 ### 0.8.0
  - Massive overhaul of the censor module, each guild now has a local blacklist and whitelist which server owners can modify.
+#### 0.8.1
+ - `m/meme` now supports searching with the syntax `m/meme (search string) [number]`.

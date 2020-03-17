@@ -10,6 +10,9 @@ merely is a discord bot intended to be highly modular and able to enhance a [dis
  - `m/janitor` to make tidy channels where bot spam is automatically removed | [demo](https://merely.yiays.com/#/janitor)
  - `m/dice` to roll as many custom dice as your heart desires | [demo](https://merely.yiays.com/#/dice)
  - `m/meme` to bring the power of a [meme database](https://meme.yiays.com/) to a discord server | [demo](https://merely.yiays.com/#/meme)
+
+in place of `m/`, you can also use `merely ` or `@merely `, eg `m/help`, `merely help` and `@merely help` are all valid.
+
 > [visit the webUI >](https://merely.yiays.com/)
 
 > [add merely to your server >](https://discordapp.com/oauth2/authorize?client_id=309270899909984267&scope=bot&permissions=0)
