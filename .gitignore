@@ -10,3 +10,4 @@
 /merely_data/uptime*
 /merely_data/whitelist*
 .vscode/
+.pytest_cache/
