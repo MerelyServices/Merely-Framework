@@ -172,7 +172,7 @@ def assurepath(path):
 def assuresection(section,default):
 	if config.has_section(section):
 		for key, defaultvalue in default.items():
-			if not config.has_key(section, key):
+			if not key in config[section]:
 				config.set(section, key, defaultvalue)
 		return True
 	else:
