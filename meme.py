@@ -1,4 +1,5 @@
 import globals
+import utils
 import asyncio
 import discord
 from discord.ext import commands
@@ -22,15 +23,11 @@ def typeconverter(type):
 		return 'url'
 	return None
 
-def FindURLs(string):
-	urls = re.findall(r'(http[s]?:\/\/[A-z0-9/?.&%;:\-=@]+)', string)
-	return urls
-
 class Meme(commands.Cog):
 	"""In beta; a new database for automatically storing and indexing memes to make them easier to find"""
 	def __init__(self, bot):
 		self.bot = bot
-		self.session = aiohttp.ClientSession()
+		self.session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=20))
 		self.usedmemes = []
 	def __delete__(self,instance):
 		self.session.close()
@@ -115,8 +112,11 @@ class Meme(commands.Cog):
 			if not result is None:
 				mid = result[0]
 				await self.session.get("https://cdn.yiays.com/meme/dl.php?singledl="+str(mid))
+				# TODO: Add timeout handler
 				await self.session.get("https://cdn.yiays.com/meme/"+str(mid)+".thumb.jpg")
+				# TODO: Add timeout handler
 				await self.session.get("https://cdn.yiays.com/meme/"+str(mid)+".mini.jpg")
+				# TODO: Add timeout handler
 		
 		# Add user, in case they don't exist
 		for voter in list(dict.fromkeys(up+down)):
@@ -147,7 +147,7 @@ class Meme(commands.Cog):
 		mydb.close()
 	
 	async def GetMessageUrls(self,message):
-		urls = FindURLs(message.content)+[a.url for a in message.attachments]
+		urls = utils.FindURLs(message.content)+[a.url for a in message.attachments]
 		if urls:
 			memes=[]
 			for url in urls:
@@ -188,6 +188,7 @@ class Meme(commands.Cog):
 							print("[WARN] skipped unknown memeurl because modchannel isn't set!")
 							return
 					async with self.session.head(url) as clientresponse:
+						# TODO: Add timeout handler
 						if 'content-type' in clientresponse.headers:
 							type = clientresponse.headers['content-type'].split(' ')[0]
 							if typeconverter(type):

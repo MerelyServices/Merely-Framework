@@ -1,3 +1,4 @@
+import re
 from collections import namedtuple
 
 timedivider = namedtuple('timedivider', ['threshold', 'divider', 'unit', 'unitplural'], defaults=[0, 0, 'null', None])
@@ -30,3 +31,7 @@ def time_fold(s:int):
 			
 			output += f"{ns} {plural}, "
 	return output[:-2]
+
+def FindURLs(string):
+	urls = re.findall(r'(http[s]?:\/\/[A-z0-9/?.&%;:\-=@]+)', string)
+	return urls

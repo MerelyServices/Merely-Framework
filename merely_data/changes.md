@@ -107,4 +107,6 @@ With this release, we are launching [MemeDB](https://meme.yiays.com) - an online
 ### 0.8.0
  - Massive overhaul of the censor module, each guild now has a local blacklist and whitelist which server owners can modify.
 #### 0.8.1
- - `m/meme` now supports searching with the syntax `m/meme (search string) [number]`.
+ - `m/meme` will now search the database whenever you follow the command with a search string.
+ - `m/blacklist train` and `m/whitelist train` have been added back to the censor module. They're a little more robust now as well.
+ - Protections have been put in place to prevent merely from hanging when fetching data from unknown sources.

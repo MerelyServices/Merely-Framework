@@ -1,4 +1,5 @@
 import globals
+import utils
 import asyncio
 import discord
 import random, re
@@ -149,13 +150,13 @@ class Censor(commands.Cog):
 		self.whitelist = {i:Whitelist(i) for i in [0]+[g.id for g in self.bot.guilds]}
 		globals.dangerous = self.dangerous
 	
-	async def send_list(self, wordlist, intro, channel):
+	async def send_list(self, wordlist, intro, channel, seporator=' '):
 		introdone = False
 		iterations = 0
 		while len(wordlist)>0 and iterations < 5:
 			if len(wordlist)>1900:
 				end = 1900
-				while wordlist[end]!=' ': end -= 1
+				while wordlist[end]!=seporator: end -= 1
 				send = wordlist[:end]
 				wordlist = wordlist[end+1:]
 			else:
@@ -202,6 +203,9 @@ class Censor(commands.Cog):
 	
 		if matches: pprint(matches)
 		return matches
+	
+	def strip(text):
+		""" TODO: make string/array format stripper """
 
 	@commands.command(pass_context=True, no_pm=True, aliases=['blacklist','whitelist'])
 	async def xlist(self, ctx, mode=None, *, words=None):
@@ -272,7 +276,10 @@ class Censor(commands.Cog):
 					
 					result = whitelist.add(words) if words else []
 				
-				if result: await emformat.genericmsg(ctx.message.channel,f"{'the words ' if len(result)>1 else ''}*'{', '.join(result)}'* {'is' if len(result)==1 else 'are'} now {'black' if black else 'white'}listed{'!' if len(warnings)==0 else ' with some warnings;```'+chr(10).join(warnings)+'```'}","done",('black' if black else 'white')+"list")
+				if result:
+					await emformat.genericmsg(ctx.message.channel,f"{'the words ' if len(result)>1 else ''}*'{', '.join(result)}'* {'is' if len(result)==1 else 'are'} now {'black' if black else 'white'}listed{'!' if len(warnings)==0 else ' with some warnings;```'+chr(10).join(warnings)+'```'}","done",('black' if black else 'white')+"list")
+					if len(result)>1 and random.random() < 1/3:
+						await ctx.channel.send("hint: you shouldn't blacklist multiple words if they have valid uses, to ban two words that are only bad together, remove the space between them. ie. `m/blacklist add badword` as opposed to `m/blacklist add bad word`.")
 				else: await emformat.genericmsg(ctx.message.channel,f"no changes were made! {'these warnings' if len(warnings)>1 else 'this warning'} might explain why...```{chr(10).join(warnings)}```","error",('black' if black else 'white')+"list")
 				return
 				
@@ -300,183 +307,73 @@ class Censor(commands.Cog):
 				return
 			
 			elif mode == 'train':
-				ctx.channel.send("this command is currently unavailable. please try again later.")
+				training_data = None
+				if len(words)==1 and len(utils.FindURLs(words[0]))==1:
+					async with ctx.channel.typing():
+						async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
+							# TODO: Add timeout handler
+							async with session.get(words[0]) as r:
+								if r.status == 200:
+									if r.headers['content-type'] == 'text/plain':
+										training_data = await r.text()
+										training_data = training_data.split()
+									else:
+										await emformat.genericmsg(ctx.channel,"the file at the provided url isn't a text file! (expected `text/plain`, got `{r.headers['content-type']}`)","error",('black' if black else 'white')+"list")
+										return
+								else:
+									await emformat.genericmsg(ctx.channel,f"downloading the provided url caused an `error {r.status}`...","error",('black' if black else 'white')+"list")
+									return
+				else:
+					await ctx.channel.send("this command takes a url to a text file, please provide one (you can upload a text file to this chat and copy the link to it)")
+					return
 				
+				if training_data:
+					results = []
+					add = []
+					async with ctx.channel.typing():
+						for word in training_data:
+							if black:
+								# blacklist train
+								if word not in blacklist.get():
+									if word in whitelist.get():
+										results.append(f" - didn't blacklist {word}: direct contradictions of the whitelist are not allowed.")
+										continue
+									add.append(word)
+							else:
+								#whitelist train
+								if word not in whitelist.get():
+									if word in blacklist.get():
+										results.append(f" - didn't whitelist {word}: direct contradictions of the blacklist are not allowed.")
+										continue
+									if not self.dangerous(word, guild=ctx.guild.id):
+										continue
+									add.append(word)
+
+						if add:
+							if black:
+								for word in blacklist.add(add):
+									results.append(f" - blacklisted {word}!")
+
+					if results:
+						await self.send_list('\n'.join(results), "here's the results of processing the training data...", ctx.channel, seporator='\n')
+					else:
+						await ctx.channel.send("after processing the training data, no changes were made!")
+				else:
+					await ctx.channel.send("that text file appears to be empty!")
+
 			else:
 				await ctx.channel.send(help.dhelp[('black' if black else 'white')+'list'])
 				return
 		
 		else: # print the xlist
-			if globals.verbose: print('xlist command')
+			if globals.verbose: print(('black' if black else 'white')+'list command')
 			wordprint=''
 			for word in (blacklist.get() if black else whitelist.get()):
 				wordprint+=word+", "
 			
 			await self.send_list(wordprint,"here's the current list of "+('black' if black else 'white')+"listed words;",ctx.message.channel)
 
-	"""
-	@commands.command(pass_context=True, no_pm=False, aliases=['bl'])
-	async def blacklist(self, ctx, *, mode=None):
-		\"""View and manage the blacklist, which restricts which words users can use in various commands.\"""
-		word=None
-		if mode!=None and len(mode.split(' '))>1:
-			mode=mode.split(' ')
-			word=' '.join(mode[1:]) if len(mode)>2 else mode[1]
-			mode=mode[0]
-		if mode=='add': #adds more words to the blacklist
-			if globals.verbose: print('blacklist add command')
-			if ctx.message.author.id in globals.authusers or ctx.message.author.id == ctx.message.guild.owner.id:
-				if word==None:
-					await ctx.message.channel.send(help.dhelp['blacklist'])
-					return
-				matches=dangerous(word)
-				if ' ' in word:
-					await emformat.genericmsg(ctx.message.channel,"please list one word at a time, and make sure that each word doesn't have legitimate uses","error","blacklist")
-				elif matches:
-					if word not in self.get_blacklist():
-						with open(globals.store+'blacklist.txt','a',encoding='utf-8') as f:
-							f.write(word+"\n")
-						await emformat.genericmsg(ctx.message.channel,"*'"+word+"'* was already covered by `"+" ".join(matches)+"`, but now it is blacklisted directly.","done","blacklist")
-					else:
-						await emformat.genericmsg(ctx.message.channel,"that word is already covered by `"+" ".join(matches)+"`","done","blacklist")
-				elif word in self.get_whitelist():
-					await emformat.genericmsg(ctx.message.channel,"`"+word+"` is in the whitelist, a direct contradiction is not allowed.","error","blacklist")
-				else:
-					with open(globals.store+'blacklist.txt','a',encoding='utf-8') as f:
-						f.write(word+"\n")
-					await emformat.genericmsg(ctx.message.channel,"*'"+word+"'* is now banned!","done","blacklist")
-			else:
-				await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","blacklist")
-		elif mode=='remove': #removes words from the blacklist
-			if globals.verbose: print('blacklist remove command')
-			if ctx.message.author.id in globals.authusers or ctx.message.author.id == ctx.message.guild.owner.id:
-				if word==None:
-					await ctx.message.channel.send(help.dhelp['blacklist'])
-					return
-				matches=dangerous(word)
-				if ' ' in word:
-					await emformat.genericmsg(ctx.message.channel,"please list one word at a time and make sure it's actually a word on the `m/blacklist`","error","blacklist")
-				elif not matches:
-					await emformat.genericmsg(ctx.message.channel,"i can't find any matches!","error","blacklist")
-				else:
-					keep=[]
-					for line in self.get_blacklist():
-						if line not in matches:
-								keep.append(line+"\n")
-					with open(globals.store+'blacklist.txt','w',encoding='utf-8') as f:
-						f.writelines(keep)
-					await emformat.genericmsg(ctx.message.channel,"the word(s) `"+" ".join(matches)+"` have been unbanned!","done","blacklist")
-			else:
-				await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","blacklist")
-		elif mode=='train': #trains the blacklist using badword lists
-			if globals.verbose: print('blacklist train command')
-			if ctx.message.author.id in globals.superusers:
-				if word==None:
-					await emformat.genericmsg(ctx.message.channel,"paste either a string of bad words, or a url to a txt file full of bad words.","error","blacklist")
-					return
-				if word.startswith('http') and ' ' not in word:
-					async with ctx.message.channel.typing():
-						header={'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.0.7) Gecko/2009021910 Firefox/3.0.7'}
-						async with aiohttp.ClientSession() as session:
-							async with session.get(word,headers=header) as r:
-								if r.status == 200:
-									text = await r.text()
-								else:
-									print('blacklist train: error '+str(r.status))
-									await emformat.genericmsg(ctx.message.channel,"i couldn't work with the file you gave me; `error "+str(r.status)+"`","error","blacklist")
-				else:
-					text=word
-				result=dangerous(text,2)
-				await emformat.genericmsg(ctx.message.channel,"all of these words were blacklisted;\n```"+', '.join(result)+"```","done","blacklist")
-			else:
-				await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","blacklist")
-		else:
-			if globals.verbose: print('blacklist command')
-			wordprint=''
-			for word in self.get_blacklist():
-				wordprint+=word+", "
-			
-			await self.send_list(wordprint,"here's the current list of blacklisted words;",ctx.message.channel)
-	
-	@commands.command(pass_context=True, no_pm=False, aliases=['wl'])
-	async def whitelist(self, ctx, *, mode=None):
-		\"""View and manage the whitelist, which allows words past the blacklist.\"""
-		word=None
-		if mode!=None and len(mode.split(' '))>1:
-			mode=mode.split(' ')
-			word=' '.join(mode[1:]) if len(mode)>2 else mode[1]
-			mode=mode[0]
-		if mode=='add': #adds more words to the whitelist
-			if globals.verbose: print('whitelist add command')
-			if ctx.message.author.id in globals.authusers or ctx.message.author.id == ctx.message.guild.owner.id:
-				if word==None:
-					await ctx.message.channel.send(help.dhelp['whitelist'])
-					return
-				#matches=dangerous(word)
-				if ' ' in word:
-					await emformat.genericmsg(ctx.message.channel,"please list one word at a time, and make sure that each word doesn't have legitimate uses","error","whitelist")
-				#elif not matches:
-					#await ctx.message.channel.send("that word isn't covered by the blacklist!")
-				elif word in self.get_blacklist():
-					await emformat.genericmsg(ctx.message.channel,"`"+word+"` is in the blacklist, a direct contradiction is not allowed.","error","whitelist")
-				else:
-					with open(globals.store+'whitelist.txt','a',encoding='utf-8') as f:
-						f.write(word+"\n")
-					await emformat.genericmsg(ctx.message.channel,"*'"+word+"'* is no longer banned!","done","whitelist")
-			else:
-				await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","whitelist")
-		elif mode=='remove': #removes words from the whitelist
-			if globals.verbose: print('whitelist remove command')
-			if ctx.message.author.id in globals.authusers:
-				if word==None:
-					await ctx.message.channel.send(help.dhelp['whitelist'])
-					return
-				whitelist=self.get_whitelist()
-				if ' ' in word:
-					await emformat.genericmsg(ctx.message.channel,"please list one word at a time and make sure it's actually on the `m/whitelist`","error","whitelist")
-				elif word not in whitelist:
-					await emformat.genericmsg(ctx.message.channel,"this word isn't in the whitelist!","error","whitelist")
-				else:
-					keep=[]
-					for line in whitelist:
-						if line.rstrip()!=word:
-								keep.append(line+"\n")
-					with open(globals.store+'whitelist.txt','w',encoding='utf-8') as f:
-						f.writelines(keep)
-					await emformat.genericmsg(ctx.message.channel,"the word `"+word+"` is no longer exempt from the blacklist!","done","whitelist")
-			else:
-				await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","whitelist")
-		elif mode=='train': #trains the whitelist using trusted texts
-			if globals.verbose: print('whitelist train command')
-			if ctx.message.author.id in globals.superusers:
-				if word==None:
-					await emformat.genericmsg(ctx.message.channel,"paste either a string of safe words, or a url to a txt file full of safe words.","error","whitelist")
-					return
-				if word.startswith('http') and ' ' not in word:
-					async with ctx.message.channel.typing():
-						header={'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.0.7) Gecko/2009021910 Firefox/3.0.7'}
-						async with aiohttp.ClientSession() as session:
-							async with session.get(word,headers=header) as r:
-								if r.status == 200:
-									text = await r.text()
-								else:
-									print('whitelist train: error '+str(r.status))
-									await emformat.genericmsg(ctx.message.channel,"i couldn't work with the file you gave me; `error "+str(r.status)+"`","error","whitelist")
-				else:
-					text=word
-				result=dangerous(text,1)
-				await emformat.genericmsg(ctx.message.channel,"all of these words were whitelisted;\n```"+result+"```","done","whitelist")
-			else:
-				await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","whitelist")
-		else:
-			if globals.verbose: print('whitelist command')
-			wordprint=''
-			for word in self.get_whitelist():
-				wordprint+=word+", "
-			
-			await self.send_list(wordprint,"here's the current list of whitelisted words;",ctx.message.channel)
-	"""
-	@commands.command(pass_context=True, no_pm=False, aliases=['censorg'])
+	@commands.command(pass_context=True, no_pm=False)
 	async def censor(self, ctx, *, text):
 		if globals.verbose: print('censor command')
 		danger=self.dangerous(text, guild=(ctx.guild.id if ctx.invoked_with.lower() == 'censor' else 0))
