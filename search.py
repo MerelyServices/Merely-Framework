@@ -24,7 +24,6 @@ class Search(commands.Cog):
 		header={'User-Agent':"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.134 Safari/537.36"}
 		attempts = 0
 		async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=8)) as session:
-			# TODO: Add timeout handler
 			while attempts < 4:
 				async with session.get(url,headers=header) as r:
 					if r.status == 200:
@@ -67,7 +66,6 @@ class Search(commands.Cog):
 		url=url.replace('%20','+')
 		header={'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.0.7) Gecko/2009021910 Firefox/3.0.7'}
 		async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=8)) as session:
-			# TODO: Add timeout handler
 			async with session.get("http://www.google.com/search?q="+url+"&gws_rd=cr",headers=header) as r:
 				if r.status == 200:
 					a = await r.text()

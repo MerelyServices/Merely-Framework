@@ -268,7 +268,7 @@ async def on_guild_join(server):
 	
 	await bot.change_presence(activity=discord.Game(name='merely help | m/help'))
 	await asyncio.sleep(30)
-	# 																																																			TODO: make universal playing function and use that
+	# TODO: make universal playing function and use that
 	# with open(globals.store+"playing.txt","r") as file:
 		# playing=file.read()
 	# if len(playing)>1:

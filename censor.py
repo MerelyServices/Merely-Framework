@@ -203,9 +203,6 @@ class Censor(commands.Cog):
 	
 		if matches: pprint(matches)
 		return matches
-	
-	def strip(text):
-		""" TODO: make string/array format stripper """
 
 	@commands.command(pass_context=True, no_pm=True, aliases=['blacklist','whitelist'])
 	async def xlist(self, ctx, mode=None, *, words=None):
@@ -311,18 +308,21 @@ class Censor(commands.Cog):
 				if len(words)==1 and len(utils.FindURLs(words[0]))==1:
 					async with ctx.channel.typing():
 						async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=10)) as session:
-							# TODO: Add timeout handler
-							async with session.get(words[0]) as r:
-								if r.status == 200:
-									if r.headers['content-type'] == 'text/plain':
-										training_data = await r.text()
-										training_data = training_data.split()
+							try:
+								async with session.get(words[0]) as r:
+									if r.status == 200:
+										if r.headers['content-type'] == 'text/plain':
+											training_data = await r.text()
+											training_data = training_data.split()
+										else:
+											await emformat.genericmsg(ctx.channel,"the file at the provided url isn't a text file! (expected `text/plain`, got `{r.headers['content-type']}`)","error",('black' if black else 'white')+"list")
+											return
 									else:
-										await emformat.genericmsg(ctx.channel,"the file at the provided url isn't a text file! (expected `text/plain`, got `{r.headers['content-type']}`)","error",('black' if black else 'white')+"list")
+										await emformat.genericmsg(ctx.channel,f"downloading the provided url caused an `error {r.status}`...","error",('black' if black else 'white')+"list")
 										return
-								else:
-									await emformat.genericmsg(ctx.channel,f"downloading the provided url caused an `error {r.status}`...","error",('black' if black else 'white')+"list")
-									return
+							except Exception as e:
+								await ctx.channel.send("failed to download the file!")
+								print(e)
 				else:
 					await ctx.channel.send("this command takes a url to a text file, please provide one (you can upload a text file to this chat and copy the link to it)")
 					return

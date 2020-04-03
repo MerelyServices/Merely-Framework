@@ -111,12 +111,12 @@ class Meme(commands.Cog):
 			result = cursor.fetchone()
 			if not result is None:
 				mid = result[0]
-				await self.session.get("https://cdn.yiays.com/meme/dl.php?singledl="+str(mid))
-				# TODO: Add timeout handler
-				await self.session.get("https://cdn.yiays.com/meme/"+str(mid)+".thumb.jpg")
-				# TODO: Add timeout handler
-				await self.session.get("https://cdn.yiays.com/meme/"+str(mid)+".mini.jpg")
-				# TODO: Add timeout handler
+				try:
+					await self.session.get("https://cdn.yiays.com/meme/dl.php?singledl="+str(mid))
+					await self.session.get("https://cdn.yiays.com/meme/"+str(mid)+".thumb.jpg")
+					await self.session.get("https://cdn.yiays.com/meme/"+str(mid)+".mini.jpg")
+				except Exception as e:
+					print(e)
 		
 		# Add user, in case they don't exist
 		for voter in list(dict.fromkeys(up+down)):
@@ -188,7 +188,6 @@ class Meme(commands.Cog):
 							print("[WARN] skipped unknown memeurl because modchannel isn't set!")
 							return
 					async with self.session.head(url) as clientresponse:
-						# TODO: Add timeout handler
 						if 'content-type' in clientresponse.headers:
 							type = clientresponse.headers['content-type'].split(' ')[0]
 							if typeconverter(type):

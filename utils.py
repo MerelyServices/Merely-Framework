@@ -35,3 +35,5 @@ def time_fold(s:int):
 def FindURLs(string):
 	urls = re.findall(r'(http[s]?:\/\/[A-z0-9/?.&%;:\-=@]+)', string)
 	return urls
+
+# TODO: create string stripper function for meme search and censor
