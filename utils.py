@@ -1,4 +1,5 @@
 import re
+import time
 from collections import namedtuple
 
 timedivider = namedtuple('timedivider', ['threshold', 'divider', 'unit', 'unitplural'], defaults=[0, 0, 'null', None])
@@ -35,5 +36,28 @@ def time_fold(s:int):
 def FindURLs(string):
 	urls = re.findall(r'(http[s]?:\/\/[A-z0-9/?.&%;:\-=@]+)', string)
 	return urls
+
+class Cached():
+	""" Cached variable datatype, use Cached.old to determine if data needs refreshing """
+	def __init__(self, data=None, age=0, threshold=300):
+		self.data = data
+		self.threshold = threshold
+		self.age = age
+		self.refresh = False
+	
+	@property
+	def data(self):
+		return self.__data
+	@data.setter
+	def data(self, data):
+		self.__data = data
+		self.age = int(time.time())
+	
+	@property
+	def old(self):
+		if self.refresh:
+			self.refresh = False
+			return True
+		return self.age < int(time.time())-self.threshold
 
 # TODO: create string stripper function for meme search and censor

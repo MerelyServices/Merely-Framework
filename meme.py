@@ -27,7 +27,7 @@ class Meme(commands.Cog):
 	"""In beta; a new database for automatically storing and indexing memes to make them easier to find"""
 	def __init__(self, bot):
 		self.bot = bot
-		self.session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=20))
+		self.session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60))
 		self.usedmemes = []
 	def __delete__(self,instance):
 		self.session.close()

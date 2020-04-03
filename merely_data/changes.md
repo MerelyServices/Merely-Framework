@@ -110,3 +110,5 @@ With this release, we are launching [MemeDB](https://meme.yiays.com) - an online
  - `m/meme` will now search the database whenever you follow the command with a search string.
  - `m/blacklist train` and `m/whitelist train` have been added back to the censor module. They're a little more robust now as well.
  - Protections have been put in place to prevent merely from hanging when fetching data from unknown sources.
+#### 0.8.2
+ - An uber blacklist has been added, which is a set of words in the blacklist that can never be removed for legal, discord TOS, or moral reasons.

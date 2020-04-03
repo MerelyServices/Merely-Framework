@@ -3,6 +3,7 @@ import utils
 import asyncio
 import discord
 import random, re
+import time
 import aiohttp
 from urllib import parse
 from difflib import get_close_matches
@@ -22,26 +23,35 @@ class Xlist():
 		self.file = None
 		self.guildfile = None
 		self.guild = guild
+		self.cached = utils.Cached()
+		self.cachedguild = utils.Cached()
 	
 	def get(self, onlymain=False):
 		""" Generic get method for blacklists/whitelists - if configured as a guildlist, it returns the xlist with guild modifications. """
-		result = []
-		try:
-			with open(self.file,'r',encoding='utf-8') as f:
-				result += f.read().splitlines()
-		except FileNotFoundError:
-			pass
-		
-		if self.guild and onlymain == False:
+		if self.cached.old:
+			result = []
 			try:
-				with open(self.guildfile,'r',encoding='utf-8') as f:
-					for line in f.read().splitlines():
-						if line[0] == '+': result.append(line[1:])
-						if line[0] == '-': 
-							try: result.remove(line[1:])
-							except ValueError: print("Failed to remove "+line+" from GuildBlacklist(id="+str(self.guild)+").")
+				with open(self.file,'r',encoding='utf-8') as f:
+					result += f.read().splitlines()
 			except FileNotFoundError:
 				pass
+			self.cached.data = result
+		else:
+			result = self.cached.data
+		
+		if self.guild and onlymain == False:
+			if self.cachedguild.old:
+				try:
+					with open(self.guildfile,'r',encoding='utf-8') as f:
+						for line in f.read().splitlines():
+							if line[0] == '+': result.append(line[1:])
+							if line[0] == '-': 
+								try: result.remove(line[1:])
+								except ValueError: print("Failed to remove "+line+" from GuildBlacklist(id="+str(self.guild)+").")
+				except FileNotFoundError:
+					pass
+			else:
+				result = self.cachedguild.data
 		
 		return result
 	
@@ -54,6 +64,7 @@ class Xlist():
 			with open(self.file,'a',encoding='utf-8') as f:
 				for word in words:
 					f.writeline(word+'\n')
+			self.cached.refresh = True
 			return words
 		
 		else:
@@ -71,6 +82,7 @@ class Xlist():
 					keep.append('+'+word+'\n')
 			with open(self.guildfile,'w',encoding='utf-8') as f:
 				f.writelines(keep)
+			self.cachedguild.refresh = True
 			return words
 		
 		return []
@@ -93,6 +105,7 @@ class Xlist():
 			else:
 				with open(self.file,'w',encoding='utf-8') as f:
 					f.writelines(keep)
+			self.cached.refresh = True
 			return words
 		
 		else:
@@ -109,6 +122,7 @@ class Xlist():
 					keep.append('-'+word)
 			with open(self.guildfile,'w',encoding='utf-8') as f:
 				f.writelines(keep)
+			self.cachedguild.refresh = True
 			return words
 		
 		return []
@@ -126,6 +140,20 @@ class Blacklist(Xlist):
 		self.file = globals.store + 'blacklist.txt'
 		if guild:
 			self.guildfile = f"{globals.store}blacklist.{guild}.txt"
+		self.cacheduber = utils.Cached(threshold=600)
+	
+	def get(self, onlymain=False, onlyuber=False):
+		if not onlyuber: result = super().get(onlymain=onlymain)
+		else: result = []
+		if self.cacheduber.old:
+			try:
+				with open(globals.store + 'blacklist.uber.txt','r',encoding='utf-8') as f:
+					result += f.read().splitlines()
+			except FileNotFoundError:
+				pass
+		else:
+			result += self.cacheduber.data
+		return result
 	
 	def remove(self, words):
 		""" Remove method for blacklists - removes all matches in the blacklist, not just exact matches. """
@@ -285,6 +313,10 @@ class Censor(commands.Cog):
 					for word in words:
 						if word not in blacklist.get():
 							warnings.append(f"'{word}' isn't in the blacklist!")
+							words.remove(word)
+							continue
+						if word in blacklist.get(onlyuber=True):
+							warnings.append(f"'{word}' cannot be removed from the blacklist: some words just shouldn't be whitelisted.")
 							words.remove(word)
 							continue
 					
