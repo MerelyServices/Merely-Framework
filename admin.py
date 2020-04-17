@@ -178,7 +178,9 @@ class Admin(commands.Cog):
 			await emformat.make_embed(ctx.message.channel, "", "merely die", "shutting down...", image="https://media.discordapp.net/attachments/302695523360440322/685087322844299284/tenor.gif", footer="merely v"+globals.ver+" - created by Yiays#5930", icon=globals.iconurl, link=globals.apiurl+"#/die")
 			with open(globals.store+'alive.txt','w') as f:
 				f.write(str(ctx.message.channel.id))
-			if globals.modules['webserver']: await globals.modules["webserver"].stop()
+			if globals.modules['webserver']:
+				try: await globals.modules["webserver"].stop()
+				except AttributeError: print("ERROR: Webserver couldn't be stopped!")
 			await self.bot.logout()
 		else:
 			await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","die")

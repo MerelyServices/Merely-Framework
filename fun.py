@@ -4,7 +4,7 @@ import random
 import discord
 import math, re, time
 from discord.ext import commands
-import emformat
+import emformat, utils
 import help
 
 globals.commandlist['fun']=['playing','thonk','vote','dice','echo']
@@ -207,7 +207,9 @@ class Fun(commands.Cog):
 		"""Repeat after me"""
 		if globals.verbose: print('echo command')
 		
-		await ctx.message.channel.send(msg.replace('@',''))
+		echo = utils.SanitizeMessage(ctx.message)
+		echo = echo[echo.find('echo')+5:]
+		await ctx.message.channel.send(echo)
 
 	@commands.command(pass_context=True, no_pm=False)
 	async def vote(self,ctx,*,msg=''):

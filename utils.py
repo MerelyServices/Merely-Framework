@@ -37,6 +37,26 @@ def FindURLs(string):
 	urls = re.findall(r'(http[s]?:\/\/[A-z0-9/?.&%;:\-=@]+)', string)
 	return urls
 
+def SanitizeMessage(msg):
+	result = msg.content
+	
+	# Replace mentions with username#discrim
+	for mention in msg.mentions:
+		result = result.replace("<@!"+str(mention.id)+">", '@' + mention.name + '#' + str(mention.discriminator))
+	
+	# Replace channel mentions with role name
+	for mention in msg.channel_mentions:
+		result = result.replace("<#"+str(mention.id)+">", '#'+mention.name)
+	
+	# Replace role mentions with role name
+	for mention in msg.role_mentions:
+		result = result.replace("<@&"+str(mention.id)+">", '@'+mention.name)
+	
+	# Remove links from message
+	result = result.replace("https://", "").replace("http://", "")
+	
+	return result
+
 class Cached():
 	""" Cached variable datatype, use Cached.old to determine if data needs refreshing """
 	def __init__(self, data=None, age=0, threshold=300):

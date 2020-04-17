@@ -310,9 +310,15 @@ async def msglog(msg:discord.Message):
 			else:
 				globals.stats.recievedcount+=1
 		
-		content=truncate(msg.content.encode('utf-8').decode('ascii','ignore'),64)
-		fullcon=truncate(msg.content,64).replace('http','')
+		content = utils.SanitizeMessage(msg)
 		
+		# Shorten message to 64 characters
+		content=truncate(content,64)
+		
+		# Strip non-ascii characters for the log
+		content_logsafe=content.encode('utf-8').decode('ascii','ignore')
+		
+		# Either show the server and channel name, or show that this is PMs
 		if isinstance(msg.channel,discord.abc.PrivateChannel):
 			channel='PM'
 		else:
@@ -323,8 +329,8 @@ async def msglog(msg:discord.Message):
 			embed = msg.embeds[0]
 		
 		if globals.logchannel:
-			await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - ["+channel+"] "+msg.author.name+"#"+msg.author.discriminator+": "+fullcon, embed=embed)
-		print(time.strftime("%H:%M:%S",time.localtime())+" - ["+channel+"] "+msg.author.name+"#"+msg.author.discriminator+": "+content)
+			await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - ["+channel+"] "+msg.author.name+"#"+msg.author.discriminator+": "+content, embed=embed)
+		print(time.strftime("%H:%M:%S",time.localtime())+" - ["+channel+"] "+msg.author.name+"#"+msg.author.discriminator+": "+content_logsafe)
 
 async def log(msg:str):
 	print(time.strftime("%H:%M:%S",time.localtime())+": "+msg)
