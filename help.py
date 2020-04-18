@@ -2,7 +2,7 @@ import globals, emformat
 from discord.ext import commands
 import time, random, asyncio
 
-globals.commandlist['help']=['help','command','hint','info','stats','feedback']
+# ['help']=['help','command','hint','info','stats','feedback']
 
 helpdict={
 	':grey_question: help':'```help, command, hint, feedback```',
@@ -113,7 +113,7 @@ class Help(commands.Cog):
 	async def info(self,ctx):
 		if globals.verbose:print('info command')
 		
-		m, s = divmod(time.time()-globals.stats.starttime, 60)
+		m, s = divmod(time.time()-self.bot.cogs['Stats'].starttime, 60)
 		h, m = divmod(m, 60)
 		
 		await emformat.make_embed(ctx.message.channel,'go to '+globals.apiurl+' to learn more!','merely info','',color=0x2C5ECA,thumbnail=globals.emurl+'greet.gif',

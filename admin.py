@@ -5,13 +5,12 @@ import time, os, math, re
 from discord.ext import commands
 import emformat, help
 
-globals.commandlist['admin']=['welcome','farewell','janitor','die','clean','purge','logcat','servers','lockout','changelog','announceupdate','owneroptout','lockout']
+# ['admin']=['welcome','farewell','janitor','die','clean','purge','logcat','servers','lockout','changelog','announceupdate','owneroptout','lockout']
 
 class Admin(commands.Cog):
 	"""Admin related commands."""
 	def __init__(self, bot):
 		self.bot = bot
-		globals.janitor = self.janitorservice
 	
 	def printlist(self,list,n,limit):
 		s="page "+str(n+1)+" of "+str(math.ceil(len(list)/limit))+";```"+'\n'.join(list[n*limit:min(n*limit+limit,len(list))])+"```"
@@ -179,8 +178,7 @@ class Admin(commands.Cog):
 			with open(globals.store+'alive.txt','w') as f:
 				f.write(str(ctx.message.channel.id))
 			if globals.modules['webserver']:
-				try: await globals.modules["webserver"].stop()
-				except AttributeError: print("ERROR: Webserver couldn't be stopped!")
+				await self.bot.cogs["Webserver"].stop()
 			await self.bot.logout()
 		else:
 			await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","die")

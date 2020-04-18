@@ -112,3 +112,5 @@ With this release, we are launching [MemeDB](https://meme.yiays.com) - an online
  - Protections have been put in place to prevent merely from hanging when fetching data from unknown sources.
 #### 0.8.2
  - An uber blacklist has been added, which is a set of words in the blacklist that can never be removed for legal, discord TOS, or moral reasons.
+### 0.9.0
+ - The codebase has been restructured to improve stability and maintainability.

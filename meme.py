@@ -8,7 +8,7 @@ import aiohttp
 import urllib.parse
 import re
 
-globals.commandlist['meme']=['meme']
+# ['meme']=['meme']
 
 def typeconverter(type):
 	if type.startswith('image'):
@@ -25,8 +25,9 @@ def typeconverter(type):
 
 class Meme(commands.Cog):
 	"""In beta; a new database for automatically storing and indexing memes to make them easier to find"""
-	def __init__(self, bot):
+	def __init__(self, bot, dbpassword):
 		self.bot = bot
+		self.dbpassword = dbpassword
 		self.session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60))
 		self.usedmemes = []
 	def __delete__(self,instance):
@@ -82,7 +83,7 @@ class Meme(commands.Cog):
 				await message.add_reaction('🔼')
 				await message.add_reaction('🔽')
 				
-				mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=globals.memedbpass,database='meme')
+				mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=self.dbpassword,database='meme')
 				cursor = mydb.cursor()
 				cursor.execute(f"SELECT Id FROM meme WHERE DiscordOrigin = {message.id} AND CollectionParent IS NULL LIMIT 1")
 				result = cursor.fetchone()
@@ -93,7 +94,7 @@ class Meme(commands.Cog):
 					await verified.remove(self.bot.user)
 	
 	async def RecordMeme(self,result,message,up=[],down=[]):
-		mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=globals.memedbpass,database='meme')
+		mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=self.dbpassword,database='meme')
 		cursor = mydb.cursor()
 		
 		# Add meme, in case it doesn't already exist
@@ -140,7 +141,7 @@ class Meme(commands.Cog):
 		mydb.commit()
 		mydb.close()
 	def RemoveVote(self,mid,uid):
-		mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=globals.memedbpass,database='meme')
+		mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=self.dbpassword,database='meme')
 		cursor = mydb.cursor()
 		cursor.execute('DELETE FROM memevote WHERE memeId = (SELECT Id FROM meme WHERE DiscordOrigin='+str(mid)+') and userId = '+str(uid)+';')
 		mydb.commit()
@@ -233,7 +234,7 @@ class Meme(commands.Cog):
 			await ctx.channel.send('Background service ended.')
 	
 	async def get_meme(self, channel, id=None, search=None):
-		mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=globals.memedbpass,database='meme')
+		mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=self.dbpassword,database='meme')
 		
 		if id is None and search is None:
 			query = \

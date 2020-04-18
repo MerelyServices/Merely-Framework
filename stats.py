@@ -3,7 +3,7 @@ import globals, emformat
 from discord import __version__ as discordversion
 from discord.ext import commands,tasks
 
-globals.commandlist['stats']=['stats']
+# ['stats']=['stats']
 
 class Stats(commands.Cog):
 	def __init__(self,bot):
@@ -39,17 +39,17 @@ class Stats(commands.Cog):
 		await emformat.make_embed(ctx.message.channel,'for constantly updating stats, go to '+globals.apiurl+'stats.html',
 		'merely stats','',color=0x2C5ECA,thumbnail=globals.emurl+'greet.gif',
 		fields={
-			'exposure': globals.stats.exposure,
-			'responses': globals.stats.responses,
-			'uptime': globals.stats.uptime,
-			'modules': globals.stats.modules,
-			'library': globals.stats.library,
-			'core': globals.stats.core,
-			#'memes': globals.stats.memes,
-			'cpu usage': globals.stats.cpu_usage,
-			'ram usage': globals.stats.ram_usage,
-			'hardware': globals.stats.hardware,
-			'generated time': globals.stats.gentime
+			'exposure': self.exposure,
+			'responses': self.responses,
+			'uptime': self.uptime,
+			'modules': self.modules,
+			'library': self.library,
+			'core': self.core,
+			#'memes': self.memes,
+			'cpu usage': self.cpu_usage,
+			'ram usage': self.ram_usage,
+			'hardware': self.hardware,
+			'generated time': self.gentime
 		},
 		icon=globals.iconurl,footer="merely v"+globals.ver+" - created by Yiays#5930",link=globals.apiurl)
 

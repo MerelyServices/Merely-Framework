@@ -9,7 +9,7 @@ import urllib, json
 import aiohttp, re, random, html
 from bs4 import BeautifulSoup
 
-globals.commandlist['google']=['google','image']
+# ['google']=['google','image']
 
 class Search(commands.Cog):
 	"""Google related commands."""

@@ -5,13 +5,8 @@ import configparser
 config=configparser.ConfigParser()
 
 # defaults, should the ini file be missing or corrupted
-stats=None
-meme=None
 dangerous=None
-janitor=None
-memedbpass=''
 lockout={}
-commandlist={'config':['reload']}
 modules={
 	'main':True,
 	'config':True,

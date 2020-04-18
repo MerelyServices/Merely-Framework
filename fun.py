@@ -7,7 +7,7 @@ from discord.ext import commands
 import emformat, utils
 import help
 
-globals.commandlist['fun']=['playing','thonk','vote','dice','echo']
+# ['fun']=['playing','thonk','vote','dice','echo']
 
 class Fun(commands.Cog):
 	"""Fun related commands."""

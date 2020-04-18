@@ -12,7 +12,7 @@ from discord.ext import commands
 import emformat
 import help
 
-globals.commandlist['censor']=['blacklist','whitelist','censor']
+# ['censor']=['blacklist','whitelist','censor']
 
 def sass():
 	return random.choice(["keep that in an nsfw channel, filthy weeb.","merely has *standards*","degenerates.","I'm not just gonna let you post filth in a sfw channel.",

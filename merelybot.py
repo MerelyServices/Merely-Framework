@@ -46,73 +46,61 @@ if globals.verbose: print('emformat done!')
 #	help
 if globals.modules['help']:
 	import help
-	globals.modules['help']=help
 	bot.add_cog(help.Help(bot))
 	if globals.verbose: print('help done!')
 
 #	censor
 if globals.modules['censor']:
 	import censor
-	globals.modules['censor']=censor
 	bot.add_cog(censor.Censor(bot))
 	if globals.verbose: print('censor done!')
 
 #	fun
 if globals.modules['fun']:
 	import fun
-	globals.modules['fun']=fun
 	bot.add_cog(fun.Fun(bot))
 	if globals.verbose: print('fun done!')
 
 #	meme
 if globals.modules['meme']:
 	import meme
-	globals.memedbpass=os.environ.get("MemeDB")
-	globals.modules['meme']=meme
-	globals.meme = meme.Meme(bot)
-	bot.add_cog(globals.meme)
+	bot.add_cog(meme.Meme(bot, os.environ.get("MemeDB")))
 	if globals.verbose: print('meme done!')
 
 #	search
 if globals.modules['search']:
 	import search
-	globals.modules['search']=search
 	bot.add_cog(search.Search(bot))
 	if globals.verbose: print('search done!')
 
 #	admin
 if globals.modules['admin']:
 	import admin
-	globals.modules['admin']=admin
 	bot.add_cog(admin.Admin(bot))
 	if globals.verbose: print('admin done!')
 
 #	tools
 if globals.modules['tools']:
 	import tools
-	globals.modules['tools']=tools
-	bot.add_cog(tools.Tools(bot))
+	bot.add_cog(tools.Tools(bot, os.environ.get("MemeDB")))
 	if globals.verbose: print('tools done!')
 
 #	obsolete
 if globals.modules['obsolete']:
 	import obsolete
-	globals.modules['obsolete']=obsolete
 	bot.add_cog(obsolete.Obsolete(bot))
 	if globals.verbose: print('obsolete done!')
 
 #	webserver
 if globals.modules['webserver']:
 	import webserver
-	globals.modules['webserver']=webserver
+	bot.add_cog(webserver.Webserver(bot))
 	if globals.verbose: print('webserver done!')
 
 # stats
 if globals.modules['stats']:
 	import stats
-	globals.modules['stats']=stats
-	globals.stats=stats.Stats(bot)
-	bot.add_cog(globals.stats)
+	bot.add_cog(stats.Stats(bot))
 	if globals.verbose: print('stats done!')
 
 if globals.modules['reload']:
@@ -162,7 +150,7 @@ async def on_ready():
 	print('------')
 	
 	if not globals.connected:
-		if globals.modules['webserver']: asyncio.ensure_future(webserver.start())
+		if globals.modules['webserver']: asyncio.ensure_future(bot.cogs['Webserver'].start())
 		globals.connected=True
 	
 	with open(globals.store+"playing.txt","r") as file:
@@ -197,7 +185,7 @@ async def on_ready():
 	if globals.modules['meme']:
 		if globals.logchannel: await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - starting background service...")
 		try:
-			await globals.meme.BackgroundService()
+			await bot.cogs['Meme'].BackgroundService()
 		except Exception as e:
 			if globals.logchannel and bot.is_ready(): await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - background service failed to complete!```"+str(e)+"```")
 		else:
@@ -209,10 +197,10 @@ async def on_message(message):
 	asyncio.ensure_future(msglog(message))
 	# determine if janitor should run on this message and run it
 	if globals.modules['admin']:
-		asyncio.ensure_future(globals.janitor(message))
+		asyncio.ensure_future(bot.cogs['Admin'].janitorservice(message))
 	# determine if message was posted in a meme channel, and if so determine if it is a meme
 	if globals.modules['meme'] and message.channel.id in sum(globals.memechannels.values(),[]):
-		asyncio.ensure_future(globals.meme.OnMemePosted(message))
+		asyncio.ensure_future(bot.cogs["Meme"].OnMemePosted(message))
 	
 	ctx = await bot.get_context(message)
 	
@@ -311,9 +299,9 @@ async def msglog(msg:discord.Message):
 	if msg.channel.id != globals.logchannel and (isinstance(msg.channel,discord.abc.PrivateChannel) or msg.author==bot.user or msg.author.id == globals.musicbuddy or bot.user in msg.mentions or msg.content.startswith('m/') or msg.content.startswith('merely')):
 		if globals.modules['stats']:
 			if msg.author==bot.user:
-				globals.stats.sentcount+=1
+				bot.cogs['Stats'].sentcount+=1
 			else:
-				globals.stats.recievedcount+=1
+				bot.cogs['Stats'].recievedcount+=1
 		
 		content = utils.SanitizeMessage(msg)
 		
@@ -345,11 +333,11 @@ async def log(msg:str):
 @bot.event
 async def on_raw_reaction_add(e):
 	if e.channel_id in sum(globals.memechannels.values(),[]) and e.user_id != bot.user.id:
-		await globals.meme.OnReaction(True,e.message_id,e.user_id,e.channel_id,e.emoji)
+		await bot.cogs['Meme'].OnReaction(True,e.message_id,e.user_id,e.channel_id,e.emoji)
 @bot.event
 async def on_raw_reaction_remove(e):
 	if e.channel_id in sum(globals.memechannels.values(),[]):
-		await globals.meme.OnReaction(False,e.message_id,e.user_id)
+		await bot.cogs['Meme'].OnReaction(False,e.message_id,e.user_id)
 
 @bot.event
 async def on_error(*args):
