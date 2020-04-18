@@ -28,7 +28,7 @@ sys.stderr = Logger(err=True)
 print('starting bot...')
 
 #start commands system
-bot=commands.Bot(command_prefix=commands.when_mentioned_or('merely ','m/ ','m/'), help_attrs={'enabled':False},case_insensitive=True)
+bot=commands.Bot(command_prefix=commands.when_mentioned_or('merely ','m/ ','m/'), help_attrs={'enabled':False}, case_insensitive=True)
 bot.remove_command('help')
 
 globals.bot=bot
@@ -199,9 +199,9 @@ async def on_ready():
 		try:
 			await globals.meme.BackgroundService()
 		except Exception as e:
-			if globals.logchannel: await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - background service failed to complete!```"+str(e)+"```")
+			if globals.logchannel and bot.is_ready(): await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - background service failed to complete!```"+str(e)+"```")
 		else:
-			if globals.logchannel: await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - background service ended.")
+			if globals.logchannel and bot.is_ready(): await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - background service ended.")
 
 @bot.event
 async def on_message(message):
@@ -220,25 +220,27 @@ async def on_message(message):
 	if ctx.prefix is not None:
 		ctx.command = bot.get_command(ctx.invoked_with.lower())
 		# detect if the message was recognised as a command
-		if ctx.command is not None:
-			allowed=True
-			# detect if the command was directed at the music bot
-			if ctx.command.name == "music":
-				if not (globals.musicbuddy and ctx.guild.get_member(globals.musicbuddy) is None):
-					# the music bot will handle this one
-					return
-			if str(message.author.id) in globals.lockout:
-				if int(globals.lockout[str(message.author.id)]) > time.time():
-					allowed=False
-					await message.channel.send(f"you're banned from using this bot for {utils.time_fold(int(globals.lockout[str(message.author.id)])-time.time())}.")
-				else:
-					await message.channel.send("your ban is over. you may use commands again.")
-					globals.lockout.pop(str(message.author.id),None)
-					globals.save()
-			if allowed:
-				await bot.invoke(ctx)
-		else:
+		if ctx.command is None:
 			await log("Unknown command: ```"+message.content+"```")
+		else:
+			await bot.invoke(ctx)
+
+@bot.check_once
+async def on_check(ctx):
+	# detect if the command was directed at the music bot
+	if ctx.command.name == "music":
+		if not (globals.musicbuddy and ctx.guild.get_member(globals.musicbuddy) is None):
+			# the music bot will handle this one
+			return False
+	if str(ctx.message.author.id) in globals.lockout:
+		if int(globals.lockout[str(ctx.message.author.id)]) > time.time():
+			await ctx.message.channel.send(f"you're banned from using this bot for {utils.time_fold(int(globals.lockout[str(ctx.message.author.id)])-time.time())}.")
+			return False
+		else:
+			await ctx.message.channel.send("your ban is over. you may use commands again.")
+			globals.lockout.pop(str(ctx.message.author.id),None)
+			globals.save()
+	return True
 
 async def send_ownerintro(server):
 	em=discord.Embed(title="introducing merely",type='rich',inline=False,
@@ -301,6 +303,9 @@ def truncate(str ,l):
 	return (str[:l] + '...') if len(str) > l+3 else str
 
 async def msglog(msg:discord.Message):
+	# This command tends to be called while the bot is shutting down, stop it.
+	if bot.is_closed() or not bot.is_ready():
+		return
 	# Determines if message should be logged, and logs it.
 	# Criteria for appearing in the log: message isn't in the logchannel, DMs to the bot, messages sent by the bot or the musicbot companion, merely is mentioned or message has a merelybot prefix.
 	if msg.channel.id != globals.logchannel and (isinstance(msg.channel,discord.abc.PrivateChannel) or msg.author==bot.user or msg.author.id == globals.musicbuddy or bot.user in msg.mentions or msg.content.startswith('m/') or msg.content.startswith('merely')):
@@ -350,6 +355,9 @@ async def on_raw_reaction_remove(e):
 async def on_error(*args):
 	error = traceback.format_exc()
 	print(time.strftime("%H:%M:%S",time.localtime())+" - encountered an error;\n"+error)
+	# This command tends to be called while the bot is shutting down, stop here.
+	if bot.is_closed() or not bot.is_ready():
+		return
 	if globals.logchannel:
 		channel = bot.get_channel(globals.logchannel)
 		await channel.send(time.strftime("%H:%M:%S",time.localtime())+" - **encountered an error;**\n```"+truncate(error,1950)+'```')
