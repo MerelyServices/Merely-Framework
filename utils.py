@@ -42,7 +42,8 @@ def SanitizeMessage(msg):
 	
 	# Replace mentions with username#discrim
 	for mention in msg.mentions:
-		result = result.replace("<@!"+str(mention.id)+">", '@' + mention.name + '#' + str(mention.discriminator))
+		# Both <@USER_ID> and <@!USER_ID> are valid for some reason
+		result = result.replace("<@!"+str(mention.id)+">", '@' + mention.name + '#' + str(mention.discriminator)).replace("<@"+str(mention.id)+">", '@' + mention.name + '#' + str(mention.discriminator))
 	
 	# Replace channel mentions with role name
 	for mention in msg.channel_mentions:

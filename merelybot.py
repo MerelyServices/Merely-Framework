@@ -277,7 +277,7 @@ async def on_member_join(member):
 		return
 	globals.config.read(globals.store+'config.ini')
 	if str(member.guild.id) in globals.config.sections() and globals.config.get(str(member.guild.id),'welcome_message') != '':
-		await bot.get_channel(int(globals.config.get(str(member.guild.id),'welcome_channel'))).send(globals.config.get(str(member.guild.id),'welcome_message').format('<@'+str(member.id)+'>',member.guild.name))
+		await bot.get_channel(int(globals.config.get(str(member.guild.id),'welcome_channel'))).send(globals.config.get(str(member.guild.id),'welcome_message').format('<@!'+str(member.id)+'>',member.guild.name))
 
 @bot.event
 async def on_member_remove(member):
