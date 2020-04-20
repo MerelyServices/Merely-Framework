@@ -30,14 +30,15 @@ you can read the up to date changelog [here](https://merely.yiays.com/changes.ht
  - install required python packages with `python3 -m pip install -r requirements.txt`
  - create a discord bot in the [Discord Developer Portal](https://discordapp.com/developers/applications/), you will need the token to continue
  - give merely the token with
-   - `export MerelyBeta="TOKEN"` on linux
-   - `setx MerelyBeta "TOKEN"` on windows
+   - `export Merely="TOKEN"` on linux
+   - `setx Merely "TOKEN"` on windows
    - *it's recommended you create a .bat or .sh file which assigns these variables whenever you start the bot*
+   - *also note that the beta branch uses the 'MerelyBeta' environment variable instead*
  - run it with `python3 merelybot.py`
  - add your instance of merely to your server
  - *optional*: create a log channel on your server and copy the id to merely_data/config.ini > logchannel. - you can also do the same with a channel for feedback and a channel for moderators.
 
-after the first run, you can enable commands by editing the file at merely_data/config.ini in order to enable modules. simply switch the value of each module you want from `False` to `True`, note that the meme module has external dependencies and will not work in a local environment yet.
+after the first run, you can enable commands by editing the file at merely_data/config.ini in order to enable modules. simply switch the value of each module you want from `False` to `True`, note that the meme module has external dependencies and will not work in a local environment.
 
 once modules have been enabled, you can list commands available to you using `m/help` in a discord channel the bot has access to.
 
