@@ -359,6 +359,22 @@ class Admin(commands.Cog):
 		else:
 			await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","changelog")
 	
+	@commands.command(pass_context=True, no_pm=True)
+	async def ownerintrotest(self, ctx):
+		await self.send_ownerintro(ctx.guild)
+	async def send_ownerintro(self, server):
+		em=discord.Embed(title="introducing merely",type='rich',
+		description="hello! i was just added to your server! type `merely help` for a list of general commands, but as the owner of *"+server.name+"*, you have more commands available to you;",
+		color=discord.Colour(0x2C5ECA),url=globals.apiurl+'#/serverowner')
+		em.add_field(name='Automated Messages', inline=False, value="*m/welcome* - shows a custom welcome message to new members\n*m/farewell* - shows a custom announcement whenever a member leaves")
+		em.add_field(name='Cleaning', inline=False, value="*m/janitor* - auto-deletes either bot spam or all messages in a channel after 30 seconds\n*m/clean* - cleans a channel of bot spam or all messages for as long as you specify\n*m/purge* - erases a section of messages within a channel")
+		em.add_field(name='Moderation', inline=False, value="*m/blacklist* and *m/whitelist* - control which words can be used in merely commands (like echo, image or google search) when in a SFW channel\n*m/lockout* - ban users from using merely if they're abusing it.")
+		em.add_field(name='Support', inline=False, value="*m/changes* - lists all the recent changes to merely, if you're curious\n*m/feedback* - provide feedback directly to the developers if there's a feature or issue you'd like to discuss.")
+		em.add_field(name='Need help using these commands?', inline=False, value="here's some useful documentation; "+globals.apiurl+"#/serverowner")
+		em.set_thumbnail(url=globals.emurl+"greet.gif")
+		em.set_footer(text="merely v"+globals.ver+" - created by Yiays#5930", icon_url=globals.iconurl)
+		await server.owner.send(embed=em)
+	
 	@commands.command(pass_context=True, no_pm=False)
 	async def announceupdate(self,ctx,*,msg=''):
 		"""Announces updates to the server owners."""

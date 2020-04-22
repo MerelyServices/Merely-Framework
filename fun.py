@@ -34,7 +34,7 @@ class Fun(commands.Cog):
 			i+=1
 		str+='\n\nuse the reactions below to add your vote!'
 		
-		em=discord.Embed(type='rich',inline=False,description=str,url=globals.apiurl+'#/vote')
+		em=discord.Embed(type='rich', description=str, url=globals.apiurl+'#/vote')
 		
 		return em
 

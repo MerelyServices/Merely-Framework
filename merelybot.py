@@ -229,32 +229,14 @@ async def on_check(ctx):
 			globals.lockout.pop(str(ctx.message.author.id),None)
 			globals.save()
 	return True
-
-async def send_ownerintro(server):
-	em=discord.Embed(title="introducing merely",type='rich',inline=False,
-	description="hello! i was just added to your server! type `merely help` for a list of general commands, but as the owner of *"+server.name+"*, you have more commands available to you;",
-	color=discord.Colour(0x2C5ECA),url=globals.apiurl+'#/serverowner')
-	em.add_field(name='merely welcome',value=help.dhelp['welcome'])
-	em.add_field(name='merely farewell',value=help.dhelp['farewell'])
-	em.add_field(name='merely janitor',value=help.dhelp['janitor'])
-	em.add_field(name='merely clean',value=help.dhelp['clean'])
-	em.add_field(name='merely purge',value=help.dhelp['purge'])
-	em.add_field(name='merely die',value=help.dhelp['die'])
-	em.add_field(name='merely blacklist and whitelist',value=help.dhelp['blacklist']+'\n\n'+help.dhelp['whitelist'])
-	em.add_field(name='merely lockout',value=help.dhelp['lockout'])
-	em.add_field(name='merely feedback',value="this command isn't exclusive, but be sure to use it!\n"+help.dhelp['feedback'])
-	em.add_field(name='merely changelog',value="this command isn't exclusive, but be sure to use it!\n"+help.dhelp['changelog'])
-	em.add_field(name='for more information...',value='be sure to visit merely\'s website! '+globals.apiurl+'#/serverowner')
-	em.set_thumbnail(url=globals.emurl+"greet.gif")
-	em.set_footer(text="merely v"+globals.ver+" - created by Yiays#5930", icon_url=globals.iconurl)
-	await server.owner.send(embed=em)
 	
 @bot.event
 async def on_guild_join(server):
 	if globals.verbose: print(time.strftime("%H:%M:%S",time.localtime())+" - Joined server "+server.name+"!")
 	if globals.logchannel: await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - **Joined server *"+server.name+"*!** ["+str(server.id)+"]")
 	
-	await send_ownerintro(server)
+	if globals.modules['admin']:
+		await bot.cogs['Admin'].send_ownerintro(server)
 	
 	await bot.change_presence(activity=discord.Game(name='merely help | m/help'))
 	await asyncio.sleep(30)
