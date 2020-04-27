@@ -12,7 +12,7 @@ timedividers = [
 	timedivider(threshold=2592000, divider=2592000, unit='month'),
 	timedivider(threshold=172800, divider=86400, unit='day'),
 	timedivider(threshold=7200, divider=3600, unit='hour'),
-	timedivider(threshold=300, divider=60, unit='minute'),
+	timedivider(threshold=60, divider=60, unit='minute'),
 	timedivider(threshold=0, divider=1, unit='second')
 ]
 
@@ -20,7 +20,7 @@ def time_fold(s:int):
 	output = ''
 	n = s
 	for td in timedividers:
-		if s > td.threshold:
+		if s >= td.threshold:
 			# divide by the divider and return the remainder
 			ns, n = divmod(n, td.divider)
 			ns = int(ns)
