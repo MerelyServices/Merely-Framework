@@ -108,31 +108,52 @@ if globals.modules['reload']:
 		def __init__(self, bot):
 			bot = bot
 		@commands.command(pass_context=True,no_pm=False)
-		async def reload(self,ctx,*,module:str):
+		async def reload(self,ctx,*,modulename:str):
+			modulename = modulename.lower()
 			if ctx.message.author.id in globals.superusers:
-				if module in globals.modules and globals.modules[module]:
-					if module=='webserver':
-						await globals.modules['webserver'].stop()
-						webserver=importlib.reload(globals.modules['webserver'])
-						globals.modules['webserver']=webserver
-						await webserver.start()
-						await ctx.message.channel.send("reloaded `webserver` succesfully!")
-					elif module=='config':
+				# if module exists and is enabled
+				if modulename in globals.modules and globals.modules[modulename]:
+					# edge case module that needs special treatment
+					if modulename=='config':
 						globals.reload()
 						await ctx.message.channel.send("reloaded `config` succesfully!")
-					else:
-						try:
-							bot.remove_cog(module.capitalize())
-							loadedmodule=importlib.reload(globals.modules[module])
-							bot.add_cog(getattr(loadedmodule,module.capitalize())(bot))
-						except AttributeError:
-							importlib.reload(globals.modules[module])
-							print('note: unable to reload '+module+' with discord.ext.commands support')
-						except Exception as e: print(e)
-						finally:
-							await ctx.message.channel.send("reloaded `"+module+"` succesfully!")
+						return
+					
+					cog = bot.cogs[modulename.capitalize()]
+					module = sys.modules[cog.__module__]
+					
+					# modules that need to be cleaned up before shutting down
+					if modulename=='webserver':
+						await cog.stop()
+					
+					try:
+						# - reload the module
+						reloadedmodule = importlib.reload(module)
+						
+						# make discord.py refresh the available commands
+						bot.remove_cog(modulename.capitalize())
+					
+						# - start up the modules again
+						
+						# modules that need extra parameters
+						if modulename in ['meme', 'tools']:
+							bot.add_cog(getattr(reloadedmodule, modulename.capitalize())(bot, os.environ.get("MemeDB")))
+						# start the module the normal way
+						else:
+							bot.add_cog(getattr(reloadedmodule, modulename.capitalize())(bot))
+						
+						# start other components of the module
+						if modulename=='webserver':
+							asyncio.ensure_future(bot.cogs['Webserver'].start())
+					
+					except Exception as e:
+						print(e)
+						await ctx.message.channel.send("failed to reload `"+modulename+"`!")
+						return
+					
+					await ctx.message.channel.send("reloaded `"+modulename+"` succesfully!")
 				else:
-					await ctx.message.channel.send('`'+module+"` isn't available for reloading.")
+					await ctx.message.channel.send('`'+modulename+"` isn't available for reloading.")
 			else:
 				await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","reload")
 	bot.add_cog(Reload(bot))
@@ -199,7 +220,7 @@ async def on_message(message):
 	if globals.modules['admin']:
 		asyncio.ensure_future(bot.cogs['Admin'].janitorservice(message))
 	# determine if message was posted in a meme channel, and if so determine if it is a meme
-	if globals.modules['meme'] and message.channel.id in sum(globals.memechannels.values(),[]):
+	if globals.modules['meme'] and message.channel.id in [m.id for m in globals.memechannels]:
 		asyncio.ensure_future(bot.cogs["Meme"].OnMemePosted(message))
 	
 	ctx = await bot.get_context(message)
@@ -314,11 +335,11 @@ async def log(msg:str):
 
 @bot.event
 async def on_raw_reaction_add(e):
-	if e.channel_id in sum(globals.memechannels.values(),[]) and e.user_id != bot.user.id:
+	if e.channel_id in [m.id for m in globals.memechannels] and e.user_id != bot.user.id:
 		await bot.cogs['Meme'].OnReaction(True,e.message_id,e.user_id,e.channel_id,e.emoji)
 @bot.event
 async def on_raw_reaction_remove(e):
-	if e.channel_id in sum(globals.memechannels.values(),[]):
+	if e.channel_id in [m.id for m in globals.memechannels]:
 		await bot.cogs['Meme'].OnReaction(False,e.message_id,e.user_id)
 
 @bot.event

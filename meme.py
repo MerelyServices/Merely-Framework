@@ -35,7 +35,7 @@ class Meme(commands.Cog):
 
 	async def BackgroundService(self,skip=0):
 		
-		for channel in sum(globals.memechannels.values(),[])[skip:]:
+		for channel in [m.id for m in globals.memechannels][skip:]:
 			counter = 0
 			channel=self.bot.get_channel(channel)
 			print('BS: iterating upon #'+channel.name+'...')
@@ -122,23 +122,40 @@ class Meme(commands.Cog):
 		# Add user, in case they don't exist
 		for voter in list(dict.fromkeys(up+down)):
 			cursor.execute(f"CALL AddUser({str(voter)},NULL,NULL);")
-		mydb.commit()
+			mydb.commit()
 		
 		# Add their vote, finally.
 		for voter in list(dict.fromkeys(up+down)):
-			try:
-				cursor.execute(f"CALL AddMemeVote(@MID,'{str(voter)}',{('1' if voter in up else '-1')});")
-			except:
-				print(cursor.statement)
-				raise
-		mydb.commit()
+			cursor.execute(f"CALL AddMemeVote(@MID,'{str(voter)}',{('1' if voter in up else '-1')});")
+			mydb.commit()
 		
 		# Add an edge rating from the bot based on where it is
 		edge = 4
-		for k,v in globals.memechannels.items():
-			if message.channel.id in v: edge = k
+		tags = []
+		cats = []
+		for memechannel in globals.memechannels:
+			if message.channel.id == memechannel.id:
+				edge = memechannel.edge
+				tags = memechannel.tags
+				cats = memechannel.categories
 		cursor.execute(f"CALL AddEdge(@MID,{self.bot.user.id},{edge});")
 		mydb.commit()
+		if tags:
+			if globals.verbose: print("adding preset channel tags to meme...")
+			inserts = []
+			for tag in tags:
+				inserts.append(f"({tag}, {self.bot.user.id}, (SELECT @MID), 1)")
+			inserts = ','.join(inserts)
+			cursor.execute(f"INSERT IGNORE INTO tagvote(tagId, userId, memeId, Value) VALUES{inserts}")
+			mydb.commit()
+		if cats:
+			if globals.verbose: print("adding preset channel categories to meme...")
+			inserts = []
+			for cat in cats:
+				inserts.append(f"({cat}, {self.bot.user.id}, (SELECT @MID), 1)")
+			inserts = ','.join(inserts)
+			cursor.execute(f"INSERT IGNORE INTO categoryvote(categoryId, userId, memeId, Value) VALUES{inserts}")
+			mydb.commit()
 		mydb.close()
 	def RemoveVote(self,mid,uid):
 		mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=self.dbpassword,database='meme')

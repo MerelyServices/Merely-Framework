@@ -21,7 +21,7 @@ class Search(commands.Cog):
 	async def imgscrape(self,query):
 		url="https://www.google.com/search?q="+urllib.parse.quote(query,safe='')+"&source=lnms&tbm=isch&gws_rd=cr"
 		url=url.replace('%20','+')
-		header={'User-Agent':"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.134 Safari/537.36"}
+		header={'User-Agent':"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36"}
 		attempts = 0
 		async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=8)) as session:
 			while attempts < 4:
@@ -64,7 +64,7 @@ class Search(commands.Cog):
 	async def googscrape(self,query):
 		url=urllib.parse.quote(query,safe='')
 		url=url.replace('%20','+')
-		header={'User-Agent':'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.0.7) Gecko/2009021910 Firefox/3.0.7'}
+		header={'User-Agent':"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.122 Safari/537.36"}
 		async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=8)) as session:
 			async with session.get("http://www.google.com/search?q="+url+"&gws_rd=cr",headers=header) as r:
 				if r.status == 200:

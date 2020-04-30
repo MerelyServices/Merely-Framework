@@ -21,7 +21,6 @@ modules={
 	'search':False,
 	'stats':False,
 	'tools':False,
-	'utils':False,
 	'webserver':False
 }
 bot={}
@@ -49,8 +48,15 @@ authusers=[]
 superusers=[]
 owneroptout=[]
 
-memechannels={0:[],1:[],2:[],3:[]}
+memechannels=[]
 memesites={'trusted':[],'blocked':[]}
+
+class MemeChannel():
+	def __init__(self, id : int, edge : int, tags = [], categories = []):
+		self.id = id
+		self.edge = edge
+		self.tags = tags
+		self.categories = categories
 
 def reload():
 	global modules,verbose,logchannel,musicbuddy,feedbackchannel,modchannel,emurl,apiurl
@@ -119,10 +125,10 @@ def reload():
 	assuresection('memechannels',{'0':'','1':'','2':'','3':''})
 	for level in config['memechannels']:
 		for channel in config.get('memechannels',level,fallback='').split(','):
-			try:
-				memechannels[int(level)].append(int(channel))
-			except ValueError:
-				continue
+			assuresection(channel, {'memetags': '', 'memecats': ''})
+			memechannels.append(MemeChannel(int(channel), int(level),
+													tags=config.get(channel, 'memetags', fallback='').split(','),
+													categories=config.get(channel, 'memecats', fallback='').split(',')))
 	
 	assuresection('memesites',{'trusted':'','blocked':''})
 	memesites={trust:[url for url in config.get('memesites',trust,fallback='').split(',')] for trust in config['memesites']}
@@ -140,7 +146,7 @@ def reload():
 	print('done!')
 
 def save():
-	global lockout,changes,owneroptout
+	global lockout,changes,owneroptout,memechannels
 	#perms
 	for user,time in lockout.items():
 		config.set('lockout',user,time)
@@ -148,6 +154,11 @@ def save():
 	config.set('settings','owneroptout',','.join([str(a) for a in owneroptout]))
 	config.set('memesites','trusted',','.join([str(a) for a in memesites['trusted']]))
 	config.set('memesites','blocked',','.join([str(a) for a in memesites['blocked']]))
+	
+	for memechannel in memechannels:
+		config.set('memechannels', str(memechannel.edge), str(memechannel.id))
+		config.set(str(memechannel.id), 'memetags', ','.join(memechannel.tags))
+		config.set(str(memechannel.id), 'memecats', ','.join(memechannel.categories))
 	
 	with open(store+'config.ini','w', encoding='utf-8') as f:
 		config.write(f)
