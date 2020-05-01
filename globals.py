@@ -5,7 +5,6 @@ import configparser
 config=configparser.ConfigParser()
 
 # defaults, should the ini file be missing or corrupted
-dangerous=None
 lockout={}
 modules={
 	'main':True,

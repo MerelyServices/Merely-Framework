@@ -14,169 +14,169 @@ import help
 
 # ['censor']=['blacklist','whitelist','censor']
 
-def sass():
-	return random.choice(["keep that in an nsfw channel, filthy weeb.","merely has *standards*","degenerates.","I'm not just gonna let you post filth in a sfw channel.",
-												"you people disgust me","merely found a naughty word in this one.","saving the mods from a second of wasted time.","no thank you."])
-
-class Xlist():
-	def __init__(self, guild=None):
-		self.file = None
-		self.guildfile = None
-		self.guild = guild
-		self.cached = utils.Cached()
-		self.cachedguild = utils.Cached()
-	
-	def get(self, onlymain=False):
-		""" Generic get method for blacklists/whitelists - if configured as a guildlist, it returns the xlist with guild modifications. """
-		if self.cached.old:
-			result = []
-			try:
-				with open(self.file,'r',encoding='utf-8') as f:
-					result += f.read().splitlines()
-			except FileNotFoundError:
-				pass
-			self.cached.data = result
-		else:
-			result = self.cached.data
-		
-		if self.guild and onlymain == False:
-			if self.cachedguild.old:
-				try:
-					with open(self.guildfile,'r',encoding='utf-8') as f:
-						for line in f.read().splitlines():
-							if line[0] == '+': result.append(line[1:])
-							if line[0] == '-': 
-								try: result.remove(line[1:])
-								except ValueError: print("Failed to remove "+line+" from GuildBlacklist(id="+str(self.guild)+").")
-				except FileNotFoundError:
-					pass
-			else:
-				result = self.cachedguild.data
-		
-		return result
-	
-	def add(self, words):
-		""" Generic add method for blacklists/whitelists - if configured as a guildlist, it looks for contradictions in the guild list, removes them, and then adds the word locally. """
-		if isinstance(words, str):
-			words = [words]
-		
-		if not self.guild:
-			with open(self.file,'a',encoding='utf-8') as f:
-				for word in words:
-					f.writeline(word+'\n')
-			self.cached.refresh = True
-			return words
-		
-		else:
-			keep = []
-			try:
-				with open(self.guildfile,'r',encoding='utf-8') as f:
-					for line in f.read().splitlines():
-						if line not in ['-'+word for word in words]:
-							keep.append(line+'\n')
-			except FileNotFoundError:
-				pass
-			permanent = self.get(onlymain=True)
-			for word in words:
-				if word not in permanent:
-					keep.append('+'+word+'\n')
-			with open(self.guildfile,'w',encoding='utf-8') as f:
-				f.writelines(keep)
-			self.cachedguild.refresh = True
-			return words
-		
-		return []
-	
-	def remove(self, words):
-		""" Generic remove method for blacklists/whitelists - if configured as a guild, it looks for contradictions in the guild list, removes them, and then removes the word locally. """
-		if isinstance(words, str):
-			words = [words]
-		keep = []
-		
-		if not self.guild:
-			try:
-				with open(self.file,'r',encoding='utf-8') as f:
-					for line in f.read().splitlines():
-						for word in words:
-							if word != line:
-								keep.append(line+'\n')
-			except FileNotFoundError:
-				pass
-			else:
-				with open(self.file,'w',encoding='utf-8') as f:
-					f.writelines(keep)
-			self.cached.refresh = True
-			return words
-		
-		else:
-			try:
-				with open(self.guildfile,'r',encoding='utf-8') as f:
-					for line in f.read().splitlines():
-						if line not in ['+'+word for word in words]:
-							keep.append(line+'\n')
-			except FileNotFoundError:
-				pass
-			permanent = self.get(onlymain=True)
-			for word in words:
-				if word in permanent:
-					keep.append('-'+word)
-			with open(self.guildfile,'w',encoding='utf-8') as f:
-				f.writelines(keep)
-			self.cachedguild.refresh = True
-			return words
-		
-		return []
-
-class Whitelist(Xlist):
-	def __init__(self, guild=None):
-		super().__init__(guild)
-		self.file = globals.store + 'whitelist.txt'
-		if guild:
-			self.guildfile = f"{globals.store}whitelist.{guild}.txt"
-
-class Blacklist(Xlist):
-	def __init__(self, guild=None):
-		super().__init__(guild)
-		self.file = globals.store + 'blacklist.txt'
-		if guild:
-			self.guildfile = f"{globals.store}blacklist.{guild}.txt"
-		self.cacheduber = utils.Cached(threshold=600)
-	
-	def get(self, onlymain=False, onlyuber=False):
-		if not onlyuber: result = super().get(onlymain=onlymain)
-		else: result = []
-		if self.cacheduber.old:
-			try:
-				with open(globals.store + 'blacklist.uber.txt','r',encoding='utf-8') as f:
-					result += f.read().splitlines()
-			except FileNotFoundError:
-				pass
-		else:
-			result += self.cacheduber.data
-		return result
-	
-	def remove(self, words):
-		""" Remove method for blacklists - removes all matches in the blacklist, not just exact matches. """
-		if isinstance(words, str):
-			words = [words]
-		
-		print('blacklist remove')
-		
-		remove = []
-		for word in words:
-			remove.extend(globals.dangerous(word, guild=self.guild))
-		remove = list(set(remove))
-		if remove:
-			return super().remove(remove)
-		return []
-
 class Censor(commands.Cog):
 	"""Censor related commands."""
 	def __init__(self, bot):
 		self.bot = bot
-		self.blacklist = {i:Blacklist(i) for i in [0]+[g.id for g in self.bot.guilds]}
-		self.whitelist = {i:Whitelist(i) for i in [0]+[g.id for g in self.bot.guilds]}
-		globals.dangerous = self.dangerous
+		self.blacklist = {i:Censor.Blacklist(self, i) for i in [0]+[g.id for g in self.bot.guilds]}
+		self.whitelist = {i:Censor.Whitelist(self, i) for i in [0]+[g.id for g in self.bot.guilds]}
+	
+	def sass(self):
+		return random.choice(["keep that in an nsfw channel, filthy weeb.","merely has *standards*","degenerates.","I'm not just gonna let you post filth in a sfw channel.",
+													"you people disgust me","merely found a naughty word in this one.","saving the mods from a second of wasted time.","no thank you."])
+
+	class Xlist():
+		def __init__(self, parent, guild=None):
+			self.parent = parent
+			self.file = None
+			self.guildfile = None
+			self.guild = guild
+			self.cached = utils.Cached()
+			self.cachedguild = utils.Cached()
+		
+		def get(self, onlymain=False):
+			""" Generic get method for blacklists/whitelists - if configured as a guildlist, it returns the xlist with guild modifications. """
+			if self.cached.old:
+				result = []
+				try:
+					with open(self.file,'r',encoding='utf-8') as f:
+						result += f.read().splitlines()
+				except FileNotFoundError:
+					pass
+				self.cached.data = result
+			else:
+				result = self.cached.data
+			
+			if self.guild and onlymain == False:
+				if self.cachedguild.old:
+					try:
+						with open(self.guildfile,'r',encoding='utf-8') as f:
+							for line in f.read().splitlines():
+								if line[0] == '+': result.append(line[1:])
+								if line[0] == '-': 
+									try: result.remove(line[1:])
+									except ValueError: print("Failed to remove "+line+" from GuildBlacklist(id="+str(self.guild)+").")
+					except FileNotFoundError:
+						pass
+				else:
+					result = self.cachedguild.data
+			
+			return result
+		
+		def add(self, words):
+			""" Generic add method for blacklists/whitelists - if configured as a guildlist, it looks for contradictions in the guild list, removes them, and then adds the word locally. """
+			if isinstance(words, str):
+				words = [words]
+			
+			if not self.guild:
+				with open(self.file,'a',encoding='utf-8') as f:
+					for word in words:
+						f.writeline(word+'\n')
+				self.cached.refresh = True
+				return words
+			
+			else:
+				keep = []
+				try:
+					with open(self.guildfile,'r',encoding='utf-8') as f:
+						for line in f.read().splitlines():
+							if line not in ['-'+word for word in words]:
+								keep.append(line+'\n')
+				except FileNotFoundError:
+					pass
+				permanent = self.get(onlymain=True)
+				for word in words:
+					if word not in permanent:
+						keep.append('+'+word+'\n')
+				with open(self.guildfile,'w',encoding='utf-8') as f:
+					f.writelines(keep)
+				self.cachedguild.refresh = True
+				return words
+			
+			return []
+		
+		def remove(self, words):
+			""" Generic remove method for blacklists/whitelists - if configured as a guild, it looks for contradictions in the guild list, removes them, and then removes the word locally. """
+			if isinstance(words, str):
+				words = [words]
+			keep = []
+			
+			if not self.guild:
+				try:
+					with open(self.file,'r',encoding='utf-8') as f:
+						for line in f.read().splitlines():
+							for word in words:
+								if word != line:
+									keep.append(line+'\n')
+				except FileNotFoundError:
+					pass
+				else:
+					with open(self.file,'w',encoding='utf-8') as f:
+						f.writelines(keep)
+				self.cached.refresh = True
+				return words
+			
+			else:
+				try:
+					with open(self.guildfile,'r',encoding='utf-8') as f:
+						for line in f.read().splitlines():
+							if line not in ['+'+word for word in words]:
+								keep.append(line+'\n')
+				except FileNotFoundError:
+					pass
+				permanent = self.get(onlymain=True)
+				for word in words:
+					if word in permanent:
+						keep.append('-'+word)
+				with open(self.guildfile,'w',encoding='utf-8') as f:
+					f.writelines(keep)
+				self.cachedguild.refresh = True
+				return words
+			
+			return []
+
+	class Whitelist(Xlist):
+		def __init__(self, parent, guild=None):
+			super().__init__(parent, guild)
+			self.file = globals.store + 'whitelist.txt'
+			if guild:
+				self.guildfile = f"{globals.store}whitelist.{guild}.txt"
+
+	class Blacklist(Xlist):
+		def __init__(self, parent, guild=None):
+			super().__init__(parent, guild)
+			self.file = globals.store + 'blacklist.txt'
+			if guild:
+				self.guildfile = f"{globals.store}blacklist.{guild}.txt"
+			self.cacheduber = utils.Cached(threshold=600)
+		
+		def get(self, onlymain=False, onlyuber=False):
+			if not onlyuber: result = super().get(onlymain=onlymain)
+			else: result = []
+			if self.cacheduber.old:
+				try:
+					with open(globals.store + 'blacklist.uber.txt','r',encoding='utf-8') as f:
+						result += f.read().splitlines()
+				except FileNotFoundError:
+					pass
+			else:
+				result += self.cacheduber.data
+			return result
+		
+		def remove(self, words):
+			""" Remove method for blacklists - removes all matches in the blacklist, not just exact matches. """
+			if isinstance(words, str):
+				words = [words]
+			
+			print('blacklist remove')
+			
+			remove = []
+			for word in words:
+				remove.extend(self.parent.dangerous(word, guild=self.guild))
+			remove = list(set(remove))
+			if remove:
+				return super().remove(remove)
+			return []
 	
 	async def send_list(self, wordlist, intro, channel, seporator=' '):
 		introdone = False
@@ -242,8 +242,8 @@ class Censor(commands.Cog):
 		if black == None: return
 		
 		if ctx.guild.id not in self.blacklist or ctx.guild.id not in self.whitelist:
-			self.blacklist[ctx.guild.id] = Blacklist(ctx.guild.id)
-			self.whitelist[ctx.guild.id] = Whitelist(ctx.guild.id)
+			self.blacklist[ctx.guild.id] = Censor.Blacklist(self, ctx.guild.id)
+			self.whitelist[ctx.guild.id] = Censor.Whitelist(self, ctx.guild.id)
 		blacklist = self.blacklist[ctx.guild.id]
 		whitelist = self.whitelist[ctx.guild.id]
 		

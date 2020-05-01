@@ -205,11 +205,13 @@ class Admin(commands.Cog):
 				def check(m):
 					return m.content.lower()=='yes' and m.channel==ctx.message.channel and m.author==ctx.message.author
 				try:
-					await self.bot.wait_for('message', check=check, timeout=30)
+					msg = await self.bot.wait_for('message', check=check, timeout=30)
+					await msg.delete()
 				except asyncio.TimeoutError:
 					await ctx.message.channel.send('clear cancelled.')
 					return
 				await ctx.message.channel.send('clearing... merely may be unresponsive for a while...')
+				await asyncio.sleep(1)
 			
 			deleted = await ctx.message.channel.purge(limit=n, check=is_delete)
 			await emformat.genericmsg(ctx.message.channel,str(len(deleted))+' messages deleted from '+ctx.message.channel.name+'.','result','clean')
