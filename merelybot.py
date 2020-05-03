@@ -107,6 +107,7 @@ if globals.modules['reload']:
 	class Reload(commands.Cog):
 		def __init__(self, bot):
 			bot = bot
+		
 		@commands.command(pass_context=True,no_pm=False)
 		async def reload(self,ctx,*,modulename:str):
 			modulename = modulename.lower()

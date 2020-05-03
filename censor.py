@@ -55,7 +55,7 @@ class Censor(commands.Cog):
 								if line[0] == '+': result.append(line[1:])
 								if line[0] == '-': 
 									try: result.remove(line[1:])
-									except ValueError: print("Failed to remove "+line+" from GuildBlacklist(id="+str(self.guild)+").")
+									except ValueError: print("ERROR: Failed to remove "+line+" from Blacklist(id="+str(self.guild)+").")
 					except FileNotFoundError:
 						pass
 				else:

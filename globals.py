@@ -88,7 +88,9 @@ def reload():
 		'iconurl':iconurl,
 		'thonks':thonks,
 		'ver':ver,
-		'lastver':lastver
+		'lastver':lastver,
+		'authusers':','.join(authusers),
+		'superusers':','.join(superusers)
 	})
 	verbose=config.getboolean('settings','verbose',fallback=verbose)
 	beta=config.getboolean('settings','beta',fallback=beta)
@@ -124,10 +126,11 @@ def reload():
 	assuresection('memechannels',{'0':'','1':'','2':'','3':''})
 	for level in config['memechannels']:
 		for channel in config.get('memechannels',level,fallback='').split(','):
-			assuresection(channel, {'memetags': '', 'memecats': ''})
-			memechannels.append(MemeChannel(int(channel), int(level),
-													tags=config.get(channel, 'memetags', fallback='').split(','),
-													categories=config.get(channel, 'memecats', fallback='').split(',')))
+			if len(channel)>0:
+				assuresection(channel, {'memetags': '', 'memecats': ''})
+				memechannels.append(MemeChannel(int(channel), int(level),
+														tags=config.get(channel, 'memetags', fallback='').split(','),
+														categories=config.get(channel, 'memecats', fallback='').split(',')))
 	
 	assuresection('memesites',{'trusted':'','blocked':''})
 	memesites={trust:[url for url in config.get('memesites',trust,fallback='').split(',')] for trust in config['memesites']}
