@@ -4,7 +4,7 @@ import asyncio
 import discord
 from discord.ext import commands
 import mysql.connector
-import datetime
+import time, datetime
 import aiohttp
 import urllib.parse
 import re
@@ -30,6 +30,8 @@ class Meme(commands.Cog):
 		self.bot = bot
 		self.dbpassword = dbpassword
 		self.session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60))
+		self.memes = {}
+		self.searches = {}
 		self.usedmemes = []
 	def __delete__(self,instance):
 		self.session.close()
@@ -39,7 +41,7 @@ class Meme(commands.Cog):
 			self.dbpassword = dbpassword
 	
 	class DBMeme(DB):
-		def __init__(self, dbpassword, id=None, origin=None, true_origin=None, type=None, collectionparent=None, url=None, originalurl=None, color=0xF9CA24, date=datetime.datetime, hidden=False, edge=4.0, nsfw=False, categories=[], tags=[], description=None, in_db=False):
+		def __init__(self, dbpassword, id=None, origin=None, true_origin=None, type=None, collectionparent=None, url=None, originalurl=None, color=0xF9CA24, date=int(time.time()), hidden=False, edge=4.0, nsfw=False, categories={}, tags={}, descriptions=[], transcriptions=[], in_db=False):
 			super().__init__(dbpassword)
 			self.id = id
 			self.origin = origin
@@ -55,8 +57,11 @@ class Meme(commands.Cog):
 			self.nsfw = nsfw
 			self.categories = categories
 			self.tags = tags
-			self.description = description
+			self.descriptions = descriptions
+			self.transcriptions = transcriptions
 			self.in_db = in_db
+			
+			self.cache_age = int(time.time())
 		
 		async def post(self, channel, owner=None):
 			if self.type in ['audio', 'video', 'webm', 'url']:
@@ -64,20 +69,28 @@ class Meme(commands.Cog):
 			await emformat.make_embed(channel,
 																message = '',
 																title = "Meme" + (f" #{self.id} on MemeDB" if self.in_db else ''),
-																description = self.url if self.type == 'text' else self.description if self.description else f"This meme needs a description. *(m/meme #{self.id} description)*" if self.in_db else "Upvote this meme to add it to MemeDB!",
+																description = self.url if self.type == 'text' else self.descriptions[0].text if len(self.descriptions) else f"This meme needs a description. *(m/meme #{self.id} description)*" if self.in_db else "Upvote this meme to add it to MemeDB!",
 																color = self.color,
 																author = "Posted by "+owner.mention if owner else None,
 																image = self.url if self.type in ['image', 'gif'] else f"https://cdn.yiays.com/meme/{self.id}.thumb.jpg" if type in ['video', 'webm'] else '',
 																fields = {
-																	"categories": ', '.join([c.name for c in self.categories]) if len(self.categories) else "None yet, you should suggest one!",
-																	"tags": ', '.join([t.name for t in self.tags]) if len(self.tags) else "None yet, you should suggest some!"
+																	"categories": ', '.join([name for name in self.categories.keys()]) if len(self.categories) else "None yet, you should suggest one!",
+																	"tags": ', '.join([name for name in self.tags.keys()]) if len(self.tags) else "None yet, you should suggest some!"
 																} if self.in_db else {},
 																link = f"https://meme.yiays.com/meme/{self.id}" if self.in_db else '')
 		
-		def getmeme(self, id=None):
+		def getmeme(self, id=None, depth=2):
+			# depth is still to be implemented
+			# depth 0; just the meme
+			# depth 1; tags and cats
+			# depth 2; desc and trans
 			if id is None: id = self.id
 			else: self.id = id
 			if not id.isdigit(): raise ValueError("id must be a digit")
+			
+			if self.in_db:
+				if self.cache_age > int(time.time()) - 60*60*24: # < cache lasts 24 hours
+					return self
 			
 			query = \
 			f"""
@@ -100,7 +113,7 @@ class Meme(commands.Cog):
 				self.url		= row['Url']
 				self.originalurl = row['OriginalUrl']
 				self.color	= int('0x' + row['Color'][1:], 16)
-				self.date		= row['Date']
+				self.date		= row['Date'].timestamp()
 				self.hidden = row['Hidden']
 				self.edge		= row['Edge']
 				self.nsfw 	= row['Nsfw']
@@ -110,6 +123,50 @@ class Meme(commands.Cog):
 			
 			self.gettags()
 			self.getcats()
+			self.getdescriptions()
+			self.gettranscriptions()
+			
+			self.cache_age = int(time.time())
+			return self
+		
+		def getdescriptions(self):
+			query = \
+			f"""
+				SELECT description.*
+				FROM description
+				LEFT JOIN descvote ON description.Id = descvote.descId
+				WHERE memeId = {self.id}
+				GROUP BY description.Id
+				ORDER BY SUM(descvote.Value) DESC
+			"""
+			
+			mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=self.dbpassword,database='meme')
+			cursor = mydb.cursor(dictionary=True)
+			cursor.execute(query)
+			
+			self.descriptions = []
+			for row in cursor.fetchall():
+				self.descriptions.append(Meme.DBDescription(id=row['Id'], author=row['userId'], editid=row['editId'], text=row['Text']))
+			
+		def gettranscriptions(self):
+			query = \
+			f"""
+				SELECT transcription.*
+				FROM transcription
+				LEFT JOIN transvote ON transcription.Id = transvote.transId
+				WHERE memeId = {self.id}
+				GROUP BY transcription.Id
+				ORDER BY SUM(transvote.Value) DESC
+			"""
+			
+			mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=self.dbpassword,database='meme')
+			cursor = mydb.cursor(dictionary=True)
+			cursor.execute(query)
+			
+			self.transcriptions = []
+			for row in cursor.fetchall():
+				self.transcriptions.append(Meme.DBTranscription(id=row['Id'], author=row['userId'], editid=row['editId'], text=row['Text']))
+			
 		
 		def gettags(self):
 			query = \
@@ -126,10 +183,12 @@ class Meme(commands.Cog):
 			
 			for row in cursor.fetchall():
 				if row['Name'] not in self.tags:
-					self.tags.append(DBTag(id=row['Id'], name=row['Name'], voters={}))
+					self.tags[row['Name']] = Meme.DBTag(id=row['Id'], name=row['Name'], voters={})
 				self.tags[row['Name']].voters[row['userId']] = row['Value']
 			
 			mydb.close()
+			
+			return self.tags
 		
 		def getcats(self):
 			query = \
@@ -146,22 +205,26 @@ class Meme(commands.Cog):
 			
 			for row in cursor.fetchall():
 				if row['Name'] not in self.categories:
-					self.categories.append(DBCategory(id=row['Id'], name=row['Name'], voters={}))
+					self.categories[row['Name']] = Meme.DBCategory(id=row['Id'], name=row['Name'], voters={})
 				self.categories[row['Name']].voters[row['userId']] = row['Value']
 			
 			mydb.close()
+			
+			return self.categories
 		
 		def savememe(self):
 			
 			
 			self.savetags()
 			self.savecats()
+			
+			return True
 		
 		def savetags(self):
-			pass
+			return True
 		
 		def savecats(self):
-			pass
+			return True
 		
 	
 	class DBSearch(DB):
@@ -179,6 +242,26 @@ class Meme(commands.Cog):
 			self.id = id
 			self.name = name
 			self.voters = voters
+	
+	class DBDescription():
+		def __init__(self, id=None, author=None, editid=None, text=""):
+			self.id = id
+			self.author = author
+			self.editid = editid
+			self.text = text
+		
+		def __str__(self):
+			return self.text
+	
+	class DBTranscription():
+		def __init__(self, id=None, author=None, editid=None, text=""):
+			self.id = id
+			self.author = author
+			self.editid = editid
+			self.text = text
+		
+		def __str__(self):
+			return self.text
 		
 
 	async def BackgroundService(self,skip=0):
@@ -530,7 +613,10 @@ class Meme(commands.Cog):
 			return False
 
 	async def new_get_meme(self, channel, id):
-		meme = Meme.DBMeme(dbpassword=self.dbpassword, id=id)
+		if id not in self.memes.keys():
+			meme = Meme.DBMeme(dbpassword=self.dbpassword, id=id)
+		else:
+			meme = memes[id]
 		meme.getmeme()
 		await meme.post(channel)
 

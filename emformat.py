@@ -18,7 +18,7 @@ async def make_embed(channel, message, title, description='', color=0x0063B1, au
 	
 	if author is not None:
 		if author!='': em.set_author(name=author,icon_url=icon)
-		else if author=='': em.set_author(name='merely',icon_url=globals.iconurl)
+		elif author=='': em.set_author(name='merely',icon_url=globals.iconurl)
 	
 	if thumbnail!='': em.set_thumbnail(url=thumbnail)
 	
