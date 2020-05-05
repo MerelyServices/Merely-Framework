@@ -32,40 +32,63 @@ class Meme(commands.Cog):
 		self.session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60))
 		self.memes = {}
 		self.searches = {}
-		self.usedmemes = []
+		self.usedmemes = Meme.UsedMemes(self.memes)
 	def __delete__(self,instance):
 		self.session.close()
+	
+	class UsedMemes(list):
+		def __init__(self, memepool):
+			self.memepool = memepool
+		
+		def append(self, item):
+			super().append(item)
+			if len(self) > len(self.memepool)/2:
+				self.pop(0)
 	
 	class DB():
 		def __init__(self, dbpassword):
 			self.dbpassword = dbpassword
 	
 	class DBMeme(DB):
-		def __init__(self, dbpassword, id=None, origin=None, true_origin=None, type=None, collectionparent=None, url=None, originalurl=None, color=0xF9CA24, date=int(time.time()), hidden=False, edge=4.0, nsfw=False, categories={}, tags={}, descriptions=[], transcriptions=[], in_db=False):
+		def __init__(self, dbpassword, usedmemes, memepool, id=None):
 			super().__init__(dbpassword)
+			self.usedmemes = usedmemes
+			self.memepool = memepool
 			self.id = id
-			self.origin = origin
-			self.true_origin = true_origin,
-			self.type = type
-			self.collectionparent = collectionparent
-			self.url = url
-			self.originalurl = originalurl
-			self.color = color
-			self.date = date
-			self.hidden = hidden
-			self.edge = edge
-			self.nsfw = nsfw
-			self.categories = categories
-			self.tags = tags
-			self.descriptions = descriptions
-			self.transcriptions = transcriptions
-			self.in_db = in_db
+			self.origin = None
+			self.true_origin = None,
+			self.type = None
+			self.collectionparent = None
+			self.url = None
+			self.originalurl = None
+			self.color = 0xF9CA24
+			self.date = int(time.time())
+			self.hidden = False
+			self.edge = 4.0
+			self.nsfw = False
+			self.categories = {}
+			self.tags = {}
+			self.descriptions = []
+			self.transcriptions = []
+			self.in_db = False
+			self.status = 200
 			
 			self.cache_age = int(time.time())
 		
 		async def post(self, channel, owner=None):
+			if self.id in self.usedmemes:
+				return False
 			if self.type in ['audio', 'video', 'webm', 'url']:
 				await channel.send(self.url)
+			if self.status == 404:
+				await emformat.make_embed(channel, message='', title="Not found!", description="Unable to locate this meme, are you sure it exists?", author=None)
+				return False
+			if self.status == 403:
+				await emformat.make_embed(channel, message='', title="Permission denied!", description="To view this meme, login with an administrative account.", author=None, link=f"https://meme.yiays.com/meme/{self.id}" if self.in_db else '')
+				return False
+			if self.nsfw and not channel.is_nsfw():
+				await emformat.make_embed(channel, message='', title="This meme is potentially nsfw!", description="The channel must be marked as nsfw for this meme to be shown.", author=None, link=f"https://meme.yiays.com/meme/{self.id}" if self.in_db else '')
+				return False
 			await emformat.make_embed(channel,
 																message = '',
 																title = "Meme" + (f" #{self.id} on MemeDB" if self.in_db else ''),
@@ -78,26 +101,17 @@ class Meme(commands.Cog):
 																	"tags": ', '.join([name for name in self.tags.keys()]) if len(self.tags) else "None yet, you should suggest some!"
 																} if self.in_db else {},
 																link = f"https://meme.yiays.com/meme/{self.id}" if self.in_db else '')
+			
+			self.usedmemes.append(self.id)
+			
+			return True
 		
-		def getmeme(self, id=None, depth=2):
-			# depth is still to be implemented
-			# depth 0; just the meme
-			# depth 1; tags and cats
-			# depth 2; desc and trans
-			if id is None: id = self.id
-			else: self.id = id
-			if not id.isdigit(): raise ValueError("id must be a digit")
-			
-			if self.in_db:
-				if self.cache_age > int(time.time()) - 60*60*24: # < cache lasts 24 hours
-					return self
-			
+		def fetch(self, id, depth=2):
 			query = \
 			f"""
 				SELECT meme.*, IFNULL(AVG(edge.Rating),4) AS Edge
 				FROM meme LEFT JOIN edge ON meme.Id = edge.memeId
 				WHERE Id = {id}
-				HAVING IFNULL(AVG(edge.Rating),4)<=1.5
 				LIMIT 1
 			"""
 			
@@ -106,27 +120,78 @@ class Meme(commands.Cog):
 			cursor.execute(query)
 			row = cursor.fetchone()
 			
-			if row:
+			mydb.close()
+			
+			return row
+		
+		def getrandom(self, depth=2):
+			query = \
+			"""
+				SELECT r1.*, IFNULL(AVG(edge.Rating),4) AS Edge
+				FROM (meme AS r1 LEFT JOIN edge ON Id = edge.memeId)
+				JOIN (SELECT CEIL(RAND() * (SELECT MAX(Id) FROM meme)) AS maxId) AS r2
+				WHERE r1.Id >= r2.maxId
+				ORDER BY r1.Id ASC
+				LIMIT 1
+			"""
+			
+			mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=self.dbpassword,database='meme')
+			cursor = mydb.cursor(dictionary=True)
+			cursor.execute(query)
+			row = cursor.fetchone()
+			
+			mydb.close()
+			
+			return self.getmeme(depth=depth, row=row)
+		
+		def getmeme(self, id=None, depth=2, row='fetchplz'):
+			# depth is still to be implemented
+			# depth 0; just the meme
+			# depth 1; tags and cats
+			# depth 2; tags, cats, desc and trans
+			if id is None: id = self.id
+			else: self.id = id
+			
+			if self.in_db and self.cache_age > int(time.time()) - 60*60*24: # < cache lasts 24 hours
+				return self
+			
+			if row == 'fetchplz':
+				row = self.fetch(id, depth=depth)
+			
+			self.status = 404
+			if row is not None and row['Id'] is not None:
+				self.status = 200
+				
+				self.id			= row['Id']
 				self.origin	= row['DiscordOrigin']
 				self.type		= row['Type']
 				self.collectionparent = row['CollectionParent']
 				self.url		= row['Url']
 				self.originalurl = row['OriginalUrl']
-				self.color	= int('0x' + row['Color'][1:], 16)
+				if row['Color'] is not None: self.color	= int('0x' + row['Color'][1:], 16)
 				self.date		= row['Date'].timestamp()
 				self.hidden = row['Hidden']
 				self.edge		= row['Edge']
 				self.nsfw 	= row['Nsfw']
 				self.in_db	= True
+				
+				if self.hidden:
+					self.status = 403
+				
+				if self.edge >= 0.5:
+					# self.nsfw = True - potentially really annoying
+					if self.edge >= 1.5:
+						self.status = 403
+		
+				self.gettags()
+				self.getcats()
+				self.getdescriptions()
+				self.gettranscriptions()
+		
+				self.cache_age = int(time.time())
+		
+				self.memepool[self.id] = self
 			
-			mydb.close()
-			
-			self.gettags()
-			self.getcats()
-			self.getdescriptions()
-			self.gettranscriptions()
-			
-			self.cache_age = int(time.time())
 			return self
 		
 		def getdescriptions(self):
@@ -213,7 +278,7 @@ class Meme(commands.Cog):
 			return self.categories
 		
 		def savememe(self):
-			
+			# TODO
 			
 			self.savetags()
 			self.savecats()
@@ -228,8 +293,76 @@ class Meme(commands.Cog):
 		
 	
 	class DBSearch(DB):
-		def __init__(self):
+		def __init__(self, dbpassword, memepool, usedmemes, query, results=[]):
 			super().__init__(dbpassword)
+			self.memepool = memepool
+			self.usedmemes = usedmemes
+			self.query = query
+			self.results = results
+		
+		def fetch():
+			query = \
+			f"""
+				SELECT meme.*, IFNULL(AVG(edge.Rating),4) AS Edge
+				REPLACE(
+					REPLACE(
+						REPLACE(
+							LOWER(
+								CONCAT_WS('',
+									(SELECT GROUP_CONCAT(Text SEPARATOR '') FROM description WHERE memeId=meme.Id),
+									(SELECT GROUP_CONCAT(Name SEPARATOR '') FROM category JOIN categoryvote ON Id=categoryId WHERE memeId=meme.Id),
+									(SELECT GROUP_CONCAT(Name SEPARATOR '') FROM tag JOIN tagvote ON Id=tagId WHERE memeId=meme.Id),
+									(SELECT GROUP_CONCAT(Text SEPARATOR '') FROM transcription WHERE memeId=meme.Id),
+									Type,
+									(SELECT IF((SELECT COUNT(*) FROM meme child WHERE CollectionParent = meme.Id)>0,'collection',''))
+								)
+							)
+						,' ','')
+					,CHAR(10 using utf8),'')
+				,'<br/>','') AS SearchData
+				FROM (((((((meme
+						LEFT JOIN description ON meme.Id = description.memeId)
+						LEFT JOIN transcription ON meme.Id = transcription.memeId)
+						LEFT JOIN categoryvote ON categoryvote.memeId = meme.Id)
+						LEFT JOIN category ON categoryvote.categoryId = category.Id)
+						LEFT JOIN tagvote ON tagvote.tagId = meme.Id)
+						LEFT JOIN tag ON tagvote.tagId = tag.Id)
+						LEFT JOIN edge ON meme.Id = edge.memeId)
+				GROUP BY meme.Id
+				SearchData LIKE "%{mydb.converter.escape(search.lower().replace(' ',''))}%"
+				ORDER BY meme.Id DESC
+				LIMIT 20;
+			"""
+			
+			mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=self.dbpassword,database='meme')
+			cursor = mydb.cursor(dictionary=True)
+			cursor.execute(query)
+			
+			for row in cursor.fetchall():
+				if row['Id'] not in self.memepool:
+					self.memepool[row['Id']] = Meme.DBMeme(dbpassword=self.dbpassword, usedmemes=self.usedmemes, memepool=self.memes)
+				self.memepool[row['Id']].getmeme(id=row['Id'], row=row)
+				self.results.append(self.memepool[row['Id']])
+			
+			mydb.close()
+			
+			return self.results
+		
+		def pick():
+			for result in self.results:
+				if result.id not in self.usedmemes:
+					return result
+			return None
+		
+		async def post(channel, n=1):
+			for i in range(n):
+				success = False
+				result = self.pick()
+				if result:
+					result.post(channel)
+				else: return
+				await asyncio.sleep(1)
+		
 	
 	class DBTag():
 		def __init__(self, id=None, name="", voters={}):
@@ -263,7 +396,7 @@ class Meme(commands.Cog):
 		def __str__(self):
 			return self.text
 		
-
+	
 	async def BackgroundService(self,skip=0):
 		
 		for channel in [m.id for m in globals.memechannels][skip:]:
@@ -483,176 +616,54 @@ class Meme(commands.Cog):
 		else:
 			await ctx.channel.send('Background service ended.')
 	
-	async def get_meme(self, channel, id=None, search=None):
-		mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=self.dbpassword,database='meme')
-		
-		if id is None and search is None:
-			query = \
-			"""
-				SELECT Id,Url,Type
-				FROM (meme AS r1 LEFT JOIN edge ON Id = edge.memeId)
-				JOIN (SELECT CEIL(RAND() * (SELECT MAX(Id) FROM meme)) AS maxId) AS r2
-				WHERE r1.Id >= r2.maxId
-				HAVING IFNULL(AVG(edge.Rating),4)<=1.5
-				ORDER BY r1.Id ASC
-				LIMIT 1
-			"""
-		elif search is not None:
-			query = \
-			f"""
-				SELECT meme.Id,Url,Type,
-				(SELECT COALESCE(SUM(memevote.Value),0) FROM memevote WHERE memeId=meme.Id) AS Votes,
-				REPLACE(
-					REPLACE(
-						REPLACE(
-							LOWER(
-								CONCAT_WS('',
-									(SELECT GROUP_CONCAT(Text SEPARATOR '') FROM description WHERE memeId=meme.Id),
-									(SELECT GROUP_CONCAT(Name SEPARATOR '') FROM category JOIN categoryvote ON Id=categoryId WHERE memeId=meme.Id),
-									(SELECT GROUP_CONCAT(Name SEPARATOR '') FROM tag JOIN tagvote ON Id=tagId WHERE memeId=meme.Id),
-									(SELECT GROUP_CONCAT(Text SEPARATOR '') FROM transcription WHERE memeId=meme.Id),
-									Type,
-									(SELECT IF((SELECT COUNT(*) FROM meme child WHERE CollectionParent = meme.Id)>0,'collection',''))
-								)
-							)
-						,' ','')
-					,CHAR(10 using utf8),'')
-				,'<br/>','') AS SearchData
-				FROM (((((((meme
-						LEFT JOIN description ON meme.Id = description.memeId)
-						LEFT JOIN transcription ON meme.Id = transcription.memeId)
-						LEFT JOIN categoryvote ON categoryvote.memeId = meme.Id)
-						LEFT JOIN category ON categoryvote.categoryId = category.Id)
-						LEFT JOIN tagvote ON tagvote.tagId = meme.Id)
-						LEFT JOIN tag ON tagvote.tagId = tag.Id)
-						LEFT JOIN edge ON meme.Id = edge.memeId)
-				GROUP BY meme.Id
-				HAVING IFNULL(AVG(edge.Rating),4)<=1.5 AND SearchData LIKE "%{mydb.converter.escape(search.lower().replace(' ',''))}%"
-				ORDER BY meme.Id DESC
-				LIMIT 20;
-			"""
-		elif id.isdigit():
-			query = \
-			f"""
-				SELECT Id,Url,Type
-				FROM meme LEFT JOIN edge ON meme.Id = edge.memeId
-				WHERE Id = {id}
-				HAVING IFNULL(AVG(edge.Rating),4)<=1.5
-				LIMIT 1
-			"""
-		else:
-			print(f'get_meme(self, channel={channel}, id={id}, search={search}) is invalid.')
-		
-		cursor = mydb.cursor()
-		cursor.execute(query)
-		row = cursor.fetchone()
-		
-		if row:
-			# shuffle random memes, don't show used memes again
-			if id is None and search is None:
-				while row[0] in self.usedmemes:
-					row = cursor.fetchone()
-					if not row:
-						cursor.execute(query)
-						row = cursor.fetchone()
-						if not row:
-							break
-				self.usedmemes.append(row[0])
-				if len(self.usedmemes)>200:
-					self.usedmemes.pop(0)
-			
-			# don't show used search results again
-			elif search is not None:
-				for _ in range(20):
-					if row[0] in self.usedmemes:
-						row = cursor.fetchone()
-						if row[0] not in self.usedmemes:
-							self.usedmemes.append(row[0])
-							if len(self.usedmemes)>200:
-								self.usedmemes.pop(0)
-							break
-						if not row:
-							break
-					else:
-						self.usedmemes.append(row[0])
-						if len(self.usedmemes)>200:
-							self.usedmemes.pop(0)
-						break
-						
-			
-			# add id meme to used memes, but don't block it
-			elif id is not None:
-				self.usedmemes.append(row[0])
-				if len(self.usedmemes)>200:
-					self.usedmemes.pop(0)
-		
-		mydb.close()
-		
-		embed = discord.Embed(color=discord.Color(0xf9ca24))#,url="https://meme.yiays.com/meme/"+str(row[0]),title="open in MemeDB")
-		embed.set_footer(text='powered by MemeDB (meme.yiays.com)',icon_url='https://meme.yiays.com/img/icon.png')
-		
-		if row:
-			extra = "https://meme.yiays.com/meme/"+str(row[0])
-			if row[2] in ['image', 'gif']:
-				embed.set_image(url=row[1])
-			elif row[2] == 'text':
-				embed.description = row[1]
-			else:
-				extra=row[1]+' - view online at https://meme.yiays.com/meme/'+str(row[0])
-				embed=None
-			
-			if search is not None:
-				extra += '\nmore results at https://meme.yiays.com/search/?q='+urllib.parse.quote_plus(search, safe='')
-				
-			await channel.send("#"+str(row[0])+": "+extra, embed=embed)
-			return True
-		else:
-			embed.title = "no results found!"
-			embed.description = "either there's nothing here, or you've already seen everything."
-			await channel.send("", embed=embed)
-			return False
-
-	async def new_get_meme(self, channel, id):
+	async def get_meme(self, channel, id):
 		if id not in self.memes.keys():
-			meme = Meme.DBMeme(dbpassword=self.dbpassword, id=id)
+			meme = Meme.DBMeme(dbpassword=self.dbpassword, usedmemes=self.usedmemes, memepool=self.memes, id=id)
 		else:
 			meme = memes[id]
 		meme.getmeme()
 		await meme.post(channel)
+	
+	async def get_random(self, channel, n=1):
+		for _ in range(n):
+			meme = Meme.DBMeme(dbpassword=self.dbpassword, usedmemes=self.usedmemes, memepool=self.memes).getrandom()
+			self.memes[meme.id] = meme
+			success = False
+			while not success:
+				success = await meme.post(channel)
+			await asyncio.sleep(1)
+	
+	async def get_search(self, channel, query, n=1):
+		search = Meme.DBSearch(dbpassword=self.dbpassword, memepool=self.memes, usedmemes=self.usedmemes, query=query)
+		search.fetch()
+		await search.post(channel, n=n)
 
 	@commands.command(pass_context=True, no_pm=False, aliases=['memes','mem'])
 	async def meme(self, ctx, *, n='1'):
 		if n.isdigit():
 			if globals.verbose: print('meme n command')
-			n = min(int(n),10)
-			for _ in range(n):
-				if not await self.get_meme(ctx.channel):
-					break
-				await asyncio.sleep(1)
+			await self.get_random(ctx.channel, int(n))
 		
 		elif n[0] == '#' and n[1:].isdigit(): # meme by id
 			if globals.verbose: print('meme id command')
-			await self.new_get_meme(ctx.channel, id=n[1:])
+			await self.get_meme(ctx.channel, id=n[1:])
 		
-		elif n.startswith('delet'):
+		elif n == 'delet':
 			if globals.verbose: print('meme delet command')
-			await ctx.channel.send("deleting memes is no longer possible, you can however open the meme in MemeDB and downvote it.")
+			await ctx.channel.send("deleting memes is no longer possible, you can, however, downvote it.")
 		
-		elif n.startswith('add'):
+		elif n == 'add':
 			if globals.verbose: print('meme add command')
-			await ctx.channel.send("memes are no longer added by a command. they must appear on the official discord server ( https://discord.gg/f6TnEJM ) and be upvoted.")
+			await ctx.channel.send("memes are no longer added by a command. they must be added using a designated channel and upvoted.")
 		
 		else:
 			if globals.verbose: print('meme search command')
 			search = n
+			n = 1
 			searchargs = search.split(' ')
 			async with ctx.channel.typing():
 				if searchargs[-1].isdigit(): # meme search (query) n
 					search = ' '.join(searchargs[:-1])
 					n = min(int(searchargs[-1]), 10)
-					for _ in range(n):
-						if not await self.get_meme(ctx.channel, search=search):
-							break
-					return
-				await self.get_meme(ctx.channel, search=search)
+				await self.get_search(ctx.channel, search, int(n))
 
