@@ -32,7 +32,7 @@ class Admin(commands.Cog):
 			await ctx.message.channel.send('the welcome message is currently;\n'+globals.config.get(str(ctx.message.guild.id),'welcome_message').format('@USER',ctx.message.guild.name))
 		else:
 			await ctx.message.channel.send("you currently don't have a welcome message on this server.\n"+\
-			"create one by going to the desired channel and typing `merely welcome Welcome, {}, to {}!`, where the first `{}` will become the name of the new user and the second `{}` will be the server name.")
+			"create one by going to the desired channel and typing `"+(globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short)+"welcome Welcome, {}, to {}!`, where the first `{}` will become the name of the new user and the second `{}` will be the server name.")
 	@welcome.command(pass_context=True,name='set')
 	async def welcomeset(self,ctx,*,message=''):
 		if ctx.message.author.id not in globals.authusers and ctx.message.author.id != ctx.message.guild.owner.id:
@@ -42,7 +42,7 @@ class Admin(commands.Cog):
 			await ctx.message.channel.send("you need to set the welcome message in the channel that it will appear in!")
 			return
 		if message=='':
-			await ctx.message.channel.send('in the channel where you want the alerts: `merely welcome set Welcome, {}, to {}!`, where the first `{}` will become the name of the new user and the optional second `{}` will be the server name.\nto remove the welcome message, use `merely welcome clear`.')
+			await ctx.message.channel.send('in the channel where you want the alerts: `'+(globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short)+'welcome set Welcome, {}, to {}!`, where the first `{}` will become the name of the new user and the optional second `{}` will be the server name.\nto remove the welcome message, use `'+(globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short)+'welcome clear`.')
 			return
 		else:
 			if str(ctx.message.guild.id) not in globals.config:
@@ -78,7 +78,7 @@ class Admin(commands.Cog):
 			await ctx.message.channel.send('the farewell message is currently;\n'+globals.config.get(str(ctx.message.guild.id),'farewell_message').format('USER#1234'))
 		else:
 			await ctx.message.channel.send("you currently don't have a farewell message on this server.\n"+\
-			"create one by going to the desired channel and typing `merely farewell {} has left the server!`, where `{}` will become the name of the departed user.")
+			"create one by going to the desired channel and typing `"+(globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short)+"farewell {} has left the server!`, where `{}` will become the name of the departed user.")
 	@farewell.command(pass_context=True,name='set')
 	async def farewellset(self,ctx,*,message=''):
 		if ctx.message.author.id not in globals.authusers and ctx.message.author.id != ctx.message.guild.owner.id:
@@ -88,7 +88,7 @@ class Admin(commands.Cog):
 			await ctx.message.channel.send("sorry, you need to set the farewell message in the channel that it will appear in!")
 			return
 		if message=='':
-			await ctx.message.channel.send('in the channel where you want the alerts: `merely farewell set {} has left the server!`, where `{}` will become the name of the departed user. to remove the farewell message, use `merely farewell clear`.')
+			await ctx.message.channel.send('in the channel where you want the alerts: `'+(globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short)+'farewell set {} has left the server!`, where `{}` will become the name of the departed user. to remove the farewell message, use `'+(globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short)+'farewell clear`.')
 			return
 		else:
 			if str(ctx.message.guild.id) not in globals.config:
@@ -143,7 +143,7 @@ class Admin(commands.Cog):
 		if str(ctx.message.channel.id) in globals.config.get('janitor','strict').split(' ') or str(ctx.message.channel.id) in globals.config.get('janitor','relaxed').split(' '):
 			await ctx.message.channel.send("this channel has already opted into the janitor service!")
 		elif mode not in ['strict','relaxed']:
-			await ctx.message.channel.send('you must specify whether you want a strict janitor or a relaxed janitor.\n*strict*; all messages from everyone are deleted after 30 seconds.\n*relaxed*; messages to and from merely are deleted after 30 seconds.')
+			await ctx.message.channel.send(f"you must specify whether you want a strict janitor or a relaxed janitor.\n*strict*; all messages from everyone are deleted after 30 seconds.\n*relaxed*; messages to and from {globals.name} are deleted after 30 seconds.")
 		else:
 			globals.config.set('janitor',mode,globals.config.get('janitor',mode)+' '+str(ctx.message.channel.id))
 			globals.save()
@@ -174,7 +174,7 @@ class Admin(commands.Cog):
 		if globals.verbose: print('die command')
 		if ctx.message.author.id in globals.authusers:
 			#await emformat.genericmsg(ctx.message.channel,"shutting down...","bye","die")
-			await emformat.make_embed(ctx.message.channel, "", "merely die", "shutting down...", image="https://media.discordapp.net/attachments/302695523360440322/685087322844299284/tenor.gif", footer="merely v"+globals.ver+" - created by Yiays#5930", icon=globals.iconurl, link=globals.apiurl+"#/die")
+			await emformat.make_embed(ctx.message.channel, "", f"{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}die", "shutting down...", image="https://media.discordapp.net/attachments/302695523360440322/685087322844299284/tenor.gif", footer=f"{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short} v"+globals.ver+" - created by Yiays#5930", icon=globals.iconurl, link=globals.apiurl+"#/die")
 			with open(globals.store+'alive.txt','w') as f:
 				f.write(str(ctx.message.channel.id))
 			if globals.modules['webserver']:
@@ -201,7 +201,7 @@ class Admin(commands.Cog):
 			except:
 				n=50
 			if n>100:
-				await ctx.message.channel.send('clearing more than 100 messages at once may take several minutes as merely will be rate-limited. continue? (reply with a clear `yes` within 30 seconds)')
+				await ctx.message.channel.send(f"clearing more than 100 messages at once may take several minutes as {globals.name} will be rate-limited. continue? (reply with a clear `yes` within 30 seconds)")
 				def check(m):
 					return m.content.lower()=='yes' and m.channel==ctx.message.channel and m.author==ctx.message.author
 				try:
@@ -210,7 +210,7 @@ class Admin(commands.Cog):
 				except asyncio.TimeoutError:
 					await ctx.message.channel.send('clear cancelled.')
 					return
-				await ctx.message.channel.send('clearing... merely may be unresponsive for a while...')
+				await ctx.message.channel.send(f"clearing... {globals.name} may be unresponsive for a while...")
 				await asyncio.sleep(1)
 			
 			deleted = await ctx.message.channel.purge(limit=n, check=is_delete)
@@ -344,10 +344,10 @@ class Admin(commands.Cog):
 			print('changelog command')
 			try:
 				await ctx.message.channel.send("You can view the full changelog online! ( "+globals.apiurl+"changes.html )")
-				await emformat.genericmsg(ctx.message.channel,"*here's a list of recent changes to merely...*\n\n"+''.join(globals.changes[-10:])+f"\n\nremeber to leave feedback with `{globals.prefix_short}feedback` if you want changes made!",'done','changelog')
+				await emformat.genericmsg(ctx.message.channel,f"*here's a list of recent changes to {globals.name}...*\n\n{''.join(globals.changes[-10:])}\n\nremeber to leave feedback with `{globals.prefix_short}feedback` if you want changes made!",'done','changelog')
 			except:
 				if len(''.join(globals.changes))>=1800:
-					await emformat.genericmsg(ctx.message.channel,"the changelog is too long for discord! either [view the changelog online]("+globals.apiurl+"changes.html) or check back later when it's been shortened.",'error','changelog')
+					await emformat.genericmsg(ctx.message.channel,f"the changelog is too long for discord! either [view the changelog online]({globals.apiurl}changes.html) or check back later when it's been shortened.",'error','changelog')
 					if globals.feedbackchannel: await self.bot.get_channel(globals.feedbackchannel).send("<@!140297042709708800>, the changelog is too long! ("+str(len('\n'.join(globals.changes)))+")")
 	@changelog.command(pass_context=True, name='add')
 	async def changelogadd(self,ctx,*,text=None):
@@ -365,16 +365,16 @@ class Admin(commands.Cog):
 	async def ownerintrotest(self, ctx):
 		await self.send_ownerintro(ctx.guild)
 	async def send_ownerintro(self, server):
-		em=discord.Embed(title="introducing merely",type='rich',
-		description="hello! i was just added to your server! type `merely help` for a list of general commands, but as the owner of *"+server.name+"*, you have more commands available to you;",
+		em=discord.Embed(title="introducing "+globals.name,type='rich',
+		description="hello! i was just added to your server! type `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short} help` for a list of general commands, but as the owner of *"+server.name+"*, you have more commands available to you;",
 		color=discord.Colour(0x2C5ECA),url=globals.apiurl+'#/serverowner')
 		em.add_field(name='Automated Messages', inline=False, value=f"*{globals.prefix_short}welcome* - shows a custom welcome message to new members\n*{globals.prefix_short}farewell* - shows a custom announcement whenever a member leaves")
 		em.add_field(name='Cleaning', inline=False, value=f"*{globals.prefix_short}janitor* - auto-deletes either bot spam or all messages in a channel after 30 seconds\n*{globals.prefix_short}clean* - cleans a channel of bot spam or all messages for as long as you specify\n*{globals.prefix_short}purge* - erases a section of messages within a channel")
-		em.add_field(name='Moderation', inline=False, value=f"*{globals.prefix_short}blacklist* and *{globals.prefix_short}whitelist* - control which words can be used in merely commands (like echo, image or google search) when in a SFW channel\n*{globals.prefix_short}lockout* - ban users from using merely if they're abusing it.")
-		em.add_field(name='Support', inline=False, value=f"*{globals.prefix_short}changes* - lists all the recent changes to merely, if you're curious\n*{globals.prefix_short}feedback* - provide feedback directly to the developers if there's a feature or issue you'd like to discuss.")
-		em.add_field(name='Need help using these commands?', inline=False, value="here's some useful documentation; "+globals.apiurl+"#/serverowner")
+		em.add_field(name='Moderation', inline=False, value=f"*{globals.prefix_short}blacklist* and *{globals.prefix_short}whitelist* - control which words can be used in {globals.name} commands (like echo, image or google search) when in a SFW channel\n*{globals.prefix_short}lockout* - ban users from using {globals.name} if they're abusing it.")
+		em.add_field(name='Support', inline=False, value=f"*{globals.prefix_short}changes* - lists all the recent changes to {globals.name}, if you're curious\n*{globals.prefix_short}feedback* - provide feedback directly to the developers if there's a feature or issue you'd like to discuss.")
+		em.add_field(name='Need help using these commands?', inline=False, value=f"here's some useful documentation; {globals.apiurl}#/serverowner")
 		em.set_thumbnail(url=globals.emurl+"greet.gif")
-		em.set_footer(text="merely v"+globals.ver+" - created by Yiays#5930", icon_url=globals.iconurl)
+		em.set_footer(text=f"{globals.name} v{globals.ver} - created by Yiays#5930", icon_url=globals.iconurl)
 		await server.owner.send(embed=em)
 	
 	@commands.command(pass_context=True, no_pm=False)
@@ -390,9 +390,9 @@ class Admin(commands.Cog):
 					for s in self.bot.guilds:
 						if s.owner.id not in sent and s.owner.id not in globals.owneroptout:
 							try:
-								await emformat.genericmsg(s.owner,"*hey there, server owner, merely's just been updated so here's a list of recent changes...*\n\n"+msg,'done','changelog')
+								await emformat.genericmsg(s.owner,f"*hey there, server owner, {globals.name}'s just been updated so here's a list of recent changes...*\n\n{msg}",'done','changelog')
 								await s.owner.send("for more information, please visit "+globals.apiurl+"#/serverowner .\n\n"+\
-									f"*note: remember to use `merely feedback` to provide feedback.*\n\nif you don't want to recieve these messages, please type `{globals.prefix_short}owneroptout`.")
+									f"*note: remember to use `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}feedback` to provide feedback.*\n\nif you don't want to recieve these messages, please type `{globals.prefix_short}owneroptout`.")
 								sent.append(s.owner.id)
 							except:
 								failed+=1

@@ -42,7 +42,7 @@ class Search(commands.Cog):
 								print("Detecting another redirect! "+url)
 								attempts += 1
 							else:
-								raise Exception("ImageSearch: Couldn't find any images. On adition to that, merely also couldn't a path towards more images.")
+								raise Exception(f"ImageSearch: Couldn't find any images. On adition to that, {globals.name} also couldn't a path towards more images.")
 					else:
 						raise Exception("ImageSearch: GET {} failed: Error code {}".format(url,r.status))
 			raise Exception("ImageSearch: It appears that google has completely blocked this bot.")
@@ -99,7 +99,7 @@ class Search(commands.Cog):
 			await emformat.make_embed(ctx.message.channel,"here's some more results...",
 				query,"showing the top 5 results.",color=0x4385F6,author='google.com',thumbnail=globals.emurl+'result.gif',
 				fields=results,
-				footer="merely v"+globals.ver+" - created by Yiays#5930",
+				footer=globals.name+" v"+globals.ver+" - created by Yiays#5930",
 				icon=globals.iconurl,
 				link="http://www.google.com/search?q="+urllib.parse.quote(query,safe='').replace('%20','+'))
 			self.results[ctx.message.guild.id]=None
@@ -120,10 +120,10 @@ class Search(commands.Cog):
 				print("complete!")
 				if self.results[ctx.message.guild.id]['title']:
 					await emformat.make_embed(ctx.message.channel,"here's what I found...",
-						query,"showing the top result.\ntype `merely google more` for more results.",
+						query,f"showing the top result.\ntype `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}google more` for more results.",
 						color=0x4385F6,author='google.com',thumbnail=globals.emurl+'result.gif',
 						fields={self.results[ctx.message.guild.id]['title'][0]:self.results[ctx.message.guild.id]['description'][0]+' - [read more](https://www.google.com'+self.results[ctx.message.guild.id]['url'][0]+')'},
-						footer="merely v"+globals.ver+" - created by Yiays#5930",
+						footer=globals.name" v"+globals.ver+" - created by Yiays#5930",
 						icon=globals.iconurl,
 						link="http://www.google.com/search?q="+urllib.parse.quote(query,safe='').replace('%20','+'))
 				else:
@@ -189,7 +189,7 @@ class Search(commands.Cog):
 					await channel.send(embed=em)
 					if count>1: del imglist[1]
 					
-				if count==1 and random.choice(range(3))==1: await channel.send("you can get more results by typing `merely image more`")
+				if count==1 and random.choice(range(3))==1: await channel.send(f"you can get more results by typing `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}image more`")
 			else:
 				await channel.send('unable to show images without `EMBED_LINKS` permission!')
 		else:

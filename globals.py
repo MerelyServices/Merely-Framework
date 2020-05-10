@@ -94,8 +94,8 @@ def reload():
 		'thonks':thonks,
 		'ver':ver,
 		'lastver':lastver,
-		'authusers':','.join(authusers),
-		'superusers':','.join(superusers)
+		'authusers':','.join([str(u) for u in authusers]),
+		'superusers':','.join([str(u) for u in superusers])
 	})
 	prefix_short=config.get('settings','prefix_short',fallback=prefix_short).replace(' ','')
 	prefix_long=config.get('settings','prefix_long',fallback=prefix_long).replace(' ','')

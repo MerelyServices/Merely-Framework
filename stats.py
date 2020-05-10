@@ -23,7 +23,7 @@ class Stats(commands.Cog):
 		self.memes="unavailable"
 		self.cpu_usage='0%'
 		self.ram_usage='0MB/0MB (0%)'
-		self.hardware='merely is running on a custom windows server.'
+		self.hardware=globals.name+' is running on a custom windows server.'
 		self.gentime='please wait...'
 		self.lastuptime=0
 		
@@ -37,7 +37,7 @@ class Stats(commands.Cog):
 	async def stats(self,ctx):
 		if globals.verbose:print('stats command')
 		await emformat.make_embed(ctx.message.channel,'for constantly updating stats, go to '+globals.apiurl+'stats.html',
-		'merely stats','',color=0x2C5ECA,thumbnail=globals.emurl+'greet.gif',
+		globals.name+' stats','',color=0x2C5ECA,thumbnail=globals.emurl+'greet.gif',
 		fields={
 			'exposure': self.exposure,
 			'responses': self.responses,
@@ -51,7 +51,7 @@ class Stats(commands.Cog):
 			'hardware': self.hardware,
 			'generated time': self.gentime
 		},
-		icon=globals.iconurl,footer="merely v"+globals.ver+" - created by Yiays#5930",link=globals.apiurl)
+		icon=globals.iconurl,footer=globals.name+" v"+globals.ver+" - created by Yiays#5930",link=globals.apiurl)
 
 	def inituptime(self):
 		with open(globals.store+'uptime.txt','r') as f:

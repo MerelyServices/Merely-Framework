@@ -15,7 +15,7 @@ helpdict={
 dhelp={
 	'welcome':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}welcome [get|clear|set (welcome message)]***\n**SERVER OWNERS ONLY** - get the welcome message for the server or set it, use `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}welcome set` for instructions on how to set a welcome message.",
 	'farewell':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}farewell [get|clear|set (farewell message)]***\n**SERVER OWNERS ONLY** - get the farewell message for the server or set it, use `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}farewell set` for instructions on how to set a farewell message.",
-	'janitor':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}janitor [leave|join (strict|relaxed)]***\n**SERVER OWNERS ONLY** - opt into or opt out of the janitor service, the janitor deletes all messages after 30 seconds. in relaxed mode, janitor only deletes messages to and from merely.",
+	'janitor':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}janitor [leave|join (strict|relaxed)]***\n**SERVER OWNERS ONLY** - opt into or opt out of the janitor service, the janitor deletes all messages after 30 seconds. in relaxed mode, janitor only deletes messages to and from {globals.name}.",
 	'feedback':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}feedback (feedback)***\nthis forwards the feedback to the developer so that they can further improve the bot.",
 	'help':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}help [(command)]***\nhelp offers a list of commands, if you follow {globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}help with a bot and a command, it'll describe the command in detail.",
 	'info':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}info***\nfind out exactly what {globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}can do and get relevant links.",
@@ -37,10 +37,10 @@ dhelp={
 	'lockout':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}lockout (user#discriminator) [time in minutes]***\n**SERVER OWNERS ONLY** - prevents any user from interacting with the bot if it appears they are trying to abuse it.",
 	'servers':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}servers***\nlists all the servers {globals.name} is in with an interactive page list system. also shows how many members each server has.",
 	'logcat':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}logcat (lines)***\noutputs the last 10 lines, by default, in the log, for the sake of debugging.",
-	'reload':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}reload (module)***\n**MERELY SUPERUSERS ONLY** - this command reloads changes made to merely's code without restarting the bot.",
+	'reload':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}reload (module)***\n**{globals.name.upper()} SUPERUSERS ONLY** - this command reloads changes made to {globals.name}'s code without restarting the bot.",
 	'changelog':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}changelog***\nlists all the recent changes made to {globals.name} over the previous few updates.",
 	'shorten':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}shorten (long link) [short name]***\ntakes the provided long link and shortens it using https://l.yiays.com. If the requested short link is *0*, the short link will be randomized.",
-	'die':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}die***\n**MERELY SUPERUSERS ONLY** - shuts down {globals.name} safely."
+	'die':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}die***\n**{globals.name.upper()} SUPERUSERS ONLY** - shuts down {globals.name} safely."
 }
 globals.dhelp=dhelp
 
@@ -55,15 +55,15 @@ class Help(commands.Cog):
 		if globals.verbose: print('help command')
 		if search == None:
 			await emformat.make_embed(ctx.message.channel,'go to '+globals.apiurl+' to learn more!',
-				"merely help",":grey_question: for specific help, use `merely help [command]`\n:mag_right: to search for commands, use `merely command [search]`"+\
-				"\n:bulb: for hints, use `merely hint`\n:point_up_2: click *'merely help'* above to go to the official website with even more information!\n",
+				globals.name+" help",f":grey_question: for specific help, use `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}help [command]`\n:mag_right: to search for commands, use `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}command [search]`"+\
+				f"\n:bulb: for hints, use `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}hint`\n:point_up_2: click *'{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}help'* above to go to the official website with even more information!\n",
 				color=0x2C5ECA,thumbnail=globals.emurl+"help.gif",fields=helpdict,
-				footer="merely v"+globals.ver+" - created by Yiays#5930",
+				footer=globals.name+" v"+globals.ver+" - created by Yiays#5930",
 				icon=globals.iconurl,
 				link=globals.apiurl+'#/help'
 			)
 			#if random.random() < 1/3:
-				#await ctx.message.channel.send('consider upvoting merely on the discord bot list; https://discordbots.org/bot/309270899909984267')
+				#await ctx.message.channel.send("consider upvoting {globals.name} on the discord bot list; https://discordbots.org/bot/309270899909984267")
 		else: #detailed help
 			if search in dhelp: await emformat.genericmsg(ctx.message.channel,dhelp[search],"help","help")
 			else: await emformat.genericmsg(ctx.message.channel,"either the command, `"+search+"`, doesn't exist, or it doesn't have any documentation yet.","error","help")
@@ -89,38 +89,38 @@ class Help(commands.Cog):
 		if globals.verbose: print('hint command')
 		await emformat.make_embed(ctx.message.channel,'',title="Did you know...",
 				description=random.choice(
-				[f"`merely help` followed by a command name explains the command in more detail. eg. `{globals.prefix_short}help meme`",
-				 "click the title of any command's message to be taken to the online docs, which includes interactive tutorials for each command!",
-				 "`merely clean [n]` scans the last [n] messages for messages to and from merely and deletes matches. only mods can use this.",
-				 "`merely clean [n] strict` deletes all of the last [n] messages. only admins can use this.",
-				 "search for commands with `merely command <search>` - it'll try its best to match you with the command you're looking for!",
-				 f"tired of typing `{globals.prefix_long}`? `{globals.prefix_short}` also works as a prefix, as does `@{globals.name}`. use whichever is easiest.",
-				 "`merely info` shows off the features of merely and gives you a few relevant links.",
-				 "`merely stats` shows technical information about what the bot runs on and how much work it's doing.",
-				 "set the playing status of merely with `merely (playing|watching|streaming|listening) (status)`",
+				[f"`{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}help` followed by a command name explains the command in more detail. eg. `{globals.prefix_short}help meme`",
+				 f"click the title of any command's message to be taken to the online docs, which includes interactive tutorials for each command!",
+				 f"`{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}clean [n]` scans the last [n] messages for messages to and from {globals.name} and deletes matches. only mods can use this.",
+				 f"`{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}clean [n] strict` deletes all of the last [n] messages. only admins can use this.",
+				 f"search for commands with `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}command <search>` - it'll try its best to match you with the command you're looking for!",
+				 f"there's multiple ways to send a command to {globals.name}. "(f"you can do it the long way with `{globals.prefix_long}` or the short way with " if globals.prefix_long else "you can do it the short way with ")+ f"`{globals.prefix_short}` and you can always mention {globals.name} instead. do whichever is most comfortable on your device.",
+				 f"`{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}info` shows off the features of {globals.name} and gives you a few relevant links.",
+				 f"`{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}stats` shows technical information about what the bot runs on and how much work it's doing.",
+				 f"set the playing status of {globals.name} with `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}(playing|watching|streaming|listening) (status)`",
 				 f"`{globals.prefix_short}blacklist`, `{globals.prefix_short}whitelist` and `{globals.prefix_short}meme` have a public list and a private list, changes made on your server affect only your server.",
 				 f"`{globals.prefix_short}thonk` is the best command. it makes use of Discord Nitro to bring you 50+ thinking emoji.",
 				 f"`{globals.prefix_short}vote` is one of the most advanced commands made yet! it supports live updating polls, countdown timers and helps decide a winner."#,
-				 #"like merely? consider upvoting merely on the discord bot list; https://discordbots.org/bot/309270899909984267"
+				 #f"like {globals.name}? consider upvoting {globals.name} on the discord bot list; https://discordbots.org/bot/309270899909984267"
 				]),
 				color=0xf4e242,
-				author='Handy Hints with merely',
+				author='handy hints with '+globals.name,
 				icon=globals.iconurl,
-				footer="merely v"+globals.ver+" - created by Yiays#5930"
+				footer=globals.name+" v"+globals.ver+" - created by Yiays#5930"
 			)
 	
 	@commands.command(pass_context=True, no_pm=False, aliases=['about'])
 	async def info(self,ctx):
 		if globals.verbose:print('info command')
 		
-		await emformat.make_embed(ctx.message.channel,'go to '+globals.apiurl+' to learn more!','merely info','',color=0x2C5ECA,thumbnail=globals.emurl+'greet.gif',
+		await emformat.make_embed(ctx.message.channel,'go to '+globals.apiurl+' to learn more!',globals.name+' info','',color=0x2C5ECA,thumbnail=globals.emurl+'greet.gif',
 		fields={
 		'🆕 fantastic features!':f"{globals.name} can do lots of stuff, it currently has **{len(dhelp)}** commands available to **{len(self.bot.guilds)}** servers.\ntype `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}help` for a full list of commands or type `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}changelog` to see all the recent additions and fixes!",
 		'😊🤖 mobile and human friendly!':f"{globals.name} is activated by 3 prefixes; `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}<command>`, `{globals.prefix_short}<command>` and `@{globals.name} <command>` pick whichever is easiest for you to type on your device.",
 		'📚 detailed documentation!':f"if you're unsure what a command does; `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}help <command>`. if you can't find a command; `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}commands <search>`. if you want to learn something new; `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}hint`. if you still need help, you can click the title of the embed for online documentation!",
-		'⬆️ frequent updates!':f"{globals.name} is updated with more features automatically, without interruption, thanks to a modular design, {globals.name} can stay online 24/7 even when being updated!\n{globals.name} has been online constantly for {utils.time_fold(time.time()-self.bot.cogs['Stats'].starttime)}",
-		#'👥 sharding! <:soon:233642257817927680>':f"merely will provide optimal service to all users in the future by being hosted on multiple servers around the world! the fastest and slowest bots will dynamically connect to your server based on demand!",
-		'➕ add now!':f"[click here](https://discordapp.com/oauth2/authorize?client_id={self.bot.id}&scope=bot&permissions=104131650) to add {globals.name} to your server with minimal permissions. *note that {globals.name} may need to ask for more permissions later on.*"#,
+		'⬆️ frequent updates!':f"{globals.name} is updated with more features automatically, without interruption, thanks to a modular design" + (f", {globals.name} has been online constantly for {utils.time_fold(time.time()-self.bot.cogs['Stats'].starttime)}" if globals.modules['stats'] else '.'),
+		#'👥 sharding! <:soon:233642257817927680>':f"{globals.name} will provide optimal service to all users in the future by being hosted on multiple servers around the world! the fastest and slowest bots will dynamically connect to your server based on demand!",
+		'➕ add now!':f"[click here](https://discordapp.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot&permissions=104131650) to add {globals.name} to your server with minimal permissions. *note that {globals.name} may need to ask for more permissions later on.*"#,
 		#'💡 keep the lights on':f"consider voting for this bot at [discordbots.org](https://discordbots.org/bot/309270899909984267) if you enjoy its services! the developers would really appreciate it!"
 		},
 		link=globals.apiurl,
@@ -142,10 +142,10 @@ class Help(commands.Cog):
 				await ctx.message.author.send("thanks for your feedback.\nthe owner of this bot hasn't provided contact details, however they may send a friend request if they require further information.")
 			else:
 				await ctx.message.author.send("thanks for your feedback.\nyou may receive a friend request from "+owner.username+'#'+owner.discriminator+" if further information is needed.\n"+\
-																			"alternatively, join merely's main discord server, and we can talk directly there; https://discord.gg/"+globals.invite)
+																			f"alternatively, join {globals.name}'s main discord server, and we can talk directly there; https://discord.gg/"+globals.invite)
 			await ctx.message.channel.send("feedback sent!")
 		else:
-			await ctx.message.channel.send("unfortunately, the administrator of merely currently doesn't have a channel in place for receiving feedback. the developers should find your feedback in the logs.")
+			await ctx.message.channel.send(f"unfortunately, the administrator of {globals.name} currently doesn't have a channel in place for receiving feedback. the developers should find your feedback in the logs.")
 	@feedback.error
 	async def feedback_error(self,ctx,error):
 		print(error)

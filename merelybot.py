@@ -178,23 +178,15 @@ async def on_ready():
 		if globals.modules['webserver']: asyncio.ensure_future(bot.cogs['Webserver'].start())
 		globals.connected=True
 	
-	with open(globals.store+"playing.txt","r") as file:
-		playing=file.read().split()
-	if len(playing)>1:
-		print('changing status to '+' '.join(playing)+'...')
-		mode=playing[0]
-		status=' '.join(playing[1:])
-		type={
-			'playing':discord.ActivityType.playing,
-			'streaming':discord.ActivityType.streaming,
-			'watching':discord.ActivityType.watching,
-			'listening':discord.ActivityType.listening
-		}.get(mode,discord.ActivityType.unknown)
-		
-		await bot.change_presence(activity=discord.Activity(name=status,type=type))
-	else:
-		print('no playing status found')
-		await bot.change_presence(activity=discord.Game(name=f"{globals.prefix_short}help"))
+	if globals.modules['fun']:
+		with open(globals.store+"playing.txt","r") as file:
+			playing=file.read().split()
+		if len(playing)>1:
+			print('changing status to '+' '.join(playing)+'...')
+			await bot.cogs['Fun'].set_status(playing[0], ' '.join(playing[1:]))
+		else:
+			print('no playing status found')
+			await bot.cogs['Fun'].set_status()
 	with open(globals.store+'alive.txt','r') as f:
 		try:
 			id=int(f.read())
@@ -264,14 +256,14 @@ async def on_guild_join(server):
 		await bot.cogs['Admin'].send_ownerintro(server)
 	
 	await bot.change_presence(activity=discord.Game(name=f"{globals.prefix_long} help | {globals.prefix_short}help"))
-	await asyncio.sleep(30)
-	# TODO: make universal playing function and use that
-	# with open(globals.store+"playing.txt","r") as file:
-		# playing=file.read()
-	# if len(playing)>1:
-		# await bot.change_presence(activity=discord.Game(name=playing))
-	# else:
-		# await bot.change_presence(activity=discord.Game(name='merely help'))
+	if globals.modules['fun']:
+		await asyncio.sleep(30)
+		with open(globals.store+"playing.txt","r") as file:
+			playing=file.read().split(' ')
+		if len(playing)>1:
+			await bot.cogs['Fun'].set_status(playing[0], ' '.join(playing[1:]))
+		else:
+			await bot.cogs['Fun'].set_status()
 
 @bot.event
 async def on_guild_remove(server):
@@ -303,7 +295,7 @@ async def msglog(msg:discord.Message):
 		return
 	# Determines if message should be logged, and logs it.
 	# Criteria for appearing in the log: message isn't in the logchannel, DMs to the bot, messages sent by the bot or the musicbot companion, merely is mentioned or message has a merelybot prefix.
-	if msg.channel.id != globals.logchannel and (isinstance(msg.channel,discord.abc.PrivateChannel) or msg.author==bot.user or msg.author.id == globals.musicbuddy or bot.user in msg.mentions or msg.content.startswith(globals.prefix_short) or msg.content.startswith(globals.prefix_long)):
+	if msg.channel.id != globals.logchannel and (isinstance(msg.channel,discord.abc.PrivateChannel) or msg.author==bot.user or msg.author.id == globals.musicbuddy or bot.user in msg.mentions or (msg.content.startswith(globals.prefix_long) and len(globals.prefix_long)>0) or msg.content.startswith(globals.prefix_short)):
 		if globals.modules['stats']:
 			if msg.author==bot.user:
 				bot.cogs['Stats'].sentcount+=1

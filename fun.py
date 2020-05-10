@@ -38,16 +38,26 @@ class Fun(commands.Cog):
 		
 		return em
 
+	async def set_status(self, mode='', status=''):
+		if len(status)>0:
+			type = {
+				'playing':discord.ActivityType.playing,
+				'streaming':discord.ActivityType.streaming,
+				'watching':discord.ActivityType.watching,
+				'listening':discord.ActivityType.listening
+			}.get(mode.lower(),discord.ActivityType.playing)
+			await self.bot.change_presence(activity=discord.Activity(name=status,type=type))
+			with open(globals.store+"playing.txt","w") as file:
+				file.write(mode+' '+status)
+		else:
+			await self.bot.change_presence(activity=discord.Game(name=f"{globals.prefix_short}help"))
+			with open(globals.store+"playing.txt","w") as file:
+				file.write('')
+	
 	@commands.command(pass_context=True, no_pm=False, aliases=['watching','streaming','listening'])
 	async def playing(self, ctx, *, status=''):
 		"""Command Description"""
 		mode=ctx.invoked_with.lower()
-		type={
-			'playing':discord.ActivityType.playing,
-			'streaming':discord.ActivityType.streaming,
-			'watching':discord.ActivityType.watching,
-			'listening':discord.ActivityType.listening
-		}.get(mode,discord.ActivityType.unknown)
 		if globals.verbose: print(mode+' command')
 		if len(status)>0:
 			if not globals.modules['censor']:
@@ -58,15 +68,11 @@ class Fun(commands.Cog):
 				await emformat.genericmsg(ctx.message.channel,
 				"can't set the status with such filthy language like `"+' ,'.join(danger)+"`","error",mode)
 			else:
-				await self.bot.change_presence(activity=discord.Activity(name=status,type=type))
+				await self.set_status(mode, status)
 				await emformat.genericmsg(ctx.message.channel,"status: "+mode.capitalize()+" **"+status+"**","done",mode)
-				with open(globals.store+"playing.txt","w") as file:
-					file.write(mode+' '+status)
 		else:
-			await self.bot.change_presence(activity=discord.Game(name=f"{globals.prefix_short}help"))
+			await self.set_status()
 			await emformat.genericmsg(ctx.message.channel,"done!\nreset status","done",mode)
-			with open(globals.store+"playing.txt","w") as file:
-				file.write('')
 	@playing.error
 	async def playing_error(self,ctx,error):
 		print(error)
@@ -112,7 +118,7 @@ class Fun(commands.Cog):
 			# hardcoded list of possible voting emoji
 			emoji = ['🇦','🇧','🇨','🇩','🇪','🇫','🇬','🇭','🇮','🇯','🇰','🇱','🇲','🇳']
 			if len(votes) > len(emoji):
-				await ctx.message.channel.send(f'unfortunately, merely currently only supports up to {len(emoji)} options.')
+				await ctx.message.channel.send(f'unfortunately, {globals.name} currently only supports up to {len(emoji)} options.')
 				return
 			if len(votes) <= 1:
 				await ctx.message.channel.send(f"please provide more than one option.")

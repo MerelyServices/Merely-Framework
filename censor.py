@@ -22,8 +22,8 @@ class Censor(commands.Cog):
 		self.whitelist = {i:Censor.Whitelist(self, i) for i in [0]+[g.id for g in self.bot.guilds]}
 	
 	def sass(self):
-		return random.choice(["keep that in an nsfw channel, filthy weeb.","merely has *standards*","degenerates.","I'm not just gonna let you post filth in a sfw channel.",
-													"you people disgust me","merely found a naughty word in this one.","saving the mods from a second of wasted time.","no thank you."])
+		return random.choice(["keep that in an nsfw channel, filthy weeb.",f"{globals.name} has *standards*","degenerates.","I'm not just gonna let you post filth in a sfw channel.",
+													"you people disgust me",f"{globals.name} found a naughty word in this one.","saving the mods from a second of wasted time.","no thank you."])
 
 	class Xlist():
 		def __init__(self, parent, guild=None):

@@ -42,7 +42,7 @@ class Meme(commands.Cog):
 		
 		def append(self, item):
 			super().append(item)
-			if len(self) > len(self.memepool)/2:
+			if len(self) > max(len(self.memepool), 100) / 2:
 				self.pop(0)
 	
 	class DB():
@@ -78,6 +78,9 @@ class Meme(commands.Cog):
 		async def post(self, channel, owner=None):
 			if self.id in self.usedmemes:
 				return False
+			
+			self.usedmemes.append(self.id)
+			
 			if self.type in ['audio', 'video', 'webm', 'url']:
 				await channel.send(self.url)
 			if self.status == 404:
@@ -101,8 +104,6 @@ class Meme(commands.Cog):
 																	"tags": ', '.join([name for name in self.tags.keys()]) if len(self.tags) else "None yet, you should suggest some!"
 																} if self.in_db else {},
 																link = f"https://meme.yiays.com/meme/{self.id}" if self.in_db else '')
-			
-			self.usedmemes.append(self.id)
 			
 			return True
 		
@@ -299,10 +300,11 @@ class Meme(commands.Cog):
 			self.query = query
 			self.results = results
 		
-		def fetch():
+		def fetch(self):
+			mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=self.dbpassword,database='meme')
 			query = \
 			f"""
-				SELECT meme.*, IFNULL(AVG(edge.Rating),4) AS Edge
+				SELECT meme.*, IFNULL(AVG(edge.Rating),4) AS Edge,
 				REPLACE(
 					REPLACE(
 						REPLACE(
@@ -328,18 +330,17 @@ class Meme(commands.Cog):
 						LEFT JOIN tag ON tagvote.tagId = tag.Id)
 						LEFT JOIN edge ON meme.Id = edge.memeId)
 				GROUP BY meme.Id
-				SearchData LIKE "%{mydb.converter.escape(search.lower().replace(' ',''))}%"
+				HAVING SearchData LIKE "%{mydb.converter.escape(self.query.lower().replace(' ',''))}%"
 				ORDER BY meme.Id DESC
 				LIMIT 20;
 			"""
 			
-			mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=self.dbpassword,database='meme')
 			cursor = mydb.cursor(dictionary=True)
 			cursor.execute(query)
 			
 			for row in cursor.fetchall():
 				if row['Id'] not in self.memepool:
-					self.memepool[row['Id']] = Meme.DBMeme(dbpassword=self.dbpassword, usedmemes=self.usedmemes, memepool=self.memes)
+					self.memepool[row['Id']] = Meme.DBMeme(dbpassword=self.dbpassword, usedmemes=self.usedmemes, memepool=self.memepool)
 				self.memepool[row['Id']].getmeme(id=row['Id'], row=row)
 				self.results.append(self.memepool[row['Id']])
 			
@@ -347,19 +348,21 @@ class Meme(commands.Cog):
 			
 			return self.results
 		
-		def pick():
+		def pick(self):
 			for result in self.results:
 				if result.id not in self.usedmemes:
 					return result
 			return None
 		
-		async def post(channel, n=1):
-			for i in range(n):
-				success = False
-				result = self.pick()
-				if result:
-					result.post(channel)
-				else: return
+		async def post(self, channel, n=1):
+			i = 0
+			while i < int(n):
+				meme = self.pick()
+				if meme is None:
+					return
+				success = await meme.post(channel)
+				if success:
+					i += 1
 				await asyncio.sleep(1)
 	
 	class DBTag():
@@ -619,10 +622,10 @@ class Meme(commands.Cog):
 		if n.isdigit():
 			if globals.verbose: print('meme n command')
 			i = 0
-			while i <= int(n):
+			while i < int(n):
 				meme = Meme.DBMeme(dbpassword=self.dbpassword, usedmemes=self.usedmemes, memepool=self.memes).getrandom()
 				self.memes[meme.id] = meme
-				success = False
+				success = await meme.post(ctx.channel)
 				if success:
 					i += 1
 				await asyncio.sleep(1)
@@ -655,7 +658,7 @@ class Meme(commands.Cog):
 					search = ' '.join(searchargs[:-1])
 					n = min(int(searchargs[-1]), 10)
 				
-				search = Meme.DBSearch(dbpassword=self.dbpassword, memepool=self.memes, usedmemes=self.usedmemes, query=search)
-				search.fetch()
-				await search.post(channel, n=n)
+				searcher = Meme.DBSearch(dbpassword=self.dbpassword, memepool=self.memes, usedmemes=self.usedmemes, query=search)
+				searcher.fetch()
+				await searcher.post(ctx.channel, n=n)
 
