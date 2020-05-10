@@ -118,7 +118,7 @@ class Admin(commands.Cog):
 				print(e)
 				return
 		elif str(msg.channel.id) in globals.config.get('janitor','relaxed',fallback='').split(' '):
-			if msg.author==self.bot.user or self.bot.user in msg.mentions or msg.content.lower().startswith('m/') or msg.content.lower().startswith('merely'):
+			if msg.author==self.bot.user or self.bot.user in msg.mentions or msg.content.lower().startswith(globals.prefix_short) or msg.content.lower().startswith(globals.prefix_long):
 				await asyncio.sleep(30)
 				try:
 					await msg.delete()
@@ -194,7 +194,7 @@ class Admin(commands.Cog):
 					return True
 			else:
 				def is_delete(m):
-					return (len(m.content)>0 and m.content.lower().startswith('merely')) or m.content.lower().startswith('m/') or self.bot.user in m.mentions or m.author==self.bot.user or m.author==self.bot.get_user(265286478668496896) or len(m.content)==1 or m.type==discord.MessageType.pins_add
+					return (len(m.content)>0 and m.content.lower().startswith(globals.prefix_long)) or m.content.lower().startswith(globals.prefix_short) or self.bot.user in m.mentions or m.author==self.bot.user or m.author==self.bot.get_user(265286478668496896) or len(m.content)==1 or m.type==discord.MessageType.pins_add
 			
 			try:
 				n=int(n)
@@ -298,7 +298,7 @@ class Admin(commands.Cog):
 			try:
 				reaction, user = await self.bot.wait_for('reaction_add',timeout=300,check=check)
 			except asyncio.TimeoutError:
-				await msg.edit(content="interactive server list expired. type `m/servers` again.")
+				await msg.edit(content=f"interactive server list expired. type `{globals.prefix_short}servers` again.")
 				await msg.clear_reactions()
 				break
 			else:
@@ -344,7 +344,7 @@ class Admin(commands.Cog):
 			print('changelog command')
 			try:
 				await ctx.message.channel.send("You can view the full changelog online! ( "+globals.apiurl+"changes.html )")
-				await emformat.genericmsg(ctx.message.channel,"*here's a list of recent changes to merely...*\n\n"+''.join(globals.changes[-10:])+"\n\nremeber to leave feedback with `m/feedback` if you want changes made!",'done','changelog')
+				await emformat.genericmsg(ctx.message.channel,"*here's a list of recent changes to merely...*\n\n"+''.join(globals.changes[-10:])+f"\n\nremeber to leave feedback with `{globals.prefix_short}feedback` if you want changes made!",'done','changelog')
 			except:
 				if len(''.join(globals.changes))>=1800:
 					await emformat.genericmsg(ctx.message.channel,"the changelog is too long for discord! either [view the changelog online]("+globals.apiurl+"changes.html) or check back later when it's been shortened.",'error','changelog')
@@ -368,10 +368,10 @@ class Admin(commands.Cog):
 		em=discord.Embed(title="introducing merely",type='rich',
 		description="hello! i was just added to your server! type `merely help` for a list of general commands, but as the owner of *"+server.name+"*, you have more commands available to you;",
 		color=discord.Colour(0x2C5ECA),url=globals.apiurl+'#/serverowner')
-		em.add_field(name='Automated Messages', inline=False, value="*m/welcome* - shows a custom welcome message to new members\n*m/farewell* - shows a custom announcement whenever a member leaves")
-		em.add_field(name='Cleaning', inline=False, value="*m/janitor* - auto-deletes either bot spam or all messages in a channel after 30 seconds\n*m/clean* - cleans a channel of bot spam or all messages for as long as you specify\n*m/purge* - erases a section of messages within a channel")
-		em.add_field(name='Moderation', inline=False, value="*m/blacklist* and *m/whitelist* - control which words can be used in merely commands (like echo, image or google search) when in a SFW channel\n*m/lockout* - ban users from using merely if they're abusing it.")
-		em.add_field(name='Support', inline=False, value="*m/changes* - lists all the recent changes to merely, if you're curious\n*m/feedback* - provide feedback directly to the developers if there's a feature or issue you'd like to discuss.")
+		em.add_field(name='Automated Messages', inline=False, value=f"*{globals.prefix_short}welcome* - shows a custom welcome message to new members\n*{globals.prefix_short}farewell* - shows a custom announcement whenever a member leaves")
+		em.add_field(name='Cleaning', inline=False, value=f"*{globals.prefix_short}janitor* - auto-deletes either bot spam or all messages in a channel after 30 seconds\n*{globals.prefix_short}clean* - cleans a channel of bot spam or all messages for as long as you specify\n*{globals.prefix_short}purge* - erases a section of messages within a channel")
+		em.add_field(name='Moderation', inline=False, value=f"*{globals.prefix_short}blacklist* and *{globals.prefix_short}whitelist* - control which words can be used in merely commands (like echo, image or google search) when in a SFW channel\n*{globals.prefix_short}lockout* - ban users from using merely if they're abusing it.")
+		em.add_field(name='Support', inline=False, value=f"*{globals.prefix_short}changes* - lists all the recent changes to merely, if you're curious\n*{globals.prefix_short}feedback* - provide feedback directly to the developers if there's a feature or issue you'd like to discuss.")
 		em.add_field(name='Need help using these commands?', inline=False, value="here's some useful documentation; "+globals.apiurl+"#/serverowner")
 		em.set_thumbnail(url=globals.emurl+"greet.gif")
 		em.set_footer(text="merely v"+globals.ver+" - created by Yiays#5930", icon_url=globals.iconurl)
@@ -392,7 +392,7 @@ class Admin(commands.Cog):
 							try:
 								await emformat.genericmsg(s.owner,"*hey there, server owner, merely's just been updated so here's a list of recent changes...*\n\n"+msg,'done','changelog')
 								await s.owner.send("for more information, please visit "+globals.apiurl+"#/serverowner .\n\n"+\
-									"*note: remember to use `merely feedback` to provide feedback.*\n\nif you don't want to recieve these messages, please type `m/owneroptout`.")
+									f"*note: remember to use `merely feedback` to provide feedback.*\n\nif you don't want to recieve these messages, please type `{globals.prefix_short}owneroptout`.")
 								sent.append(s.owner.id)
 							except:
 								failed+=1

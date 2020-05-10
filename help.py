@@ -1,4 +1,4 @@
-import globals, emformat
+import globals, emformat, utils
 from discord.ext import commands
 import time, random, asyncio
 
@@ -13,34 +13,34 @@ helpdict={
 	':new: new':'```changelog, dice, shorten```'
 }
 dhelp={
-	'welcome':"***merely welcome [get|clear|set (welcome message)]***\n**SERVER OWNERS ONLY** - get the welcome message for the server or set it, use `merely welcome set` for instructions on how to set a welcome message.",
-	'farewell':"***merely farewell [get|clear|set (farewell message)]***\n**SERVER OWNERS ONLY** - get the farewell message for the server or set it, use `merely farewell set` for instructions on how to set a farewell message.",
-	'janitor':"***merely janitor [leave|join (strict|relaxed)]***\n**SERVER OWNERS ONLY** - opt into or opt out of the janitor service, the janitor deletes all messages after 30 seconds. in relaxed mode, janitor only deletes messages to and from merely.",
-	'feedback':"***merely feedback (feedback)***\nthis forwards the feedback to the developer so that they can further improve the bot.",
-	'help':"***merely help [(command)]***\nhelp offers a list of commands, if you follow merely help with a bot and a command, it'll describe the command in detail.",
-	'info':"***merely info***\nfind out exactly what merely can do and get relevant links.",
-	'stats':"***merely stats***\ntechnical information and interesting statistics.",
-	'clean':"***merely clean [limit] [strict]***\n**MODERATORS ONLY** - clean deletes all messages that either activated merely or are from merely in the current channel. If you provide a limit and the word 'strict' at the end, it will delete everything indescriminately.\n\n*note that all discord bots are only allowed to delete messages from the last 2 months.*",
-	'purge':"***merely purge (first message id) (last message id) [limit]***\n**MODS ONLY** - purge purges all messages that are within a range of ids. get message ids by enabling developer mode in discord and then clicking on the menu next to the messages.",
-	'playing':"***merely playing|watching|streaming [(status)]***\nchanges the playing status text to anything you desire, or alternatively resets the playing text if you provide no arguments. is subject to censorship from the blacklist.",
-	'command':"***merely command (search)***\nsearches the list of known commands for any command containing the query.",
-	'image':"***merely image more|(search)***\nsearches google images for your query and returns the top image. `m/image more` returns 5 more results, `m/images` returns 5 from the begining.",
-	'google':"***merely google more|(search)***\nsearches google for your query and returns the top search result. more returns the top 5 results.",
-	'meme':"***merely meme [n | #(number)]***\nsends a random meme to the channel. n specifies how many you want, #(number) specifies the id of a meme you've seen before.\n\n*merely meme is designed to avoid repeating memes for as long as possible*",
-	'thonk':"***merely thonk***\nit just posts a random thonking emoji.",
-	'vote':"***merely vote question? answer 1, answer 2, as many more answers as you want** - spaces, question marks and commas are important!*\ncreate an interactive, multi-choice poll with the given options, if you add a number at the end, that will be the time limit in minutes before the results are finalised. the longer a poll is running, the more likely it may fail to complete.",
-	'blacklist':"***merely blacklist [add (words)|remove (words)|train (url)]***\n**SERVER OWNERS ONLY** - blacklist lists all banned words. you can also add or remove one word at a time to your server's local blacklist\n\n*note that the blacklist exists to prevent users from searching for nsfw content on non-nsfw channels in line with discord's terms of service.*",
-	'whitelist':"***merely whitelist [add (words)|remove (words)|train (url)]***\n**SERVER OWNERS ONLY** - whitelist lists all words that are exempt to the blacklist. you can also add or remove one word at a time to your server's local whitelist.\n\n*note that the whitelist exists because the blacklist may mistake valid words as mispellings of bad words. as a server owner, you are allowed to fix this.*",
-	'hint':"***merely hint***\ngives you handy hints on how to better use this bot.",
-	'echo':"***merely echo (echo)***\nrepeats whatever you say to it. and no, it will not echo itself or other bots. is subject to censorship rules in the blacklist.",
-	'dice':"***merely dice [(dice1sides) (dice2sides) (dice3sides) (dice4sides) (dice5sides) etc...]***\ndice will roll a 6 sided dice by default, but you can specify how many sides if you want, just leave a number, if you want to roll more than one dice, just leave more than one number separated by spaces.",
-	'lockout':"***merely lockout (user#discriminator) [time in minutes]***\n**SERVER OWNERS ONLY** - prevents any user from interacting with the bot if it appears they are trying to abuse it.",
-	'servers':"***merely servers***\nlists all the servers merely is in with an interactive page list system. also shows how many members each server has.",
-	'logcat':"***merely logcat (lines)***\noutputs the last 10 lines, by default, in the log, for the sake of debugging.",
-	'reload':"***merely reload (module)***\n**MERELY SUPERUSERS ONLY** - this command reloads changes made to merely's code without restarting the bot.",
-	'changelog':"***merely changelog***\nlists all the recent changes made to merely over the previous few updates.",
-	'shorten':"***merely shorten (long link) [short name]***\ntakes the provided long link and shortens it using https://l.yiays.com. If the requested short link is *0*, the short link will be randomized.",
-	'die':"***merely die***\n**MERELY SUPERUSERS ONLY** - shuts down merely safely."
+	'welcome':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}welcome [get|clear|set (welcome message)]***\n**SERVER OWNERS ONLY** - get the welcome message for the server or set it, use `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}welcome set` for instructions on how to set a welcome message.",
+	'farewell':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}farewell [get|clear|set (farewell message)]***\n**SERVER OWNERS ONLY** - get the farewell message for the server or set it, use `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}farewell set` for instructions on how to set a farewell message.",
+	'janitor':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}janitor [leave|join (strict|relaxed)]***\n**SERVER OWNERS ONLY** - opt into or opt out of the janitor service, the janitor deletes all messages after 30 seconds. in relaxed mode, janitor only deletes messages to and from merely.",
+	'feedback':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}feedback (feedback)***\nthis forwards the feedback to the developer so that they can further improve the bot.",
+	'help':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}help [(command)]***\nhelp offers a list of commands, if you follow {globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}help with a bot and a command, it'll describe the command in detail.",
+	'info':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}info***\nfind out exactly what {globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}can do and get relevant links.",
+	'stats':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}stats***\ntechnical information and interesting statistics.",
+	'clean':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}clean [limit] [strict]***\n**MODERATORS ONLY** - clean deletes all messages that either activated {globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}or are from {globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}in the current channel. If you provide a limit and the word 'strict' at the end, it will delete everything indescriminately.\n\n*note that all discord bots are only allowed to delete messages from the last 2 months.*",
+	'purge':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}purge (first message id) (last message id) [limit]***\n**MODS ONLY** - purge purges all messages that are within a range of ids. get message ids by enabling developer mode in discord and then clicking on the menu next to the messages.",
+	'playing':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}playing|watching|streaming [(status)]***\nchanges the playing status text to anything you desire, or alternatively resets the playing text if you provide no arguments. is subject to censorship from the blacklist.",
+	'command':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}command (search)***\nsearches the list of known commands for any command containing the query.",
+	'image':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}image more|(search)***\nsearches google images for your query and returns the top image. `{globals.prefix_short}image more` returns 5 more results, `{globals.prefix_short}images` returns 5 from the begining.",
+	'google':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}google more|(search)***\nsearches google for your query and returns the top search result. more returns the top 5 results.",
+	'meme':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}meme [n | #(number)]***\nsends a random meme to the channel. n specifies how many you want, #(number) specifies the id of a meme you've seen before.\n\n*{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}meme is designed to avoid repeating memes for as long as possible*",
+	'thonk':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}thonk***\nit just posts a random thonking emoji.",
+	'vote':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}vote question? answer 1, answer 2, as many more answers as you want** - spaces, question marks and commas are important!*\ncreate an interactive, multi-choice poll with the given options, if you add a number at the end, that will be the time limit in minutes before the results are finalised. the longer a poll is running, the more likely it may fail to complete.",
+	'blacklist':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}blacklist [add (words)|remove (words)|train (url)]***\n**SERVER OWNERS ONLY** - blacklist lists all banned words. you can also add or remove one word at a time to your server's local blacklist\n\n*note that the blacklist exists to prevent users from searching for nsfw content on non-nsfw channels in line with discord's terms of service.*",
+	'whitelist':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}whitelist [add (words)|remove (words)|train (url)]***\n**SERVER OWNERS ONLY** - whitelist lists all words that are exempt to the blacklist. you can also add or remove one word at a time to your server's local whitelist.\n\n*note that the whitelist exists because the blacklist may mistake valid words as mispellings of bad words. as a server owner, you are allowed to fix this.*",
+	'hint':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}hint***\ngives you handy hints on how to better use this bot.",
+	'echo':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}echo (echo)***\nrepeats whatever you say to it. and no, it will not echo itself or other bots. is subject to censorship rules in the blacklist.",
+	'dice':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}dice [(dice1sides) (dice2sides) (dice3sides) (dice4sides) (dice5sides) etc...]***\ndice will roll a 6 sided dice by default, but you can specify how many sides if you want, just leave a number, if you want to roll more than one dice, just leave more than one number separated by spaces.",
+	'lockout':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}lockout (user#discriminator) [time in minutes]***\n**SERVER OWNERS ONLY** - prevents any user from interacting with the bot if it appears they are trying to abuse it.",
+	'servers':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}servers***\nlists all the servers {globals.name} is in with an interactive page list system. also shows how many members each server has.",
+	'logcat':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}logcat (lines)***\noutputs the last 10 lines, by default, in the log, for the sake of debugging.",
+	'reload':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}reload (module)***\n**MERELY SUPERUSERS ONLY** - this command reloads changes made to merely's code without restarting the bot.",
+	'changelog':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}changelog***\nlists all the recent changes made to {globals.name} over the previous few updates.",
+	'shorten':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}shorten (long link) [short name]***\ntakes the provided long link and shortens it using https://l.yiays.com. If the requested short link is *0*, the short link will be randomized.",
+	'die':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}die***\n**MERELY SUPERUSERS ONLY** - shuts down {globals.name} safely."
 }
 globals.dhelp=dhelp
 
@@ -89,18 +89,18 @@ class Help(commands.Cog):
 		if globals.verbose: print('hint command')
 		await emformat.make_embed(ctx.message.channel,'',title="Did you know...",
 				description=random.choice(
-				["`merely help` followed by a command name explains the command in more detail. eg. `m/help meme`",
+				[f"`merely help` followed by a command name explains the command in more detail. eg. `{globals.prefix_short}help meme`",
 				 "click the title of any command's message to be taken to the online docs, which includes interactive tutorials for each command!",
 				 "`merely clean [n]` scans the last [n] messages for messages to and from merely and deletes matches. only mods can use this.",
 				 "`merely clean [n] strict` deletes all of the last [n] messages. only admins can use this.",
 				 "search for commands with `merely command <search>` - it'll try its best to match you with the command you're looking for!",
-				 "tired of typing `merely`? `m/` also works as a prefix, as does `@merely`. use whichever is easiest.",
+				 f"tired of typing `{globals.prefix_long}`? `{globals.prefix_short}` also works as a prefix, as does `@{globals.name}`. use whichever is easiest.",
 				 "`merely info` shows off the features of merely and gives you a few relevant links.",
 				 "`merely stats` shows technical information about what the bot runs on and how much work it's doing.",
 				 "set the playing status of merely with `merely (playing|watching|streaming|listening) (status)`",
-				 #"`m/blacklist`, `m/whitelist` and `m/meme` have a public list and a private list, changes made on your server affect only your server.",
-				 "`m/thonk` is the best command. it makes use of Discord Nitro to bring you 50+ thinking emoji.",
-				 "`m/vote` is one of the most advanced commands made yet! it supports live updating polls, countdown timers and helps decide a winner."#,
+				 f"`{globals.prefix_short}blacklist`, `{globals.prefix_short}whitelist` and `{globals.prefix_short}meme` have a public list and a private list, changes made on your server affect only your server.",
+				 f"`{globals.prefix_short}thonk` is the best command. it makes use of Discord Nitro to bring you 50+ thinking emoji.",
+				 f"`{globals.prefix_short}vote` is one of the most advanced commands made yet! it supports live updating polls, countdown timers and helps decide a winner."#,
 				 #"like merely? consider upvoting merely on the discord bot list; https://discordbots.org/bot/309270899909984267"
 				]),
 				color=0xf4e242,
@@ -113,22 +113,19 @@ class Help(commands.Cog):
 	async def info(self,ctx):
 		if globals.verbose:print('info command')
 		
-		m, s = divmod(time.time()-self.bot.cogs['Stats'].starttime, 60)
-		h, m = divmod(m, 60)
-		
 		await emformat.make_embed(ctx.message.channel,'go to '+globals.apiurl+' to learn more!','merely info','',color=0x2C5ECA,thumbnail=globals.emurl+'greet.gif',
 		fields={
-		'🆕 fantastic features!':"merely can do lots of stuff, it currently has **"+str(len(dhelp))+"** commands available to **"+str(len(self.bot.guilds))+"** servers.\ntype `merely help` for a full list of commands or type `merely changelog` to see all the recent additions and fixes!",
-		'😊🤖 mobile and human friendly!':"merely is activated by 3 prefixes; `merely <command>`, `m/<command>` and `@merely <command>` pick whichever is easiest for you to type on your device.",
-		'📚 detailed documentation!':"if you're unsure what a command does; `merely help <command>`. if you can't find a command; `merely commands <search>`. if you want to learn something new; `merely hint`. if you still need help, you can click the title of the embed for online documentation!",
-		'⬆️ frequent updates!':'merely is updated with more features automatically all the time, almost seamlessly. thanks to sharding (coming soon) and modular design, merely can stay online 24/7 even when being updated!\n merely has been online constantly for '+str(round(h))+" hours, "+str(round(m))+" minutes and "+str(round(s))+" seconds.",
-		#'👥 sharding! <:soon:233642257817927680>':"merely will provide optimal service to all users in the future by being hosted on multiple servers around the world! the fastest and slowest bots will dynamically connect to your server based on demand!",
-		'➕ add now!':"[click here](https://discordapp.com/oauth2/authorize?client_id=309270899909984267&scope=bot&permissions=104131650) to add merely to your server with minimal permissions. *note that merely may need to ask for more permissions later on.*"#,
-		#'💡 keep the lights on':"consider voting for this bot at [discordbots.org](https://discordbots.org/bot/309270899909984267) if you enjoy its services! the developers would really appreciate it!"
+		'🆕 fantastic features!':f"{globals.name} can do lots of stuff, it currently has **{len(dhelp)}** commands available to **{len(self.bot.guilds)}** servers.\ntype `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}help` for a full list of commands or type `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}changelog` to see all the recent additions and fixes!",
+		'😊🤖 mobile and human friendly!':f"{globals.name} is activated by 3 prefixes; `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}<command>`, `{globals.prefix_short}<command>` and `@{globals.name} <command>` pick whichever is easiest for you to type on your device.",
+		'📚 detailed documentation!':f"if you're unsure what a command does; `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}help <command>`. if you can't find a command; `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}commands <search>`. if you want to learn something new; `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}hint`. if you still need help, you can click the title of the embed for online documentation!",
+		'⬆️ frequent updates!':f"{globals.name} is updated with more features automatically, without interruption, thanks to a modular design, {globals.name} can stay online 24/7 even when being updated!\n{globals.name} has been online constantly for {utils.time_fold(time.time()-self.bot.cogs['Stats'].starttime)}",
+		#'👥 sharding! <:soon:233642257817927680>':f"merely will provide optimal service to all users in the future by being hosted on multiple servers around the world! the fastest and slowest bots will dynamically connect to your server based on demand!",
+		'➕ add now!':f"[click here](https://discordapp.com/oauth2/authorize?client_id={self.bot.id}&scope=bot&permissions=104131650) to add {globals.name} to your server with minimal permissions. *note that {globals.name} may need to ask for more permissions later on.*"#,
+		#'💡 keep the lights on':f"consider voting for this bot at [discordbots.org](https://discordbots.org/bot/309270899909984267) if you enjoy its services! the developers would really appreciate it!"
 		},
 		link=globals.apiurl,
 		icon=globals.iconurl,
-		footer="merely v"+globals.ver+" - created by Yiays#5930")
+		footer=f"{globals.name} v{globals.ver} - created by Yiays#5930")
 	
 	@commands.command(pass_context=True, no_pm=False)
 	async def feedback(self,ctx,*,feedback):

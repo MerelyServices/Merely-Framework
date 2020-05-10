@@ -28,7 +28,10 @@ sys.stderr = Logger(err=True)
 print('starting bot...')
 
 #start commands system
-bot=commands.Bot(command_prefix=commands.when_mentioned_or('merely ','m/ ','m/'), help_attrs={'enabled':False}, case_insensitive=True)
+prefixes = [globals.prefix_short, globals.prefix_short+' ']
+if len(globals.prefix_long): prefixes.append(globals.prefix_long+' ')
+
+bot=commands.Bot(command_prefix=commands.when_mentioned_or(*prefixes), help_attrs={'enabled':False}, case_insensitive=True)
 bot.remove_command('help')
 
 globals.bot=bot
@@ -103,8 +106,8 @@ if globals.modules['stats']:
 	bot.add_cog(stats.Stats(bot))
 	if globals.verbose: print('stats done!')
 
-if globals.modules['reload']:
-	class Reload(commands.Cog):
+if globals.modules['core']:
+	class Core(commands.Cog):
 		def __init__(self, bot):
 			bot = bot
 		
@@ -157,7 +160,7 @@ if globals.modules['reload']:
 					await ctx.message.channel.send('`'+modulename+"` isn't available for reloading.")
 			else:
 				await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","reload")
-	bot.add_cog(Reload(bot))
+	bot.add_cog(Core(bot))
 	if globals.verbose: print('reload done!')
 
 @bot.event
@@ -191,7 +194,7 @@ async def on_ready():
 		await bot.change_presence(activity=discord.Activity(name=status,type=type))
 	else:
 		print('no playing status found')
-		await bot.change_presence(activity=discord.Game(name='m/help'))
+		await bot.change_presence(activity=discord.Game(name=f"{globals.prefix_short}help"))
 	with open(globals.store+'alive.txt','r') as f:
 		try:
 			id=int(f.read())
@@ -260,7 +263,7 @@ async def on_guild_join(server):
 	if globals.modules['admin']:
 		await bot.cogs['Admin'].send_ownerintro(server)
 	
-	await bot.change_presence(activity=discord.Game(name='merely help | m/help'))
+	await bot.change_presence(activity=discord.Game(name=f"{globals.prefix_long} help | {globals.prefix_short}help"))
 	await asyncio.sleep(30)
 	# TODO: make universal playing function and use that
 	# with open(globals.store+"playing.txt","r") as file:
@@ -300,7 +303,7 @@ async def msglog(msg:discord.Message):
 		return
 	# Determines if message should be logged, and logs it.
 	# Criteria for appearing in the log: message isn't in the logchannel, DMs to the bot, messages sent by the bot or the musicbot companion, merely is mentioned or message has a merelybot prefix.
-	if msg.channel.id != globals.logchannel and (isinstance(msg.channel,discord.abc.PrivateChannel) or msg.author==bot.user or msg.author.id == globals.musicbuddy or bot.user in msg.mentions or msg.content.startswith('m/') or msg.content.startswith('merely')):
+	if msg.channel.id != globals.logchannel and (isinstance(msg.channel,discord.abc.PrivateChannel) or msg.author==bot.user or msg.author.id == globals.musicbuddy or bot.user in msg.mentions or msg.content.startswith(globals.prefix_short) or msg.content.startswith(globals.prefix_long)):
 		if globals.modules['stats']:
 			if msg.author==bot.user:
 				bot.cogs['Stats'].sentcount+=1

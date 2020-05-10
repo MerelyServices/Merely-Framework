@@ -304,7 +304,7 @@ class Censor(commands.Cog):
 				if result:
 					await emformat.genericmsg(ctx.message.channel,f"{'the words ' if len(result)>1 else ''}*'{', '.join(result)}'* {'is' if len(result)==1 else 'are'} now {'black' if black else 'white'}listed{'!' if len(warnings)==0 else ' with some warnings;```'+chr(10).join(warnings)+'```'}","done",('black' if black else 'white')+"list")
 					if len(result)>1 and random.random() < 1/3:
-						await ctx.channel.send("hint: you shouldn't blacklist multiple words if they have valid uses, to ban two words that are only bad together, remove the space between them. ie. `m/blacklist add badword` as opposed to `m/blacklist add bad word`.")
+						await ctx.channel.send(f"hint: you shouldn't blacklist multiple words if they have valid uses, to ban two words that are only bad together, remove the space between them. ie. `{globals.prefix_short}blacklist add badword` as opposed to `{globals.prefix_short}blacklist add bad word`.")
 				else: await emformat.genericmsg(ctx.message.channel,f"no changes were made! {'these warnings' if len(warnings)>1 else 'this warning'} might explain why...```{chr(10).join(warnings)}```","error",('black' if black else 'white')+"list")
 				return
 				

@@ -7,11 +7,10 @@ config=configparser.ConfigParser()
 # defaults, should the ini file be missing or corrupted
 lockout={}
 modules={
-	'main':True,
+	'core':True,
 	'config':True,
 	'emformat':True,
 	'help':True,
-	'reload':False,
 	'admin':False,
 	'censor':False,
 	'fun':False,
@@ -30,6 +29,9 @@ connected=False
 owner=0
 invite=None
 
+prefix_short='m/'
+prefix_long='merely'
+name='merely'
 verbose=True
 beta=False
 logchannel=0
@@ -58,9 +60,9 @@ class MemeChannel():
 		self.categories = categories
 
 def reload():
-	global modules,verbose,logchannel,musicbuddy,feedbackchannel,modchannel,emurl,apiurl
-	global apiport,iconurl,thonks,ver,lastver,changes,lockout,authusers,superusers,memechannels
-	global memesites,owner,invite,beta,owneroptout
+	global modules,prefix_short,prefix_long,name,verbose,logchannel,musicbuddy,feedbackchannel,modchannel
+	global emurl,apiurl,apiport,iconurl,thonks,ver,lastver,changes,lockout,authusers,superusers
+	global memechannels,memesites,owner,invite,beta,owneroptout
 	
 	print('reading config...')
 	assurepath(store+'config.ini')
@@ -76,6 +78,9 @@ def reload():
 
 	#settings
 	assuresection('settings',{
+		'prefix_short':prefix_short,
+		'prefix_long':prefix_long,
+		'name':name,
 		'verbose':verbose,
 		'beta':beta,
 		'logchannel':logchannel,
@@ -92,6 +97,9 @@ def reload():
 		'authusers':','.join(authusers),
 		'superusers':','.join(superusers)
 	})
+	prefix_short=config.get('settings','prefix_short',fallback=prefix_short).replace(' ','')
+	prefix_long=config.get('settings','prefix_long',fallback=prefix_long).replace(' ','')
+	name=config.get('settings','name',fallback=name)
 	verbose=config.getboolean('settings','verbose',fallback=verbose)
 	beta=config.getboolean('settings','beta',fallback=beta)
 	logchannel=config.getint('settings','logchannel',fallback=logchannel)

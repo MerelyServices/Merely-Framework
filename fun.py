@@ -63,7 +63,7 @@ class Fun(commands.Cog):
 				with open(globals.store+"playing.txt","w") as file:
 					file.write(mode+' '+status)
 		else:
-			await self.bot.change_presence(activity=discord.Game(name='m/help'))
+			await self.bot.change_presence(activity=discord.Game(name=f"{globals.prefix_short}help"))
 			await emformat.genericmsg(ctx.message.channel,"done!\nreset status","done",mode)
 			with open(globals.store+"playing.txt","w") as file:
 				file.write('')

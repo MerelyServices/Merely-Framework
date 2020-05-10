@@ -92,7 +92,7 @@ class Meme(commands.Cog):
 			await emformat.make_embed(channel,
 																message = '',
 																title = "Meme" + (f" #{self.id} on MemeDB" if self.in_db else ''),
-																description = self.url if self.type == 'text' else self.descriptions[0].text if len(self.descriptions) else f"This meme needs a description. *(m/meme #{self.id} description)*" if self.in_db else "Upvote this meme to add it to MemeDB!",
+																description = self.url if self.type == 'text' else self.descriptions[0].text if len(self.descriptions) else f"This meme needs a description. *({globals.prefix_short}meme #{self.id} description)*" if self.in_db else "Upvote this meme to add it to MemeDB!",
 																color = self.color,
 																author = "Posted by "+owner.mention if owner else None,
 																image = self.url if self.type in ['image', 'gif'] else f"https://cdn.yiays.com/meme/{self.id}.thumb.jpg" if type in ['video', 'webm'] else '',
@@ -290,7 +290,6 @@ class Meme(commands.Cog):
 		
 		def savecats(self):
 			return True
-		
 	
 	class DBSearch(DB):
 		def __init__(self, dbpassword, memepool, usedmemes, query, results=[]):
@@ -362,7 +361,6 @@ class Meme(commands.Cog):
 					result.post(channel)
 				else: return
 				await asyncio.sleep(1)
-		
 	
 	class DBTag():
 		def __init__(self, id=None, name="", voters={}):
@@ -615,38 +613,29 @@ class Meme(commands.Cog):
 			await ctx.channel.send('Failed to complete service: ```py\n'+str(e)+'```')
 		else:
 			await ctx.channel.send('Background service ended.')
-	
-	async def get_meme(self, channel, id):
-		if id not in self.memes.keys():
-			meme = Meme.DBMeme(dbpassword=self.dbpassword, usedmemes=self.usedmemes, memepool=self.memes, id=id)
-		else:
-			meme = memes[id]
-		meme.getmeme()
-		await meme.post(channel)
-	
-	async def get_random(self, channel, n=1):
-		for _ in range(n):
-			meme = Meme.DBMeme(dbpassword=self.dbpassword, usedmemes=self.usedmemes, memepool=self.memes).getrandom()
-			self.memes[meme.id] = meme
-			success = False
-			while not success:
-				success = await meme.post(channel)
-			await asyncio.sleep(1)
-	
-	async def get_search(self, channel, query, n=1):
-		search = Meme.DBSearch(dbpassword=self.dbpassword, memepool=self.memes, usedmemes=self.usedmemes, query=query)
-		search.fetch()
-		await search.post(channel, n=n)
 
 	@commands.command(pass_context=True, no_pm=False, aliases=['memes','mem'])
 	async def meme(self, ctx, *, n='1'):
 		if n.isdigit():
 			if globals.verbose: print('meme n command')
-			await self.get_random(ctx.channel, int(n))
+			i = 0
+			while i <= int(n):
+				meme = Meme.DBMeme(dbpassword=self.dbpassword, usedmemes=self.usedmemes, memepool=self.memes).getrandom()
+				self.memes[meme.id] = meme
+				success = False
+				if success:
+					i += 1
+				await asyncio.sleep(1)
 		
 		elif n[0] == '#' and n[1:].isdigit(): # meme by id
 			if globals.verbose: print('meme id command')
-			await self.get_meme(ctx.channel, id=n[1:])
+			id=n[1:]
+			if id not in self.memes.keys():
+				meme = Meme.DBMeme(dbpassword=self.dbpassword, usedmemes=self.usedmemes, memepool=self.memes, id=id)
+			else:
+				meme = memes[id]
+			meme.getmeme()
+			await meme.post(ctx.channel)
 		
 		elif n == 'delet':
 			if globals.verbose: print('meme delet command')
@@ -665,5 +654,8 @@ class Meme(commands.Cog):
 				if searchargs[-1].isdigit(): # meme search (query) n
 					search = ' '.join(searchargs[:-1])
 					n = min(int(searchargs[-1]), 10)
-				await self.get_search(ctx.channel, search, int(n))
+				
+				search = Meme.DBSearch(dbpassword=self.dbpassword, memepool=self.memes, usedmemes=self.usedmemes, query=search)
+				search.fetch()
+				await search.post(channel, n=n)
 
