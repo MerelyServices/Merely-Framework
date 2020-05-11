@@ -18,7 +18,10 @@ in place of `m/`, you can also use `merely ` or `@merely `, eg `m/help`, `merely
 > [add merely to your server >](https://discordapp.com/oauth2/authorize?client_id=309270899909984267&scope=bot&permissions=0)
 
 ## news
-merely is approaching three years of development and simultaneously the 1.0.0 update. merely has reached a high level of stability, scalability and modularity.
+merely has been in development for over three years, and the 1.0 update is just around the corner. check out the [beta branch](https://github.com/yiays/merely/commits/beta) for details on the 1.0 update.
+
+after v1.0 is launched, merely will be rewritten with a new code architecture and functionality, this may take several months. this means merely v1.0 will be feature frozen once it launches.
+
 > [see the roadmap for future updates >](https://github.com/yesiateyoursheep/merely/projects/1)
 
 ## changelog
