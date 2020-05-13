@@ -123,6 +123,10 @@ if globals.modules['core']:
 						await ctx.message.channel.send("reloaded `config` succesfully!")
 						return
 					
+					if modulename.capitalize() not in bot.cogs:
+						self.load(ctx, modulename)
+						return
+					
 					cog = bot.cogs[modulename.capitalize()]
 					module = sys.modules[cog.__module__]
 					
@@ -160,6 +164,74 @@ if globals.modules['core']:
 					await ctx.message.channel.send('`'+modulename+"` isn't available for reloading.")
 			else:
 				await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","reload")
+		
+		@commands.command(pass_context=True,no_pm=False)
+		async def load(self,ctx,*,modulename:str):
+			modulename = modulename.lower()
+			if ctx.message.author.id in globals.superusers:
+				# if module exists
+				if modulename in globals.modules:
+					try:
+						# - load the module
+						loadedmodule = importlib.import_module(modulename)
+					
+						# - start up the modules again
+						
+						# modules that need extra parameters
+						if modulename in ['meme', 'tools']:
+							bot.add_cog(getattr(loadedmodule, modulename.capitalize())(bot, os.environ.get("MemeDB")))
+						# start the module the normal way
+						else:
+							bot.add_cog(getattr(loadedmodule, modulename.capitalize())(bot))
+						
+						# start other components of the module
+						if modulename=='webserver':
+							asyncio.ensure_future(bot.cogs['Webserver'].start())
+					
+					except Exception as e:
+						print(e)
+						await ctx.message.channel.send("failed to load `"+modulename+"`!")
+						return
+					
+					globals.modules[modulename] = True
+					await ctx.message.channel.send("loaded `"+modulename+"` succesfully!")
+				else:
+					await ctx.message.channel.send('`'+modulename+"` isn't available for loading.")
+			else:
+				await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","load")
+		
+		@commands.command(pass_context=True,no_pm=False)
+		async def unload(self,ctx,*,modulename:str):
+			modulename = modulename.lower()
+			if ctx.message.author.id in globals.superusers:
+				# if module exists and is currently in cogs
+				if modulename in globals.modules and modulename.capitalize() in bot.cogs:
+					# edge case module that needs special treatment
+					if modulename=='config':
+						globals.reload()
+						await ctx.message.channel.send("reloaded `config` succesfully!")
+						return
+					
+					if modulename.capitalize() not in bot.cogs:
+						self.load(ctx, modulename)
+						return
+					
+					# modules that need to be cleaned up before shutting down
+					if modulename=='webserver':
+						await cog.stop()
+					
+					# dereferencing the module and letting gc take care of it
+					bot.remove_cog(modulename.capitalize())
+					
+					del sys.modules[modulename]
+					
+					globals.modules[modulename] = False
+					await ctx.message.channel.send("unloaded `"+modulename+"` succesfully!")
+				else:
+					await ctx.message.channel.send('`'+modulename+"` isn't available for unloading!")
+			else:
+				await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","load")
+	
 	bot.add_cog(Core(bot))
 	if globals.verbose: print('reload done!')
 
