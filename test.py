@@ -1,7 +1,7 @@
 import unittest
-import utils
+import utils, meme
 
-class Tester(unittest.TestCase):
+class Utils_Test(unittest.TestCase):
 	def test_time_fold(self):
 		assert utils.time_fold(-100) == ""
 		assert utils.time_fold(0) == "0 seconds"
@@ -18,6 +18,11 @@ class Tester(unittest.TestCase):
 		assert testvar.old == True
 		testvar.data = "test2"
 		assert testvar.old == False
+
+class Meme_Test(unittest.TestCase):
+	def test_querybuilder(self):
+		db = meme.Meme.DB("nopassword")
+		assert db.selectquery(selects=['meme.*','IFNULL(AVG(edge.Value),4)','SUM(memevote.Value)'], _from='meme', joins=['LEFT JOIN edge on edge.memeId = meme.Id','LEFT JOIN memevote ON memevote.memeId = meme.Id'], wheres=['meme.Id = 1'], groups=['meme.Id'], limit='1') == "SELECT meme.*,IFNULL(AVG(edge.Value),4),SUM(memevote.Value) FROM ((meme LEFT JOIN edge on edge.memeId = meme.Id) LEFT JOIN memevote ON memevote.memeId = meme.Id) WHERE meme.Id = 1 GROUP BY meme.Id LIMIT 1;"
 	
 if __name__ == '__main__':
 	unittest.main()
