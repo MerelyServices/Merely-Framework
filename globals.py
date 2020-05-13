@@ -154,8 +154,8 @@ def save():
 	config.set('memesites','trusted',','.join([str(a) for a in memesites['trusted']]))
 	config.set('memesites','blocked',','.join([str(a) for a in memesites['blocked']]))
 	
+	config.set('memechannels', str(memechannel.edge), ','.join([str(m.id) for m in memechannels]))
 	for memechannel in memechannels:
-		config.set('memechannels', str(memechannel.edge), str(memechannel.id))
 		config.set(str(memechannel.id), 'memetags', ','.join(memechannel.tags))
 		config.set(str(memechannel.id), 'memecats', ','.join(memechannel.categories))
 	
