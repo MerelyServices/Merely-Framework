@@ -201,6 +201,10 @@ class Censor(commands.Cog):
 			await channel.send("there's even more, but I don't want to spam this channel anymore.")
 	
 	def dangerous(self, text, train=0, guild=0):
+		if guild not in self.blacklist or guild not in self.whitelist:
+			self.blacklist[guild] = Censor.Blacklist(self, guild)
+			self.whitelist[guild] = Censor.Whitelist(self, guild)
+		
 		blacklist=self.blacklist[guild].get()
 		whitelist=self.whitelist[guild].get()
 		matches=[]
