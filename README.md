@@ -70,6 +70,7 @@ feel free to fix any bugs or add new features to a fork, and send me a pull requ
 | [obsolete](obsolete.py) | stores stubs for old obsolete commands and promotes merely music when someone attempts to use musicbot commands | 0.2.3 |
 | [utils](utils.py) | provides useful general functions for programming merely | 0.7.3 |
 | [tools](tools.py) | provides tools for all users (unlike admin, which is for mods and server owners) like `m/shorten` | 0.7.4 |
+| [test](test.py) | a set of CI tests to help catch bugs early | 0.9.0 |
 
  - \* = must be imported for minimal functionality
  - <sup>n</sup> = these modules are codependant - they must be enabled together
