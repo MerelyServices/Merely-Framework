@@ -21,7 +21,8 @@ class Utils_Test(unittest.TestCase):
 
 class Meme_Test(unittest.TestCase):
 	def test_querybuilder(self):
-		db = meme.Meme.DB("nopassword")
+		dudmeme = meme.DudMeme()
+		db = meme.Meme.DB(dudmeme)
 		assert db.selectquery(selects=['meme.*','IFNULL(AVG(edge.Value),4)','SUM(memevote.Value)'], _from='meme', joins=['LEFT JOIN edge on edge.memeId = meme.Id','LEFT JOIN memevote ON memevote.memeId = meme.Id'], wheres=['meme.Id = 1'], groups=['meme.Id'], limit='1') == "SELECT meme.*,IFNULL(AVG(edge.Value),4),SUM(memevote.Value) FROM ((meme LEFT JOIN edge on edge.memeId = meme.Id) LEFT JOIN memevote ON memevote.memeId = meme.Id) WHERE meme.Id = 1 GROUP BY meme.Id LIMIT 1;"
 	
 if __name__ == '__main__':

@@ -124,7 +124,7 @@ if globals.modules['core']:
 						return
 					
 					if modulename.capitalize() not in bot.cogs:
-						self.load(ctx, modulename)
+						await self.load(ctx)
 						return
 					
 					cog = bot.cogs[modulename.capitalize()]
@@ -207,14 +207,11 @@ if globals.modules['core']:
 				# if module exists and is currently in cogs
 				if modulename in globals.modules and modulename.capitalize() in bot.cogs:
 					# edge case module that needs special treatment
-					if modulename=='config':
-						globals.reload()
-						await ctx.message.channel.send("reloaded `config` succesfully!")
+					if modulename in ['config', 'core', 'emformat']:
+						await ctx.message.channel.send('`'+modulename+"` must remain loaded for stability!")
 						return
 					
-					if modulename.capitalize() not in bot.cogs:
-						self.load(ctx, modulename)
-						return
+					cog = bot.cogs[modulename.capitalize()]
 					
 					# modules that need to be cleaned up before shutting down
 					if modulename=='webserver':

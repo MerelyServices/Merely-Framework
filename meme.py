@@ -8,6 +8,7 @@ import time, datetime
 import aiohttp
 import urllib.parse
 import re
+import random
 
 # ['meme']=['meme','memedbscan','memedbtest']
 
@@ -24,23 +25,35 @@ def typeconverter(type):
 		return 'url'
 	return None
 
+class DudMeme():
+	"""Dud version of Meme class for passing through to DB* elements"""
+	def __init__(self):
+		dbpassword = ""
+		searches = {}
+		usedmemes = {}
+		users = {}
+		memes = {}
+		tags = {}
+		categories = {}
+
 class Meme(commands.Cog):
 	"""Database and API for collecting, organizing and presenting memes"""
 	def __init__(self, bot, dbpassword):
 		self.bot = bot
 		self.dbpassword = dbpassword
 		self.session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60))
-		self.memes = {}
 		self.searches = {}
-		self.usedmemes = Meme.UsedMemes(self) #TODO: make usedmemes specific to the guild
+		self.usedmemes = {g.id:Meme.UsedMemes(self) for g in self.bot.guilds} #TODO: Stop this from crashing
 		self.users = {}
 		
-		if globals.verbose: print("filling meme tags/categories cache...")
+		if globals.verbose: print("filling meme/tags/categories cache...")
+		self.memes = {}
+		Meme.DBMeme(self).fetchall() # <- this takes 5 seconds on the main thread (after memedb caches the first query), probably can't be optimized much, but makes all searches instant
 		self.tags = {}
 		Meme.DBTag(self).fetchall()
 		self.categories = {}
 		Meme.DBCategory(self).fetchall()
-		if globals.verbose: print("meme tags/categories cache done!")
+		if globals.verbose: print("meme/tags/categories cache done!")
 	
 	def __delete__(self,instance):
 		self.session.close()
@@ -138,23 +151,42 @@ class Meme(commands.Cog):
 			self.transcriptions = []
 			self.in_db = False
 			self.status = 200
+			
+			self.cache_age = 0
+			self.depth = -1 # depth is a value that can only increase, as it increases, the cache date applies to all of it
 		
-		async def post(self, channel, owner=None, force=False):
-			if self.id in self.parent.usedmemes and not force:
+		@property
+		def searchdata(self):
+			if self.depth < 2: # all metadata is required for this task
+				self.getmeme(depth=2)
+			
+			data = ''.join([desc.text for desc in self.descriptions])
+			data += ''.join([trans.text for trans in self.transcriptions])
+			data += ''.join([tag for tag in self.tags])
+			data += ''.join([cat for cat in self.categories])
+			data += self.type
+			
+			data = data.strip(' ').strip('\n').lower().replace('<br/>','')
+			# could consider caching this..?
+			
+			return data
+		
+		async def post(self, ctx, owner=None, force=False):
+			if self.id in self.parent.usedmemes[ctx.guild.id] and not force:
 				return False
 			
-			self.parent.usedmemes.append(self.id)
+			self.parent.usedmemes[ctx.guild.id].append(self.id)
 			
 			if self.status == 404:
-				await emformat.make_embed(channel, message='', title="Not found!", description="Unable to locate this meme, are you sure it exists?", author=None)
+				await emformat.make_embed(ctx.channel, message='', title="Not found!", description="Unable to locate this meme, are you sure it exists?", author=None)
 				return False
 			if self.status == 403:
-				await emformat.make_embed(channel, message='', title="Permission denied!", description="To view this meme, open the meme in MemeDB and login with an administrative account.", author=None, link=f"https://meme.yiays.com/meme/{self.id}" if self.in_db else '')
+				await emformat.make_embed(ctx.channel, message='', title="Permission denied!", description="To view this meme, open the meme in MemeDB and login with an administrative account.", author=None, link=f"https://meme.yiays.com/meme/{self.id}" if self.in_db else '')
 				return False
-			if self.nsfw and not channel.is_nsfw():
-				await emformat.make_embed(channel, message='', title="This meme is potentially nsfw!", description="The channel must be marked as nsfw for this meme to be shown.", author=None, link=f"https://meme.yiays.com/meme/{self.id}" if self.in_db else '')
+			if self.nsfw and not ctx.channel.is_nsfw():
+				await emformat.make_embed(ctx.channel, message='', title="This meme is potentially nsfw!", description="The channel must be marked as nsfw for this meme to be shown.", author=None, link=f"https://meme.yiays.com/meme/{self.id}" if self.in_db else '')
 				return False
-			await emformat.make_embed(channel,
+			await emformat.make_embed(ctx.channel,
 																message = '',
 																title = "Meme" + (f" #{self.id} on MemeDB" if self.in_db else ''),
 																description = self.url if self.type == 'text' else self.descriptions[0].text if len(self.descriptions) else f"This meme needs a description. *({globals.prefix_short}meme #{self.id} describe)*" if self.in_db else "Upvote this meme to add it to MemeDB!",
@@ -168,45 +200,104 @@ class Meme(commands.Cog):
 																link = f"https://meme.yiays.com/meme/{self.id}" if self.in_db else '')
 			
 			if self.type in ['audio', 'video', 'webm', 'url']: # Follow up with a link that should be automatically embedded in situations where we have to
-				await channel.send(self.url)
+				await ctx.channel.send(self.url)
 			
 			return True
 		
-		def fetch(self, id, depth=2):
+		def fetch(self, id):
 			query = self.selectquery(selects=['meme.*', 'IFNULL(AVG(edge.Rating),4) AS Edge'], _from='meme', joins=['LEFT JOIN edge ON meme.Id = edge.memeId'], wheres=['Id = '+str(id)], limit='1')
 			
 			return self.runquery(query, 1)
 		
-		def getrandom(self, depth=2, nsfw=False):
-			#TODO This query is too complex for the constructor. Fix that.
-			query = \
-			f"""
-				SELECT r1.*, IFNULL(AVG(edge.Rating),4) AS Edge
-				FROM (meme AS r1 LEFT JOIN edge ON Id = edge.memeId)
-				JOIN (SELECT CEIL(RAND() * (SELECT MAX(Id) FROM meme)) AS maxId) AS r2
-				WHERE r1.Id >= r2.maxId
-				HAVING Edge < {"0.5" if not nsfw else "1.5"}
-				ORDER BY r1.Id ASC
-				LIMIT 1
-			"""
+		def fetchall(self):
+			# Builds cache of all memes in the database, cats and tags will need to be fetched later if and when needed
+			query = self.selectquery(
+				selects=[
+					'meme.*',
+					'description.Id AS descriptionId',
+					'description.userId AS descriptionUserId',
+					'description.Text AS descriptionText',
+					'transcription.Id AS transcriptionId',
+					'transcription.userId AS transcriptionUserId',
+					'transcription.Text AS transcriptionText',
+					'tag.Id AS tagId',
+					'tag.Name AS tagName',
+					'category.Id AS categoryId',
+					'category.Name AS categoryName',
+					'IFNULL(AVG(edge.Rating),4) AS Edge'
+				],
+				_from='meme',
+				joins=[
+					"LEFT JOIN description ON meme.Id = description.memeId",
+					"LEFT JOIN transcription ON meme.Id = transcription.memeId",
+					"LEFT JOIN categoryvote ON categoryvote.memeId = meme.Id",
+					"LEFT JOIN category ON categoryvote.categoryId = category.Id",
+					"LEFT JOIN tagvote ON tagvote.memeId = meme.Id",
+					"LEFT JOIN tag ON tagvote.tagId = tag.Id",
+					"LEFT JOIN edge ON meme.Id = edge.memeId"
+				],
+				groups=['description.Id', 'transcription.Id', 'tag.Id', 'category.Id', 'meme.Id'],
+				orders=['meme.Id DESC']
+			)
 			
-			row = self.runquery(query, 1)
-			
-			return self.getmeme(depth=depth, row=row)
+			lastid = -1
+			for row in self.runquery(query, fetchmode=2):
+				# meme
+				if row['Id']!=lastid:
+					if row['Id'] not in self.parent.memes:
+						self.parent.memes[row['Id']] = Meme.DBMeme(self.parent)
+					self.parent.memes[row['Id']].getmeme(depth=0, row=row)
+				lastid = row['Id']
+				
+				targetmeme = self.parent.memes[row['Id']]
+				
+				# descriptions
+				if row['descriptionId'] is not None:
+					targetmeme.descriptions.append(Meme.DBDescription(id=row['descriptionId'], meme=targetmeme, author=row['descriptionUserId'], text=row['descriptionText'])) # editId may be needed later
+				
+				# transcriptions
+				if row['transcriptionId'] is not None:
+					targetmeme.transcriptions.append(Meme.DBTranscription(id=row['transcriptionId'], meme=targetmeme, author=row['transcriptionUserId'], text=row['transcriptionText'])) # editId may be needed later
+				
+				# categories
+				if row['categoryId'] is not None:
+					targetmeme.categories[row['categoryName']] = Meme.DBCategory(parent=self.parent, id=row['categoryId'], meme=targetmeme, name=row['categoryName']) # voters could be an issue eventually
+				
+				# tags
+				if row['tagId'] is not None:
+					targetmeme.tags[row['tagName']] = Meme.DBTag(parent=self.parent, id=row['tagId'], meme=targetmeme, name=row['tagName']) # voters could be an issue eventually
+				
+				targetmeme.depth = 2 # more or less...
+				
 		
 		def getmeme(self, id=None, depth=2, row='fetchplz'):
-			# depth is still to be implemented
 			# depth 0; just the meme
 			# depth 1; tags and cats
-			# depth 2; tags, cats, desc and trans
+			# depth 2; everything: tags, cats, desc and trans
 			if id is None: id = self.id
 			else: self.id = id
 			
+			
 			if self.in_db and self.cache_age > int(time.time()) - 60*60*24: # < cache lasts 24 hours
-				return self
+				if self.depth >= depth:
+					return self
+				else:
+					if self.depth == 0:
+						self.getcats()
+						self.gettags()
+						if depth > 1:
+							self.getdescriptions()
+							self.gettranscriptions()
+					elif self.depth == 1:
+						self.getdescriptions()
+						self.gettranscriptions()
+					
+					# this doesn't increase the base cache because the base meme isn't fetched
+					self.depth = max(depth, self.depth)
+					return self
 			
 			if row == 'fetchplz':
-				row = self.fetch(id, depth=depth)
+				row = self.fetch(id)
 			
 			self.status = 404
 			if row is not None and row['Id'] is not None:
@@ -229,18 +320,24 @@ class Meme(commands.Cog):
 					self.status = 403
 				
 				if self.edge >= 0.5:
-					# self.nsfw = True - potentially really annoying
+					self.nsfw = True
 					if self.edge >= 1.5:
 						self.status = 403
-		
-				self.gettags()
-				self.getcats()
-				self.getdescriptions()
-				self.gettranscriptions()
+				
+				if depth >= 1:
+					self.gettags()
+					self.getcats()
+					if depth >= 2:
+						self.getdescriptions()
+						self.gettranscriptions()
 		
 				self.cache_age = int(time.time())
+				self.depth = max(depth, self.depth)
 		
 				self.parent.memes[self.id] = self
+			
+			else:
+				print(f"ERROR: failed to fetch meme {self.id}!")
 			
 			return self
 		
@@ -294,166 +391,140 @@ class Meme(commands.Cog):
 			return True
 	
 	class DBSearch(DB):
-		def __init__(self, parent, search, result_type=None, include_tags=True):
+		def __init__(self, parent, search, result_type=None, include_tags=True, nsfw=False):
 			super().__init__(parent.dbpassword)
 			self.parent = parent
+			self.title = None
 			self.search = search
+			self.nsfw = nsfw
 			self.result_type = Meme.DBMeme if result_type is None else result_type
 			self.results = []
+			self.message = None
+			
 			self.include_tags = include_tags
+			self.tag_filters = {}
+			self.cat_filters = {}
+			self.edge_filter = 0
 			
 			self.searchre = {
-				"edge": re.compile(r"([🌶]{1,4})"),
-				"tags": re.compile(r"([-])?#(\w+)"),
-				"cats": re.compile(r"([-])?\$(\w+)")
+				"edge": re.compile(r"edge:(\d)"),
+				"tags": re.compile(r"([-])?tag:([\w\d\-_]+)"),
+				"cats": re.compile(r"([-])?cat:([\w\d\-_]+)")
 			}
 			# Test cases:
-			# 	🌶 -#fnaf -#anime -$anime -#lowquality ばん
-			#		🌶🌶 #shrek $anime
+			# 	edge:1 -tag:fnaf -tag:anime -cat:anime -cat:lowquality ばん
+			#		edge:2 tag:shrek cat:anime
 			
 			self.alphanum = re.compile('[\W_]+')
 			
 			self.query = None
 		
-		def construct(self):
-			selects = []
-			_from		= ''
-			joins		= []
-			wheres  = []
-			groups	= []
-			havings = []
-			orders	= ['meme.Id DESC']
-			limit		= ""
+		def get_results(self):
+			self.tag_filters = {'+':[], '-':[]}
+			self.cat_filters = {'+':[], '-':[]}
+			self.edge_filter = 1.5 if self.nsfw else 0.5
 			
-			if self.result_type is Meme.DBMeme:
-				self.connect()
+			title = []
+			
+			remainder = self.search
+			
+			edge_min = 1
+			edge_max = 2 #TODO: check account before allowing edge values above 2
+			
+			edge = self.searchre['edge'].match(self.search)
+			if edge and edge.group(1).isdigit(): # sanity check
+				self.edge_filter = min(max(int(edge.group(1)), edge_min), edge_max)-0.5
+				remainder = remainder.replace(edge.group(0),'')
+			
+			tags = self.searchre['tags'].findall(self.search)
+			for tag in tags:
+				modifier = tag[0]
+				name = tag[1]
 				
-				# Basic meme search query
-				_from = "meme"
-				selects.append("meme.*")
-				selects.append("IFNULL(AVG(edge.Rating),4) AS Edge")
-				# THIS MUST REMAIN AS INDEX #2
-				selects.append("""
-					REPLACE(
-						REPLACE(
-							REPLACE(
-								LOWER(
-									CONCAT_WS('',
-										(SELECT GROUP_CONCAT(Text SEPARATOR '') FROM description WHERE memeId=meme.Id),
-										(SELECT GROUP_CONCAT(Name SEPARATOR '') FROM category JOIN categoryvote ON Id=categoryId WHERE memeId=meme.Id),
-										(SELECT GROUP_CONCAT(Name SEPARATOR '') FROM tag JOIN tagvote ON Id=tagId WHERE memeId=meme.Id),
-										(SELECT GROUP_CONCAT(Text SEPARATOR '') FROM transcription WHERE memeId=meme.Id),
-										Type,
-										(SELECT IF((SELECT COUNT(*) FROM meme child WHERE CollectionParent = meme.Id)>0,'collection',''))
-									)
-								)
-							,' ','')
-						,CHAR(10 using utf8),'')
-					,'<br/>','') AS SearchData"""
-				)
-				joins += [
-					"LEFT JOIN description ON meme.Id = description.memeId",
-					"LEFT JOIN transcription ON meme.Id = transcription.memeId",
-					"LEFT JOIN categoryvote ON categoryvote.memeId = meme.Id",
-					"LEFT JOIN category ON categoryvote.categoryId = category.Id",
-					"LEFT JOIN tagvote ON tagvote.memeId = meme.Id",
-					"LEFT JOIN tag ON tagvote.tagId = tag.Id",
-					"LEFT JOIN edge ON meme.Id = edge.memeId"
-				]
-				groups.append("meme.Id")
-				limit = "20"
-				
-				# Tags search
-				if self.include_tags:
-					remainder = self.search
-					
-					edge = self.searchre['edge'].match(self.search)
-					if edge:
-						havings.append(f"Edge <= {len(edge.group(1))-0.5}")
-						
-						remainder = remainder.replace('🌶','')
-					
-					tags = self.searchre['tags'].findall(self.search)
-					tagwheres = []
-					for tag in tags:
-						modifier = tag[0]
-						name = tag[1]
-						
-						for dbtag in self.parent.tags.values():
-							if name in self.alphanum.sub('', dbtag.name).lower():
-								tagwheres.append(f"tag.Id {'!=' if modifier=='-' else '='} {dbtag.id}")
-						
-						remainder = remainder.replace('#'+name,'')
-					if len(tagwheres)>0:
-						wheres.append('('+' OR '.join(tagwheres)+')')
-					elif len(tags)>0:
-						wheres.append('tag.Id = -1')
-					
-					cats = self.searchre['cats'].findall(self.search)
-					catwheres = []
-					for cat in cats:
-						modifier = cat[0]
-						name = cat[1]
-						
-						for dbcat in self.parent.categories.values():
-							if name in self.alphanum.sub('', dbcat.name).lower():
-								catwheres.append(f"category.Id {'!=' if modifier=='-' else '='} {dbcat.id}")
-						
-						remainder = remainder.replace('$'+name,'')
-					if len(catwheres)>0:
-						wheres.append('('+' OR '.join(catwheres)+')')
-					elif len(cats)>0:
-						wheres.append('category.Id = -1')
-					
-					remainder = remainder.lower().replace(' ','')
-					if remainder:
-						havings.append(f"SearchData LIKE \"%{self.connection.converter.escape(remainder)}%\"")
-					else:
-						selects.pop(2) # speed up searches when there's no searchdata
+				match = utils.intuitivelistsearch(name.replace('-', ' ').replace('_', ' '), [dbtag.name for dbtag in self.parent.tags.values()])
+				if match:
+					self.tag_filters['-' if modifier == '-' else '+'].append([dbtag.id for dbtag in self.parent.tags.values() if dbtag.name == match][0])
+					title.append(f"#{match}")
 				else:
-					havings.append(f"SearchData LIKE \"%{self.connection.converter.escape(self.search.lower().replace(' ',''))}%\"")
-						
-			#TODO: add support for more types
-			else:
-				raise TypeError("Unsupported type: {}".format(self.result_type.__name__))
+					self.title = "Invalid search"
+					self.message = f"Couldn't find a tag by the name {name}!"
+					return False
+				
+				remainder = remainder.replace('tag:'+name,'')
 			
-			self.query = self.selectquery(selects=selects, _from=_from, joins=joins, wheres=wheres, groups=groups, havings=havings, orders=orders, limit=limit)
-			print(self.query)
-			return self.query
-		
-		def fetch(self):
-			if self.cache_age > int(time.time()) - 60*60*24:
-				return self.results
+			cats = self.searchre['cats'].findall(self.search)
+			catwheres = []
+			for cat in cats:
+				modifier = cat[0]
+				name = cat[1]
+				
+				match = utils.intuitivelistsearch(name.replace('-', ' ').replace('_', ' '), [dbcat.name for dbcat in self.parent.categories.values()])
+				if match:
+					self.cat_filters['-' if modifier == '-' else '+'].append([dbcat.id for dbcat in self.parent.categories.values() if dbcat.name == match][0])
+					title.append(f"{match}")
+				else:
+					self.title = "Invalid search"
+					self.message = f"Couldn't find a category by the name {name}!"
+					return False
+				
+				remainder = remainder.replace('cat:'+name,'')
 			
-			if self.query is None:
-				self.construct()
+			for meme in self.parent.memes.values():
+				#edge search
+				if meme.edge > self.edge_filter or meme.edge < self.edge_filter - 1.0:
+					continue
+				
+				#text search - also inadvertently fetches tags and cats as a result
+				if remainder:
+					if remainder not in meme.searchdata:
+						continue
+				
+				#tag search
+				if self.tag_filters['-']:
+					if set(tag.id for tag in meme.tags.values())&set(self.tag_filters['-']):
+						continue
+				if self.tag_filters['+']:
+					if not (set(tag.id for tag in meme.tags.values())&set(self.tag_filters['+'])):
+						continue
 			
-			for row in self.runquery(self.query, 2):
-				if row['Id'] not in self.parent.memes:
-					self.parent.memes[row['Id']] = Meme.DBMeme(parent = self.parent)
-				self.parent.memes[row['Id']].getmeme(id=row['Id'], row=row)
-				self.results.append(self.parent.memes[row['Id']])
+				#cat search
+				if self.cat_filters['-']:
+					if set(cat.id for cat in meme.categories.values())&set(self.cat_filters['-']):
+						continue
+				if self.cat_filters['+']:
+					if not (set(cat.id for cat in meme.categories.values())&set(self.cat_filters['+'])):
+						continue
+				
+				self.results.append(meme)
 			
-			self.cache_age = int(time.time())
+			self.title = "{} memes".format(', '.join(title))
+			if remainder:
+				self.title += f" which match the search term '{remainder}'"
 			return self.results
 		
-		def pick(self):
+		def pick(self, guild):
 			for result in self.results:
-				if result.id not in self.parent.usedmemes:
+				if result.id not in self.parent.usedmemes[guild]:
 					return result
 			return None
 		
-		async def post(self, channel, n=1):
+		async def post(self, ctx, n=1):
+			await ctx.channel.send(f"**{self.title}** - {len(self.results)} results total.")
+			if self.message:
+				await ctx.channel.send(self.message)
+				return False
+			
 			i = 0
 			while i < int(n):
-				meme = self.pick()
+				meme = self.pick(ctx.guild.id)
 				if meme is None:
-					await channel.send(f"Can't find any{' more' if len(self.results)>0 else ''} memes with this query! Try a less specific search.")
+					await ctx.channel.send(f"Can't find any{' more' if len(self.results)>0 else ''} memes with this query! Try a less specific search.")
 					return False
-				success = await meme.post(channel)
+				success = await meme.post(ctx)
 				if success:
 					i += 1
 				await asyncio.sleep(1)
+			return True
 	
 	class DBTag(DB):
 		def __init__(self, parent, id=None, meme=None, name="", voters=None, popularity=None):
@@ -771,9 +842,12 @@ class Meme(commands.Cog):
 			if globals.verbose: print('meme n command')
 			i = 0
 			while i < int(n):
-				meme = Meme.DBMeme(parent=self).getrandom(nsfw=ctx.channel.is_nsfw())
+				if ctx.channel.is_nsfw():
+					meme = random.choice([meme for meme in self.memes])
+				else:
+					meme = random.choice([meme for meme in self.memes if not meme.is_nsfw])
 				self.memes[meme.id] = meme
-				success = await meme.post(ctx.channel)
+				success = await meme.post(ctx)
 				if success:
 					i += 1
 				await asyncio.sleep(1)
@@ -784,9 +858,9 @@ class Meme(commands.Cog):
 			if id not in self.memes.keys():
 				meme = Meme.DBMeme(parent=self, id=id)
 			else:
-				meme = memes[id]
-			meme.getmeme()
-			await meme.post(ctx.channel, force=True)
+				meme = self.memes[id]
+			meme.getmeme(depth=2)
+			await meme.post(ctx, force=True)
 		
 		elif n == 'delet':
 			if globals.verbose: print('meme delet command')
@@ -807,13 +881,12 @@ class Meme(commands.Cog):
 			
 			if search not in self.searches:
 				async with ctx.channel.typing():
-					searcher = Meme.DBSearch(parent=self, search=search, result_type=Meme.DBMeme, include_tags=True)
-					searcher.construct()
-					searcher.fetch()
+					searcher = Meme.DBSearch(parent=self, search=search, result_type=Meme.DBMeme, include_tags=True, nsfw=ctx.channel.is_nsfw())
+					searcher.get_results()
 					self.searches[search] = searcher
 			else:
 				searcher = self.searches[search]
-				searcher.fetch()
+				searcher.get_results()
 			
-			await searcher.post(ctx.channel, n=n)
+			await searcher.post(ctx, n=n)
 

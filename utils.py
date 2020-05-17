@@ -1,6 +1,7 @@
 import re
 import time
 from collections import namedtuple
+from difflib import SequenceMatcher
 
 timedivider = namedtuple('timedivider', ['threshold', 'divider', 'unit', 'unitplural'], defaults=[0, 0, 'null', None])
 
@@ -80,5 +81,34 @@ class Cached():
 			self.refresh = False
 			return True
 		return self.age < int(time.time())-self.threshold
+
+def intuitivelistsearch(needle, haystack):
+	""" Searches through lists for matches with biases towards searches that are intuitive, but not the clostest match in a logical sense """
+	needle = needle.lower()
+	
+	firstclass = []
+	secondclass = []
+	
+	for hay in haystack:
+		# Acronym detection
+		acronym = ''.join([w[0] for w in hay.lower().split(' ')])
+		if SequenceMatcher(None, needle, acronym).ratio() > 0.6:
+			firstclass.append(hay)
+			continue
+		
+		if needle in hay.lower():
+			# Startswith, always a good default
+			if hay.lower().startswith(needle):
+				firstclass.append(hay)
+				continue
+			
+			secondclass.append(hay)
+			continue
+	
+	if firstclass:
+		return min(firstclass, key=len)
+	elif secondclass:
+		return min(secondclass, key=len)
+	return None
 
 # TODO: create string stripper function for meme search and censor
