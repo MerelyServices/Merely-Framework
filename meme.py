@@ -40,6 +40,7 @@ class Meme(commands.Cog):
 	"""Database and API for collecting, organizing and presenting memes"""
 	def __init__(self, bot, dbpassword):
 		self.bot = bot
+		self.backgroundservice = None
 		self.dbpassword = dbpassword
 		self.session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60))
 		self.searches = {}
@@ -54,9 +55,16 @@ class Meme(commands.Cog):
 		self.categories = {}
 		Meme.DBCategory(self).fetchall()
 		if globals.verbose: print("meme/tags/categories cache done!")
+		
+		self.bot.events['on_ready'].append(self.BackgroundService)
+		self.bot.events['on_message'].append(self.on_message)
+		self.bot.events['on_raw_reaction_add'].append(self.on_raw_reaction_add)
+		self.bot.events['on_raw_reaction_remove'].append(self.on_raw_reaction_remove)
 	
-	def __delete__(self,instance):
-		self.session.close()
+	def __del__(self):
+		pass
+		#TODO: make this work...
+		# await self.session.close()
 	
 	class UsedMemes(list):
 		def __init__(self, parent):
@@ -391,9 +399,10 @@ class Meme(commands.Cog):
 			return True
 	
 	class DBSearch(DB):
-		def __init__(self, parent, search, result_type=None, include_tags=True, nsfw=False):
+		def __init__(self, parent, owner, search, result_type=None, include_tags=True, nsfw=False):
 			super().__init__(parent.dbpassword)
 			self.parent = parent
+			self.owner = owner
 			self.title = None
 			self.search = search
 			self.nsfw = nsfw
@@ -429,11 +438,13 @@ class Meme(commands.Cog):
 			remainder = self.search
 			
 			edge_min = 1
-			edge_max = 2 #TODO: check account before allowing edge values above 2
+			edge_max = 2 if self.owner.id not in globals.superusers else 4 #TODO: instead fetch the DBUser and check for Admin
 			
 			edge = self.searchre['edge'].match(self.search)
 			if edge and edge.group(1).isdigit(): # sanity check
-				self.edge_filter = min(max(int(edge.group(1)), edge_min), edge_max)-0.5
+				target_edge = int(edge.group(1))
+				self.edge_filter = min(max(target_edge, edge_min), edge_max)-0.5
+				if target_edge != self.edge_filter: self.message = f"Warning: Your requested edge level is invalid or unavailable to your account, rounded to {self.edge_filter}"
 				remainder = remainder.replace(edge.group(0),'')
 			
 			tags = self.searchre['tags'].findall(self.search)
@@ -512,13 +523,13 @@ class Meme(commands.Cog):
 			await ctx.channel.send(f"**{self.title}** - {len(self.results)} results total.")
 			if self.message:
 				await ctx.channel.send(self.message)
-				return False
+				if not self.message.startswith("Warning: "): return False
 			
 			i = 0
 			while i < int(n):
 				meme = self.pick(ctx.guild.id)
 				if meme is None:
-					await ctx.channel.send(f"Can't find any{' more' if len(self.results)>0 else ''} memes with this query! Try a less specific search.")
+					await ctx.channel.send(f"Can't find any{' more ' if len(self.results)>0 else ' '}memes with this query! Try a less specific search.")
 					return False
 				success = await meme.post(ctx)
 				if success:
@@ -618,17 +629,25 @@ class Meme(commands.Cog):
 			self.is_banned = row['Banned']
 	
 	async def BackgroundService(self,skip=0):
-		
-		for channel in [m.id for m in globals.memechannels][skip:]:
-			counter = 0
-			channel=self.bot.get_channel(channel)
-			print('BS: iterating upon #'+channel.name+'...')
-			print("BS: 0",end='\r')
-			async for message in channel.history(limit=10000):
-				counter+=1
-				print('BS: '+str(counter),end='\r')
-				await self.ReactionCrawler(message,channel)
-		print('BS: done')
+		if globals.logchannel: await self.bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - starting background service...")
+		try:
+			pass
+			"""
+			for channel in [m.id for m in globals.memesources][skip:]:
+				counter = 0
+				channel=self.bot.get_channel(channel)
+				print('BS: iterating upon #'+channel.name+'...')
+				print("BS: 0",end='\r')
+				async for message in channel.history(limit=10000):
+					counter+=1
+					print('BS: '+str(counter),end='\r')
+					await self.ReactionCrawler(message,channel)
+			print('BS: done')
+			"""
+		except Exception as e:
+			if globals.logchannel and self.bot.is_ready(): await self.bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - background service failed to complete!```"+str(e)+"```")
+		else:
+			if globals.logchannel and self.bot.is_ready(): await self.bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - background service ended.")
 	
 	async def ReactionCrawler(self,message,channel):
 		result = -1
@@ -717,7 +736,7 @@ class Meme(commands.Cog):
 			edge = 4
 			tags = []
 			cats = []
-			for memechannel in globals.memechannels:
+			for memechannel in globals.memesources:
 				if message.channel.id == memechannel.id:
 					edge = memechannel.edge
 					tags = memechannel.tags
@@ -801,6 +820,10 @@ class Meme(commands.Cog):
 			return memes
 		else: return None
 
+	async def on_message(self, message):
+		if message.channel.id in [m.id for m in globals.memesources]:
+			self.OnMemePosted(message)
+
 	async def OnMemePosted(self,message):
 		result = await self.GetMessageUrls(message)
 		if result:
@@ -811,6 +834,14 @@ class Meme(commands.Cog):
 				out+='found type '+item[1]+' at '+item[0]+'\n'
 			return out
 		return "couldn't find a meme!"
+	
+	async def on_raw_reaction_add(self, e):
+		if e.channel_id in [m.id for m in globals.memesources] and e.user_id != bot.user.id:
+			await self.OnReaction(True,e.message_id,e.user_id,e.channel_id,e.emoji)
+	
+	async def on_raw_reaction_remove(self, e):
+		if e.channel_id in [m.id for m in globals.memesources]:
+			await self.OnReaction(False,e.message_id,e.user_id)
 	
 	async def OnReaction(self,add,message_id,user_id,channel_id=None,emoji=None):
 		if add:
@@ -843,9 +874,9 @@ class Meme(commands.Cog):
 			i = 0
 			while i < int(n):
 				if ctx.channel.is_nsfw():
-					meme = random.choice([meme for meme in self.memes])
+					meme = random.choice([meme for meme in self.memes if meme.edge < 1.5])
 				else:
-					meme = random.choice([meme for meme in self.memes if not meme.is_nsfw])
+					meme = random.choice([meme for meme in self.memes if not meme.is_nsfw and meme.edge < 0.5])
 				self.memes[meme.id] = meme
 				success = await meme.post(ctx)
 				if success:
@@ -881,11 +912,12 @@ class Meme(commands.Cog):
 			
 			if search not in self.searches:
 				async with ctx.channel.typing():
-					searcher = Meme.DBSearch(parent=self, search=search, result_type=Meme.DBMeme, include_tags=True, nsfw=ctx.channel.is_nsfw())
+					searcher = Meme.DBSearch(parent=self, owner=ctx.message.author, search=search, result_type=Meme.DBMeme, include_tags=True, nsfw=ctx.channel.is_nsfw())
 					searcher.get_results()
 					self.searches[search] = searcher
 			else:
 				searcher = self.searches[search]
+				searcher.owner = ctx.message.author
 				searcher.get_results()
 			
 			await searcher.post(ctx, n=n)

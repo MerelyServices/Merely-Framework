@@ -17,6 +17,18 @@ class Fun(commands.Cog):
 		self.usedmemes=[]
 		self.thonks=globals.thonks.split(' ')
 		
+		self.bot.events['on_ready'].append(self.recover_status)
+	
+	async def recover_status(self):
+		with open(globals.store+"playing.txt","r") as file:
+			playing=file.read().split()
+		if len(playing)>1:
+			print('changing status to '+' '.join(playing)+'...')
+			await bot.cogs['Fun'].set_status(playing[0], ' '.join(playing[1:]))
+		else:
+			print('no playing status found')
+			await bot.cogs['Fun'].set_status()
+	
 	def printvote(self,q,v,t,e):
 		if t-time.time()>=1:
 			min,sec=divmod(round(t-time.time()),60)

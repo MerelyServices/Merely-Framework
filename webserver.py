@@ -24,11 +24,15 @@ class Webserver(commands.Cog):
 												 web.get('/lacket', self.lacket),
 												 web.get('/favicon.ico', self.favicon)])
 		self.runner=web.AppRunner(self.app)
+		self.site = None
+		
+		self.bot.events['on_ready'].append(start)
 	
 	async def start(self):
-		await self.runner.setup()
-		site = web.TCPSite(self.runner,'0.0.0.0',globals.apiport)
-		await site.start()
+		if self.site is None:
+			await self.runner.setup()
+			self.site = web.TCPSite(self.runner,'0.0.0.0',globals.apiport)
+			await site.start()
 	
 	async def stop(self):
 		await self.runner.cleanup()

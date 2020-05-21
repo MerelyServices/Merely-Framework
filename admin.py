@@ -11,6 +11,12 @@ class Admin(commands.Cog):
 	"""Admin related commands."""
 	def __init__(self, bot):
 		self.bot = bot
+		
+		self.bot.events['on_ready'].append(self.undead)
+		self.bot.events['on_member_join'].append(self.welcome_member)
+		self.bot.events['on_member_remove'].append(self.farewell_member)
+		self.bot.events['on_message'].append(self.janitorservice)
+		self.bot.events['on_guild_join'].append(self.send_ownerintro)
 	
 	def printlist(self,list,n,limit):
 		s="page "+str(n+1)+" of "+str(math.ceil(len(list)/limit))+";```"+'\n'.join(list[n*limit:min(n*limit+limit,len(list))])+"```"
@@ -63,6 +69,13 @@ class Admin(commands.Cog):
 			globals.save()
 			await ctx.message.channel.send("removed and disabled the welcome message!")
 	
+	async def welcome_member(self, member):
+		if member.id == bot.user.id:
+			return
+		globals.config.read(globals.store+'config.ini')
+		if str(member.guild.id) in globals.config.sections() and globals.config.get(str(member.guild.id),'welcome_message') != '':
+			await bot.get_channel(int(globals.config.get(str(member.guild.id),'welcome_channel'))).send(globals.config.get(str(member.guild.id),'welcome_message').format('<@!'+str(member.id)+'>',member.guild.name))
+	
 	@commands.group(pass_context=True, no_pm=True, aliases=['goodbye', 'bye'])
 	async def farewell(self,ctx):
 		"""Configure the farewell message for your server. Not obsolete, just can't be in the same script as m/welcome"""
@@ -108,6 +121,13 @@ class Admin(commands.Cog):
 			globals.config.set(str(ctx.message.guild.id),'farewell_message','')
 			globals.save()
 			await ctx.message.channel.send("removed and disabled the farewell message!")
+	
+	async def farewell_member(self, member):
+		if member.id == bot.user.id:
+			return
+		globals.config.read(globals.store+'config.ini')
+		if str(member.guild.id) in globals.config.sections() and globals.config.get(str(member.guild.id),'farewell_message') != '':
+			await bot.get_channel(int(globals.config.get(str(member.guild.id),'farewell_channel'))).send(globals.config.get(str(member.guild.id),'farewell_message').format(member.name+'#'+str(member.discriminator)))
 	
 	async def janitorservice(self,msg):
 		if str(msg.channel.id) in globals.config.get('janitor','strict',fallback='').split(' '):
@@ -183,6 +203,18 @@ class Admin(commands.Cog):
 		else:
 			await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","die")
 		return True
+	
+	async def undead(self):
+		with open(globals.store+'alive.txt','r') as f:
+			try:
+				id=int(f.read())
+			except:
+				id=False
+		if id:
+			print('informing channel '+str(id)+' of my return...')
+			await emformat.genericmsg(self.bot.get_channel(id),"i have returned.","greet","die")
+		with open(globals.store+'alive.txt','w') as f:
+			f.write('')
 	
 	@commands.command(pass_context=True, no_pm=True, aliases=['clear'])
 	async def clean(self,ctx,n=50,strict=''):

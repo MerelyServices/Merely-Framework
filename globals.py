@@ -24,7 +24,6 @@ modules={
 bot={}
 store='merely_data/'
 dhelp={}
-connected=False
 
 owner=0
 invite=None
@@ -45,11 +44,13 @@ iconurl="https://cdn.discordapp.com/avatars/309270899909984267/1d574f78b4d4acec1
 thonks=''
 ver='0.0.0'
 lastver='0.0.0'
+changes=[]
 authusers=[]
 superusers=[]
 owneroptout=[]
 
-memechannels=[]
+memesources={}
+memesubscriptions={}
 memesites={'trusted':[],'blocked':[]}
 
 class MemeChannel():
@@ -62,7 +63,7 @@ class MemeChannel():
 def reload():
 	global modules,prefix_short,prefix_long,name,verbose,logchannel,musicbuddy,feedbackchannel,modchannel
 	global emurl,apiurl,apiport,iconurl,thonks,ver,lastver,changes,lockout,authusers,superusers
-	global memechannels,memesites,owner,invite,beta,owneroptout
+	global memesources,memesubscriptions,memesites,owner,invite,beta,owneroptout
 	
 	print('reading config...')
 	assurepath(store+'config.ini')
@@ -131,14 +132,12 @@ def reload():
 	superusers = failsafelist(config.get('settings','authusers',fallback='').split(','), int)
 	owneroptout = failsafelist(config.get('settings','owneroptout',fallback='').split(','), int)
 	
-	assuresection('memechannels',{'0':'','1':'','2':'','3':''})
-	for level in config['memechannels']:
-		for channel in config.get('memechannels',level,fallback='').split(','):
-			if len(channel)>0:
-				assuresection(channel, {'memetags': '', 'memecats': ''})
-				memechannels.append(MemeChannel(int(channel), int(level),
-														tags=config.get(channel, 'memetags', fallback='').split(','),
-														categories=config.get(channel, 'memecats', fallback='').split(',')))
+	assuresection('memesources',{})
+	for channel in config['memesources']:
+		memesources[int(channel)] = config.get('memesources', channel, fallback='')
+	assuresection('memesubscriptions',{})
+	for channel in config['memesubscriptions']:
+		memesubscriptions[int(channel)] = config.get('memesubscriptions', channel, fallback='')
 	
 	assuresection('memesites',{'trusted':'','blocked':''})
 	memesites={trust:[url for url in config.get('memesites',trust,fallback='').split(',')] for trust in config['memesites']}
@@ -156,7 +155,7 @@ def reload():
 	print('done!')
 
 def save():
-	global lockout,changes,owneroptout,memechannels
+	global lockout,changes,owneroptout,memesources,memesubscriptions
 	#perms
 	for user,time in lockout.items():
 		config.set('lockout',user,time)
@@ -165,10 +164,10 @@ def save():
 	config.set('memesites','trusted',','.join([str(a) for a in memesites['trusted']]))
 	config.set('memesites','blocked',','.join([str(a) for a in memesites['blocked']]))
 	
-	for memechannel in memechannels:
-		config.set('memechannels', str(memechannel.edge), str(memechannel.id))
-		config.set(str(memechannel.id), 'memetags', ','.join(memechannel.tags))
-		config.set(str(memechannel.id), 'memecats', ','.join(memechannel.categories))
+	for channel in memesources:
+		config.set('memechannels', str(channel), memesources[channel])
+	for channel in memesubscriptions:
+		config.set('memechannels', str(channel), memesubscriptions[channel])
 	
 	with open(store+'config.ini','w', encoding='utf-8') as f:
 		config.write(f)

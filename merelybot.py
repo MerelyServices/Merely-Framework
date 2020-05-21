@@ -2,6 +2,8 @@
 	Merely - created by Yiays#5930
 	https://merely.yiays.com
 	A Discord bot created to entertian, moderate, and inform.
+	
+	merelybot.py is a barebones core to be extended upon with plugins
 """
 
 import os, sys, traceback, asyncio, time, importlib
@@ -36,8 +38,326 @@ bot.remove_command('help')
 
 globals.bot=bot
 
+if globals.verbose: print('setting up events...')
+# Some events are not included for security purposes
+bot.events={'on_connect':[],
+						'on_disconnect':[],
+						'on_ready':[],
+						'on_shard_ready':[],
+						'on_resumed':[],
+						'on_error':[],
+						'on_socket_raw_receive':[],
+						'on_socket_raw_send':[],
+						'on_typing':[],
+						'on_message':[],
+						'on_message_delete':[],
+						'on_bulk_message_delete':[],
+						'on_raw_message_delete':[],
+						'on_raw_bulk_message_delete':[],
+						'on_message_edit':[],
+						'on_raw_message_edit':[],
+						'on_reaction_add':[],
+						'on_raw_reaction_add':[],
+						'on_reaction_remove':[],
+						'on_raw_reaction_remove':[],
+						'on_reaction_clear':[],
+						'on_raw_reaction_clear':[],
+						'on_reaction_clear_emoji':[],
+						'on_raw_reaction_clear_emoji':[],
+						'on_private_channel_delete':[],
+						'on_private_channel_create':[],
+						'on_private_channel_update':[],
+						'on_private_channel_pins_update':[],
+						'on_guild_channel_delete':[],
+						'on_guild_channel_create':[],
+						'on_guild_channel_update':[],
+						'on_guild_channel_pins_update':[],
+						'on_guild_integrations_update':[],
+						'on_webhooks_update':[],
+						'on_member_join':[],
+						'on_member_remove':[],
+						'on_member_update':[],
+						'on_user_update':[],
+						'on_guild_join':[],
+						'on_guild_remove':[],
+						'on_guild_update':[],
+						'on_guild_role_create':[],
+						'on_guild_role_delete':[],
+						'on_guild_role_update':[],
+						'on_guild_emojis_update':[],
+						'on_guild_available':[],
+						'on_guild_unavailable':[],
+						'on_voice_state_update':[],
+						'on_member_ban':[],
+						'on_member_unban':[],
+						'on_invite_create':[],
+						'on_invite_delete':[]
+						}
+
+@bot.event
+async def on_connect():
+	for func in bot.events['on_connect']:
+		asyncio.ensure_future(func())
+
+@bot.event
+async def on_disconnect():
+	for func in bot.events['on_disconnect']:
+		asyncio.ensure_future(func())
+
+@bot.event
+async def on_ready():
+	for func in bot.events['on_ready']:
+		asyncio.ensure_future(func())
+
+@bot.event
+async def on_shard_ready(shard_id):
+	for func in bot.events['on_shard_ready']:
+		asyncio.ensure_future(func(shard_id))
+
+@bot.event
+async def on_resumed():
+	for func in bot.events['on_resumed']:
+		asyncio.ensure_future(func())
+
+@bot.event
+async def on_error(event, *args, **kwargs):
+	raise #TODO: get this working
+	#for func in bot.events['on_error']:
+		#asyncio.ensure_future(func(event, *args, **kwargs))
+
+@bot.event
+async def on_socket_raw_receive(msg):
+	for func in bot.events['on_socket_raw_receive']:
+		asyncio.ensure_future(func(msg))
+
+@bot.event
+async def on_socket_raw_send(payload):
+	for func in bot.events['on_socket_raw_send']:
+		asyncio.ensure_future(func(payload))
+
+@bot.event
+async def on_typing(channel, user, when):
+	for func in bot.events['on_typing']:
+		asyncio.ensure_future(func(channel, user, when))
+
+@bot.event
+async def on_message(message):
+	for func in bot.events['on_message']:
+		asyncio.ensure_future(func(message))
+
+@bot.event
+async def on_message_delete(message):
+	for func in bot.events['on_message_delete']:
+		asyncio.ensure_future(func(message))
+
+@bot.event
+async def on_bulk_message_delete(messages):
+	for func in bot.events['on_bulk_message_delete']:
+		asyncio.ensure_future(func(messages))
+
+@bot.event
+async def on_raw_message_delete(payload):
+	for func in bot.events['on_raw_message_delete']:
+		asyncio.ensure_future(func(payload))
+
+@bot.event
+async def on_raw_bulk_message_delete(payload):
+	for func in bot.events['on_raw_bulk_message_delete']:
+		asyncio.ensure_future(func(payload))
+
+@bot.event
+async def on_message_edit(before, after):
+	for func in bot.events['on_message_edit']:
+		asyncio.ensure_future(func(before, after))
+
+@bot.event
+async def on_raw_message_edit(payload):
+	for func in bot.events['on_raw_message_edit']:
+		asyncio.ensure_future(func(payload))
+
+@bot.event
+async def on_reaction_add(reaction, user):
+	for func in bot.events['on_reaction_add']:
+		asyncio.ensure_future(func(reaction, user))
+
+@bot.event
+async def on_raw_reaction_add(payload):
+	for func in bot.events['on_raw_reaction_add']:
+		asyncio.ensure_future(func(payload))
+
+@bot.event
+async def on_reaction_remove(reaction, user):
+	for func in bot.events['on_reaction_remove']:
+		asyncio.ensure_future(func(reaction, user))
+
+@bot.event
+async def on_raw_reaction_remove(payload):
+	for func in bot.events['on_raw_reaction_remove']:
+		asyncio.ensure_future(func(payload))
+
+@bot.event
+async def on_reaction_clear(message, reactions):
+	for func in bot.events['on_reaction_clear']:
+		asyncio.ensure_future(func(message, reactions))
+
+@bot.event
+async def on_raw_reaction_clear(payload):
+	for func in bot.events['on_raw_reaction_clear']:
+		asyncio.ensure_future(func(payload))
+
+@bot.event
+async def on_reaction_clear_emoji(reaction):
+	for func in bot.events['on_reaction_clear_emoji']:
+		asyncio.ensure_future(func(reaction))
+
+@bot.event
+async def on_raw_reaction_clear_emoji(payload):
+	for func in bot.events['on_raw_reaction_clear_emoji']:
+		asyncio.ensure_future(func(payload))
+
+@bot.event
+async def on_private_channel_delete(channel):
+	for func in bot.events['on_private_channel_delete']:
+		asyncio.ensure_future(func(channel))
+
+@bot.event
+async def on_private_channel_create(channel):
+	for func in bot.events['on_private_channel_create']:
+		asyncio.ensure_future(func(channel))
+
+@bot.event
+async def on_private_channel_update(before, after):
+	for func in bot.events['on_private_channel_update']:
+		asyncio.ensure_future(func(before, after))
+
+@bot.event
+async def on_private_channel_pins_update(channel, last_pin):
+	for func in bot.events['on_private_channel_pins_update']:
+		asyncio.ensure_future(func(channel, last_pin))
+
+@bot.event
+async def on_guild_channel_delete(channel):
+	for func in bot.events['on_guild_channel_delete']:
+		asyncio.ensure_future(func(channel))
+
+@bot.event
+async def on_guild_channel_create(channel):
+	for func in bot.events['on_guild_channel_create']:
+		asyncio.ensure_future(func(channel))
+
+@bot.event
+async def on_guild_channel_update(before, after):
+	for func in bot.events['on_guild_channel_update']:
+		asyncio.ensure_future(func(before, after))
+
+@bot.event
+async def on_guild_channel_pins_update(channel, last_pin):
+	for func in bot.events['on_guild_channel_pins_update']:
+		asyncio.ensure_future(func(channel, last_pin))
+
+@bot.event
+async def on_guild_integrations_update(guild):
+	for func in bot.events['on_guild_integrations_update']:
+		asyncio.ensure_future(func(guild))
+
+@bot.event
+async def on_webhooks_update(channel):
+	for func in bot.events['on_webhooks_update']:
+		asyncio.ensure_future(func(channel))
+
+@bot.event
+async def on_member_join(member):
+	for func in bot.events['on_member_join']:
+		asyncio.ensure_future(func(member))
+
+@bot.event
+async def on_member_remove(member):
+	for func in bot.events['on_member_remove']:
+		asyncio.ensure_future(func(member))
+
+@bot.event
+async def on_member_update(before, after):
+	for func in bot.events['on_member_update']:
+		asyncio.ensure_future(func(before, after))
+
+@bot.event
+async def on_user_update(before, after):
+	for func in bot.events['on_user_update']:
+		asyncio.ensure_future(func(before, after))
+
+@bot.event
+async def on_guild_join(guild):
+	for func in bot.events['on_guild_join']:
+		asyncio.ensure_future(func(guild))
+
+@bot.event
+async def on_guild_remove(guild):
+	for func in bot.events['on_guild_remove']:
+		asyncio.ensure_future(func(guild))
+
+@bot.event
+async def on_guild_update(before, after):
+	for func in bot.events['on_guild_update']:
+		asyncio.ensure_future(func(before, after))
+
+@bot.event
+async def on_guild_role_create(role):
+	for func in bot.events['on_guild_role_create']:
+		asyncio.ensure_future(func(role))
+
+@bot.event
+async def on_guild_role_delete(role):
+	for func in bot.events['on_guild_role_delete']:
+		asyncio.ensure_future(func(role))
+
+@bot.event
+async def on_guild_role_update(before, after):
+	for func in bot.events['on_guild_role_update']:
+		asyncio.ensure_future(func(before, after))
+
+@bot.event
+async def on_guild_emojis_update(guild, before, after):
+	for func in bot.events['on_guild_emojis_update']:
+		asyncio.ensure_future(func(guild, before, after))
+
+@bot.event
+async def on_guild_available(guild):
+	for func in bot.events['on_guild_available']:
+		asyncio.ensure_future(func(guild))
+
+@bot.event
+async def on_guild_unavailable(guild):
+	for func in bot.events['on_guild_unavailable']:
+		asyncio.ensure_future(func(guild))
+
+@bot.event
+async def on_voice_state_update(member, before, after):
+	for func in bot.events['on_voice_state_update']:
+		asyncio.ensure_future(func(member, before, after))
+
+@bot.event
+async def on_member_ban(guild, user):
+	for func in bot.events['on_member_ban']:
+		asyncio.ensure_future(func(guild, user))
+
+@bot.event
+async def on_member_unban(guild, user):
+	for func in bot.events['on_member_unban']:
+		asyncio.ensure_future(func(guild, user))
+
+@bot.event
+async def on_invite_create(invite):
+	for func in bot.events['on_invite_create']:
+		asyncio.ensure_future(func(invite))
+
+@bot.event
+async def on_invite_delete(invite):
+	for func in bot.events['on_invite_delete']:
+		asyncio.ensure_future(func(invite))
+
+if globals.verbose: print('events done!')
+
 if globals.verbose: print('importing modules...')
-if globals.verbose: print('main done!')
 
 # bot command modules
 # globals
@@ -140,8 +460,6 @@ if globals.modules['core']:
 						
 						# make discord.py refresh the available commands
 						bot.remove_cog(modulename.capitalize())
-					
-						# - start up the modules again
 						
 						# modules that need extra parameters
 						if modulename in ['meme', 'tools']:
@@ -174,8 +492,6 @@ if globals.modules['core']:
 					try:
 						# - load the module
 						loadedmodule = importlib.import_module(modulename)
-					
-						# - start up the modules again
 						
 						# modules that need extra parameters
 						if modulename in ['meme', 'tools']:
@@ -232,62 +548,20 @@ if globals.modules['core']:
 	bot.add_cog(Core(bot))
 	if globals.verbose: print('reload done!')
 
-@bot.event
-async def on_connect():
-	print('connected!\nlogging in...')
+async def onconnect():
+	print('connected!')
+bot.events['on_connect'].append(onconnect)
 
-@bot.event
-async def on_ready():
+async def onready():
 	print('logged in as')
 	print(bot.user.name)
 	print(bot.user.id)
 	print('------')
 	
-	if not globals.connected:
-		if globals.modules['webserver']: asyncio.ensure_future(bot.cogs['Webserver'].start())
-		globals.connected=True
-	
-	if globals.modules['fun']:
-		with open(globals.store+"playing.txt","r") as file:
-			playing=file.read().split()
-		if len(playing)>1:
-			print('changing status to '+' '.join(playing)+'...')
-			await bot.cogs['Fun'].set_status(playing[0], ' '.join(playing[1:]))
-		else:
-			print('no playing status found')
-			await bot.cogs['Fun'].set_status()
-	with open(globals.store+'alive.txt','r') as f:
-		try:
-			id=int(f.read())
-		except:
-			id=False
-	if id:
-		print('informing channel '+str(id)+' of my return...')
-		await emformat.genericmsg(bot.get_channel(id),"i have returned.","greet","die")
 	if globals.logchannel: await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - **logged in and restored settings.**")
-	with open(globals.store+'alive.txt','w') as f:
-		f.write('')
-	
-	if globals.modules['meme']:
-		if globals.logchannel: await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - starting background service...")
-		try:
-			await bot.cogs['Meme'].BackgroundService()
-		except Exception as e:
-			if globals.logchannel and bot.is_ready(): await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - background service failed to complete!```"+str(e)+"```")
-		else:
-			if globals.logchannel and bot.is_ready(): await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - background service ended.")
+bot.events['on_ready'].append(onready)
 
-@bot.event
-async def on_message(message):
-	# determine if the message should be logged and log it
-	asyncio.ensure_future(msglog(message))
-	# determine if janitor should run on this message and run it
-	if globals.modules['admin']:
-		asyncio.ensure_future(bot.cogs['Admin'].janitorservice(message))
-	# determine if message was posted in a meme channel, and if so determine if it is a meme
-	if globals.modules['meme'] and message.channel.id in [m.id for m in globals.memechannels]:
-		asyncio.ensure_future(bot.cogs["Meme"].OnMemePosted(message))
-	
+async def command_handler(message):
 	ctx = await bot.get_context(message)
 	
 	# ignore messages that clearly weren't directed at merely
@@ -298,6 +572,7 @@ async def on_message(message):
 			await log("Unknown command: ```"+message.content+"```")
 		else:
 			await bot.invoke(ctx)
+bot.events['on_message'].append(command_handler)
 
 @bot.check_once
 async def on_check(ctx):
@@ -316,44 +591,20 @@ async def on_check(ctx):
 			globals.save()
 	return True
 	
-@bot.event
-async def on_guild_join(server):
+async def log_guildjoin(server):
 	if globals.verbose: print(time.strftime("%H:%M:%S",time.localtime())+" - Joined server "+server.name+"!")
 	if globals.logchannel: await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - **Joined server *"+server.name+"*!** ["+str(server.id)+"]")
-	
-	if globals.modules['admin']:
-		await bot.cogs['Admin'].send_ownerintro(server)
 	
 	await bot.change_presence(activity=discord.Game(name=f"{globals.prefix_long} help | {globals.prefix_short}help"))
 	if globals.modules['fun']:
 		await asyncio.sleep(30)
-		with open(globals.store+"playing.txt","r") as file:
-			playing=file.read().split(' ')
-		if len(playing)>1:
-			await bot.cogs['Fun'].set_status(playing[0], ' '.join(playing[1:]))
-		else:
-			await bot.cogs['Fun'].set_status()
+		await bot.cogs['Fun'].recover_status()
+bot.events['on_guild_join'].append(log_guildjoin)
 
-@bot.event
-async def on_guild_remove(server):
+async def log_guildleave(server):
 	if globals.verbose: print(time.strftime("%H:%M:%S",time.localtime())+" - Left server "+server.name+"!")
 	if globals.logchannel: await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - **Left server *"+server.name+"*!**")
-
-@bot.event
-async def on_member_join(member):
-	if member.id == bot.user.id:
-		return
-	globals.config.read(globals.store+'config.ini')
-	if str(member.guild.id) in globals.config.sections() and globals.config.get(str(member.guild.id),'welcome_message') != '':
-		await bot.get_channel(int(globals.config.get(str(member.guild.id),'welcome_channel'))).send(globals.config.get(str(member.guild.id),'welcome_message').format('<@!'+str(member.id)+'>',member.guild.name))
-
-@bot.event
-async def on_member_remove(member):
-	if member.id == bot.user.id:
-		return
-	globals.config.read(globals.store+'config.ini')
-	if str(member.guild.id) in globals.config.sections() and globals.config.get(str(member.guild.id),'farewell_message') != '':
-		await bot.get_channel(int(globals.config.get(str(member.guild.id),'farewell_channel'))).send(globals.config.get(str(member.guild.id),'farewell_message').format(member.name+'#'+str(member.discriminator)))
+bot.events['on_guild_remove'].append(log_guildleave)
 
 def truncate(str ,l):
 	return (str[:l] + '...') if len(str) > l+3 else str
@@ -392,23 +643,14 @@ async def msglog(msg:discord.Message):
 		if globals.logchannel:
 			await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - ["+channel+"] "+msg.author.name+"#"+msg.author.discriminator+": "+content, embed=embed)
 		print(time.strftime("%H:%M:%S",time.localtime())+" - ["+channel+"] "+msg.author.name+"#"+msg.author.discriminator+": "+content_logsafe)
+bot.events['on_message'].append(msglog)
 
 async def log(msg:str):
 	print(time.strftime("%H:%M:%S",time.localtime())+": "+msg)
 	if globals.logchannel:
 		await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+": "+msg)
 
-@bot.event
-async def on_raw_reaction_add(e):
-	if e.channel_id in [m.id for m in globals.memechannels] and e.user_id != bot.user.id:
-		await bot.cogs['Meme'].OnReaction(True,e.message_id,e.user_id,e.channel_id,e.emoji)
-@bot.event
-async def on_raw_reaction_remove(e):
-	if e.channel_id in [m.id for m in globals.memechannels]:
-		await bot.cogs['Meme'].OnReaction(False,e.message_id,e.user_id)
-
-@bot.event
-async def on_error(*args):
+async def log_error(error, *args):
 	error = traceback.format_exc()
 	print(time.strftime("%H:%M:%S",time.localtime())+" - encountered an error;\n"+error)
 	# This command tends to be called while the bot is shutting down, stop here.
@@ -417,7 +659,7 @@ async def on_error(*args):
 	if globals.logchannel:
 		channel = bot.get_channel(globals.logchannel)
 		await channel.send(time.strftime("%H:%M:%S",time.localtime())+" - **encountered an error;**\n```"+truncate(error,1950)+'```')
-if globals.verbose: print('events done!')
+bot.events['on_error'].append(log_error)
 
 if __name__ == '__main__':
 	if ('Merely' in os.environ and not globals.beta) or ('MerelyBeta' in os.environ and globals.beta):
