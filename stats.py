@@ -51,7 +51,7 @@ class Stats(commands.Cog):
 			'hardware': self.hardware,
 			'generated time': self.gentime
 		},
-		icon=globals.iconurl,footer=globals.name+" v"+globals.ver+" - created by Yiays#5930",link=globals.apiurl)
+		footer_icon=globals.iconurl,footer=globals.name+" v"+globals.ver+" - created by Yiays#5930",link=globals.apiurl)
 
 	def inituptime(self):
 		with open(globals.store+'uptime.txt','r') as f:

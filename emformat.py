@@ -13,11 +13,11 @@ async def genericmsg(channel,content,status,command):
 		msg = await channel.send(content)
 	
 	return msg
-async def make_embed(channel, message, title, description='', color=0x0063B1, author='', image='', thumbnail='', fields={}, footer='', icon='', link='', **kwargs):
+async def make_embed(channel, message, title, description='', color=0x0063B1, author='', author_icon='', image='', thumbnail='', fields={}, footer='', footer_icon='', link='', **kwargs):
 	em=discord.Embed(title=title, type='rich', description=description, color=color, url=link)
 	
 	if author is not None:
-		if author!='': em.set_author(name=author,icon_url=icon)
+		if author!='': em.set_author(name=author,icon_url=author_icon)
 	
 	if thumbnail!='': em.set_thumbnail(url=thumbnail)
 	
@@ -26,7 +26,7 @@ async def make_embed(channel, message, title, description='', color=0x0063B1, au
 	for field in fields:
 		em.add_field(name=field+' ', value=fields[field]+' ', inline=True if len(fields[field])<8 else False)
 	
-	if footer!='': em.set_footer(text=footer,icon_url=icon)
+	if footer!='': em.set_footer(text=footer,icon_url=footer_icon)
 	else: em.set_footer(text=globals.name+" v"+globals.ver+" - created by Yiays#5930")
 	
 	try:
