@@ -165,9 +165,9 @@ def save():
 	config.set('memesites','blocked',','.join([str(a) for a in memesites['blocked']]))
 	
 	for channel in memesources:
-		config.set('memechannels', str(channel), memesources[channel])
+		config.set('memesources', str(channel), memesources[channel])
 	for channel in memesubscriptions:
-		config.set('memechannels', str(channel), memesubscriptions[channel])
+		config.set('memesubscriptions', str(channel), memesubscriptions[channel])
 	
 	with open(store+'config.ini','w', encoding='utf-8') as f:
 		config.write(f)

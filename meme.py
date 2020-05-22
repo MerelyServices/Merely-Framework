@@ -1,5 +1,5 @@
 import globals
-import utils,emformat
+import utils,emformat,help
 import asyncio
 import discord
 from discord.ext import commands
@@ -62,7 +62,11 @@ class Meme(commands.Cog):
 		self.bot.events['on_raw_reaction_remove'].append(self.on_raw_reaction_remove)
 	
 	def __del__(self):
-		pass
+		self.bot.events['on_ready'].remove(self.BackgroundService)
+		self.bot.events['on_message'].remove(self.on_message)
+		self.bot.events['on_raw_reaction_add'].remove(self.on_raw_reaction_add)
+		self.bot.events['on_raw_reaction_remove'].remove(self.on_raw_reaction_remove)
+		
 		#TODO: make this work...
 		# await self.session.close()
 	
@@ -200,12 +204,15 @@ class Meme(commands.Cog):
 																description = self.url if self.type == 'text' else self.descriptions[0].text if len(self.descriptions) else f"This meme needs a description. *({globals.prefix_short}meme #{self.id} describe)*" if self.in_db else "Upvote this meme to add it to MemeDB!",
 																color = self.color,
 																author = "Posted by "+owner.mention if owner else None,
+																author_icon = owner.avatar_url if owner else '',
 																image = self.url if self.type in ['image', 'gif'] else f"https://cdn.yiays.com/meme/{self.id}.thumb.jpg" if type in ['video', 'webm'] else '',
 																fields = {
 																	"categories": ', '.join([name for name in self.categories.keys()]) if len(self.categories) else f"None yet, you should suggest one! *({globals.prefix_short}meme #{self.id} cat)*",
 																	"tags": ', '.join([name for name in self.tags.keys()]) if len(self.tags) else f"None yet, you should suggest some! *({globals.prefix_short}meme #{self.id} tag)*"
 																} if self.in_db else {},
-																link = f"https://meme.yiays.com/meme/{self.id}" if self.in_db else '')
+																link = f"https://meme.yiays.com/meme/{self.id}" if self.in_db else '',
+																footer = "powered by MemeDB (meme.yiays.com)",
+																footer_icon = "https://meme.yiays.com/img/icon.png")
 			
 			if self.type in ['audio', 'video', 'webm', 'url']: # Follow up with a link that should be automatically embedded in situations where we have to
 				await ctx.channel.send(self.url)
@@ -821,7 +828,7 @@ class Meme(commands.Cog):
 		else: return None
 
 	async def on_message(self, message):
-		if message.channel.id in [m.id for m in globals.memesources]:
+		if message.channel in globals.memesources.keys():
 			self.OnMemePosted(message)
 
 	async def OnMemePosted(self,message):
@@ -836,12 +843,10 @@ class Meme(commands.Cog):
 		return "couldn't find a meme!"
 	
 	async def on_raw_reaction_add(self, e):
-		if e.channel_id in [m.id for m in globals.memesources] and e.user_id != bot.user.id:
-			await self.OnReaction(True,e.message_id,e.user_id,e.channel_id,e.emoji)
+		pass #TODO: check if the message is by this bot and is a meme somehow
 	
 	async def on_raw_reaction_remove(self, e):
-		if e.channel_id in [m.id for m in globals.memesources]:
-			await self.OnReaction(False,e.message_id,e.user_id)
+		pass
 	
 	async def OnReaction(self,add,message_id,user_id,channel_id=None,emoji=None):
 		if add:
@@ -920,4 +925,67 @@ class Meme(commands.Cog):
 				searcher.get_results()
 			
 			await searcher.post(ctx, n=n)
-
+	
+	@commands.group(aliases=['memesources'])
+	async def memesource(self, ctx):
+		if ctx.invoked_subcommand is None:
+			await ctx.channel.send(help.dhelp['memesource'])
+	
+	@memesource.command(pass_context=True, no_pm=True, name="add")
+	@commands.has_permissions(administrator=True)
+	async def addmemesource(self, ctx):
+		if ctx.channel.id not in globals.memesources.keys():
+			globals.memesources[ctx.channel.id]=""
+			globals.save()
+			await ctx.channel.send("done! any image or link posted here can now be added to MemeDB.")
+		else:
+			await ctx.channel.send("this channel is already a memesource!")
+	
+	@memesource.command(pass_context=True, no_pm=True, name="remove")
+	@commands.has_permissions(administrator=True)
+	async def removememesource(self, ctx):
+		if ctx.channel.id in globals.memesources.keys():
+			del globals.memesources[ctx.channel.id]
+			globals.save()
+			await ctx.channel.send(f"done! {globals.name} will no longer consider images and links in this channel memes.")
+		else:
+			await ctx.channel.send("this channel isn't a memesource, so can't remove it.")
+	
+	@removememesource.error
+	@addmemesource.error
+	async def memesource_failed(self, ctx, error):
+		await ctx.channel.send(error.lower())
+	
+	
+	@commands.group(aliases=['memesubscription','memesubscriptions','memesubs'])
+	async def memesub(self, ctx):
+		if ctx.invoked_subcommand is None:
+			await ctx.channel.send(help.dhelp['memesub'])
+	
+	@memesub.command(pass_context=True, no_pm=True, name="add")
+	@commands.has_permissions(administrator=True)
+	async def addmemesub(self, ctx, search=""):
+		if len(search)>0:
+			globals.memesubscriptions[ctx.channel.id]=search
+			globals.save()
+			if ctx.channel.id not in globals.memesubscriptions.keys():
+				await ctx.channel.send("done! any new memes matching the provided search term will be posted here!")
+			else:
+				await ctx.channel.send("updated the search term for this memesubscription.")
+		else:
+			await ctx.channel.send("a search term is required! (eg. `edge:1 tag:discord` for sfw discord memes, `edge:2 -cat:anime` for edgy non-anime memes, or `edge:1` for all sfw memes)")
+	
+	@memesub.command(pass_context=True, no_pm=True, name="remove")
+	@commands.has_permissions(administrator=True)
+	async def removememesub(self, ctx):
+		if ctx.channel.id in globals.memesubscriptions.keys():
+			del globals.memesubscriptions[ctx.channel.id]
+			globals.save()
+			await ctx.channel.send(f"done! {globals.name} will no longer post memes here.")
+		else:
+			await ctx.channel.send("this channel doesn't have a memesubscription, so can't remove it.")
+	
+	@removememesub.error
+	@addmemesub.error
+	async def memesub_failed(self, ctx, error):
+		await ctx.channel.send(error.lower())

@@ -26,7 +26,9 @@ dhelp={
 	'command':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}command (search)***\nsearches the list of known commands for any command containing the query.",
 	'image':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}image more|(search)***\nsearches google images for your query and returns the top image. `{globals.prefix_short}image more` returns 5 more results, `{globals.prefix_short}images` returns 5 from the begining.",
 	'google':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}google more|(search)***\nsearches google for your query and returns the top search result. more returns the top 5 results.",
-	'meme':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}meme [n | #(number)]***\nsends a random meme to the channel. n specifies how many you want, #(number) specifies the id of a meme you've seen before.\n\n*{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}meme is designed to avoid repeating memes for as long as possible*",
+	'meme':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}meme [n | #n [describe (description) | transcribe (transcription) | tag (tag) | cat (category)] | (search &| tag:name &| cat:name &| edge:n)]***\nsends a random meme to the channel. n specifies how many you want, #(number) specifies the id of a meme you've seen before. when searching, you can just enter a search string, or specify edge, categories and tags, and you can exclude specific cats and tags with -.\n\n*{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}meme is designed to avoid repeating memes for as long as possible*",
+	'memesource':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}memesource add | remove***\n**SERVER ADMINS ONLY** - enables or disables monitoring of the channel for memes by merely, when monitoring is enabled, merely will ask questions about each meme posted. If the questions are answered, the meme will be added to MemeDB.",
+	'memesub':F"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}memesub add (search) | remove***\n**SERVER ADMINS ONLY** - subscribes a channel to a meme search, this means whenever a new meme is added to the database, if it matches the search term, it will be posted in this channel.",
 	'thonk':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}thonk***\nit just posts a random thonking emoji.",
 	'vote':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}vote question? answer 1, answer 2, as many more answers as you want** - spaces, question marks and commas are important!*\ncreate an interactive, multi-choice poll with the given options, if you add a number at the end, that will be the time limit in minutes before the results are finalised. the longer a poll is running, the more likely it may fail to complete.",
 	'blacklist':f"***{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}blacklist [add (words)|remove (words)|train (url)]***\n**SERVER OWNERS ONLY** - blacklist lists all banned words. you can also add or remove one word at a time to your server's local blacklist\n\n*note that the blacklist exists to prevent users from searching for nsfw content on non-nsfw channels in line with discord's terms of service.*",
@@ -59,7 +61,7 @@ class Help(commands.Cog):
 				f"\n:bulb: for hints, use `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}hint`\n:point_up_2: click *'{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}help'* above to go to the official website with even more information!\n",
 				color=0x2C5ECA,thumbnail=globals.emurl+"help.gif",fields=helpdict,
 				footer=globals.name+" v"+globals.ver+" - created by Yiays#5930",
-				icon=globals.iconurl,
+				footer_icon=globals.iconurl,
 				link=globals.apiurl+'#/help'
 			)
 			#if random.random() < 1/3:
@@ -124,7 +126,7 @@ class Help(commands.Cog):
 		#'💡 keep the lights on':f"consider voting for this bot at [discordbots.org](https://discordbots.org/bot/309270899909984267) if you enjoy its services! the developers would really appreciate it!"
 		},
 		link=globals.apiurl,
-		icon=globals.iconurl,
+		footer_icon=globals.iconurl,
 		footer=f"{globals.name} v{globals.ver} - created by Yiays#5930")
 	
 	@commands.command(pass_context=True, no_pm=False)
