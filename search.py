@@ -42,7 +42,7 @@ class Search(commands.Cog):
 								print("Detecting another redirect! "+url)
 								attempts += 1
 							else:
-								raise Exception(f"ImageSearch: Couldn't find any images. On adition to that, {globals.name} also couldn't a path towards more images.")
+								raise Exception(f"ImageSearch: Couldn't find any images. On adition to that, {globals.name} also couldn't find a path towards more images.")
 					else:
 						raise Exception("ImageSearch: GET {} failed: Error code {}".format(url,r.status))
 			raise Exception("ImageSearch: It appears that google has completely blocked this bot.")
@@ -123,7 +123,7 @@ class Search(commands.Cog):
 						query,f"showing the top result.\ntype `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}google more` for more results.",
 						color=0x4385F6,author='google.com',thumbnail=globals.emurl+'result.gif',
 						fields={self.results[ctx.message.guild.id]['title'][0]:self.results[ctx.message.guild.id]['description'][0]+' - [read more](https://www.google.com'+self.results[ctx.message.guild.id]['url'][0]+')'},
-						footer=globals.name" v"+globals.ver+" - created by Yiays#5930",
+						footer=globals.name+" v"+globals.ver+" - created by Yiays#5930",
 						icon=globals.iconurl,
 						link="http://www.google.com/search?q="+urllib.parse.quote(query,safe='').replace('%20','+'))
 				else:

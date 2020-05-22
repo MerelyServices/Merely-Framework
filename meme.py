@@ -874,10 +874,9 @@ class Meme(commands.Cog):
 			i = 0
 			while i < int(n):
 				if ctx.channel.is_nsfw():
-					meme = random.choice([meme for meme in self.memes if meme.edge < 1.5])
+					meme = random.choice([meme for meme in self.memes.values() if meme.edge < 1.5])
 				else:
-					meme = random.choice([meme for meme in self.memes if not meme.is_nsfw and meme.edge < 0.5])
-				self.memes[meme.id] = meme
+					meme = random.choice([meme for meme in self.memes.values() if not meme.nsfw and meme.edge < 0.5])
 				success = await meme.post(ctx)
 				if success:
 					i += 1
