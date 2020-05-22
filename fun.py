@@ -19,6 +19,9 @@ class Fun(commands.Cog):
 		
 		self.bot.events['on_ready'].append(self.recover_status)
 	
+	def __del__(self):
+		self.bot.events['on_ready'].remove(self.recover_status)
+	
 	async def recover_status(self):
 		with open(globals.store+"playing.txt","r") as file:
 			playing=file.read().split()

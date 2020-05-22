@@ -18,6 +18,13 @@ class Admin(commands.Cog):
 		self.bot.events['on_message'].append(self.janitorservice)
 		self.bot.events['on_guild_join'].append(self.send_ownerintro)
 	
+	def __del__(self):
+		self.bot.events['on_ready'].remove(self.undead)
+		self.bot.events['on_member_join'].remove(self.welcome_member)
+		self.bot.events['on_member_remove'].remove(self.farewell_member)
+		self.bot.events['on_message'].remove(self.janitorservice)
+		self.bot.events['on_guild_join'].remove(self.send_ownerintro)
+	
 	def printlist(self,list,n,limit):
 		s="page "+str(n+1)+" of "+str(math.ceil(len(list)/limit))+";```"+'\n'.join(list[n*limit:min(n*limit+limit,len(list))])+"```"
 		print(s)
@@ -194,7 +201,7 @@ class Admin(commands.Cog):
 		if globals.verbose: print('die command')
 		if ctx.message.author.id in globals.authusers:
 			#await emformat.genericmsg(ctx.message.channel,"shutting down...","bye","die")
-			await emformat.make_embed(ctx.message.channel, "", f"{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}die", "shutting down...", image="https://media.discordapp.net/attachments/302695523360440322/685087322844299284/tenor.gif", footer=f"{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short} v"+globals.ver+" - created by Yiays#5930", icon=globals.iconurl, link=globals.apiurl+"#/die")
+			await emformat.make_embed(ctx.message.channel, "", f"{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}die", "shutting down...", image="https://media.discordapp.net/attachments/302695523360440322/685087322844299284/tenor.gif", footer=f"{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short} v"+globals.ver+" - created by Yiays#5930", footer_icon=globals.iconurl, link=globals.apiurl+"#/die")
 			with open(globals.store+'alive.txt','w') as f:
 				f.write(str(ctx.message.channel.id))
 			if globals.modules['webserver']:

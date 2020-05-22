@@ -28,6 +28,9 @@ class Webserver(commands.Cog):
 		
 		self.bot.events['on_ready'].append(start)
 	
+	def __del__(self):
+		self.bot.events['on_ready'].remove(start)
+	
 	async def start(self):
 		if self.site is None:
 			await self.runner.setup()
