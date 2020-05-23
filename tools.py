@@ -24,15 +24,15 @@ class Tools(commands.Cog):
 			r'(?:/?|[/?]\S+)$', re.IGNORECASE
 		)
 
-	@commands.command(pass_context=True, no_pm=False, aliases=['short','shorturl','urlshort','urlshortener','shrink','shrinkurl','urlshrink','urlshrinker','shortlink','linkshort','linkshortener','shrinklink','linkshrink','linkshrinker'])
+	@commands.command(no_pm=False, aliases=['short','shorturl','urlshort','urlshortener','shrink','shrinkurl','urlshrink','urlshrinker','shortlink','linkshort','linkshortener','shrinklink','linkshrink','linkshrinker'])
 	async def shorten(self, ctx, long='', short=''):
 		"""Shorten a provided url using l.yiays.com"""
 		if globals.verbose: print('shorten command')
 		if long=='':
-			await emformat.genericmsg(ctx.message.channel,globals.dhelp['shorten'],'help','shorten')
+			await emformat.genericmsg(ctx.channel,globals.dhelp['shorten'],'help','shorten')
 		else:
 			if(re.match(self.validurl, long) is None):
-				await ctx.channel.send("the provided url is invalid.")
+				await ctx.send("the provided url is invalid.")
 			else:
 				rand = False
 				taken = False
@@ -41,10 +41,10 @@ class Tools(commands.Cog):
 				short = str.replace(str.replace(urllib.parse.quote(short, safe = ''), '%20', '+'), '%2F', '+')
 				while not done:
 					if short == '' or taken:
-						if taken: msg = await ctx.channel.send("sorry, but the shortened url you requested was taken. please type a new one *or 0 for a random one*")
-						else: msg = await ctx.channel.send("if you would like a custom name for the url, say it now. ie. l.yiays.com/*merely* (type 0 if you would like a random url)")
+						if taken: msg = await ctx.send("sorry, but the shortened url you requested was taken. please type a new one *or 0 for a random one*")
+						else: msg = await ctx.send("if you would like a custom name for the url, say it now. ie. l.yiays.com/*merely* (type 0 if you would like a random url)")
 						def check(m):
-							return m.channel == ctx.channel and m.author == ctx.message.author
+							return m.channel == ctx.channel and m.author == ctx.author
 						msg = await self.bot.wait_for('message', check=check)
 						short = str.replace(str.replace(urllib.parse.quote(msg.content, safe = ''), '%20', '+'), '%2F', '+')
 					if short == '0' or rand:
@@ -58,7 +58,7 @@ class Tools(commands.Cog):
 						cursor.execute("INSERT INTO link(short, original, discordId) VALUES(%s, %s, %s)", (short, long, ctx.author.id))
 						mydb.commit()
 						cursor.close()
-						await ctx.channel.send("done - *shortened by {} character(s)*: {}".format(len(long)-(len(short)+12),"https://l.yiays.com/"+short))
+						await ctx.send("done - *shortened by {} character(s)*: {}".format(len(long)-(len(short)+12),"https://l.yiays.com/"+short))
 						done = True
 					elif not rand:
 						taken = True

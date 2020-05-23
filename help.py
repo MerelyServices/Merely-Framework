@@ -51,12 +51,12 @@ class Help(commands.Cog):
 	def __init__(self, bot):
 		self.bot = bot
 
-	@commands.command(pass_context=True, no_pm=False, aliases=['?','??'])
+	@commands.command(no_pm=False, aliases=['?','??'])
 	async def help(self, ctx, *, search=None):
 		"""Lists available commands"""
 		if globals.verbose: print('help command')
 		if search == None:
-			await emformat.make_embed(ctx.message.channel,'go to '+globals.apiurl+' to learn more!',
+			await emformat.make_embed(ctx.channel,'go to '+globals.apiurl+' to learn more!',
 				globals.name+" help",f":grey_question: for specific help, use `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}help [command]`\n:mag_right: to search for commands, use `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}command [search]`"+\
 				f"\n:bulb: for hints, use `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}hint`\n:point_up_2: click *'{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}help'* above to go to the official website with even more information!\n",
 				color=0x2C5ECA,thumbnail=globals.emurl+"help.gif",fields=helpdict,
@@ -65,31 +65,31 @@ class Help(commands.Cog):
 				link=globals.apiurl+'#/help'
 			)
 			#if random.random() < 1/3:
-				#await ctx.message.channel.send("consider upvoting {globals.name} on the discord bot list; https://discordbots.org/bot/309270899909984267")
+				#await ctx.send("consider upvoting {globals.name} on the discord bot list; https://discordbots.org/bot/309270899909984267")
 		else: #detailed help
-			if search in dhelp: await emformat.genericmsg(ctx.message.channel,dhelp[search],"help","help")
-			else: await emformat.genericmsg(ctx.message.channel,"either the command, `"+search+"`, doesn't exist, or it doesn't have any documentation yet.","error","help")
+			if search in dhelp: await emformat.genericmsg(ctx.channel,dhelp[search],"help","help")
+			else: await emformat.genericmsg(ctx.channel,"either the command, `"+search+"`, doesn't exist, or it doesn't have any documentation yet.","error","help")
 
-	@commands.command(pass_context=True, no_pm=False, aliases=['commands'])
+	@commands.command(no_pm=False, aliases=['commands'])
 	async def command(self, ctx, *, search=None):
 		"""Searching existing commands"""
 		if globals.verbose: print('command command')
-		if search==None: await emformat.genericmsg(ctx.message.channel,dhelp['command'],"help","command")
+		if search==None: await emformat.genericmsg(ctx.channel,dhelp['command'],"help","command")
 		else:
 			matches=[s for s in dhelp if search in s or search in dhelp[s]]
 			if matches:
 				matchstr=""
 				for match in matches:
 					matchstr+=dhelp[match]+"\n"
-				await emformat.genericmsg(ctx.message.channel,"here's all matches;\n"+matchstr,"help","command")
+				await emformat.genericmsg(ctx.channel,"here's all matches;\n"+matchstr,"help","command")
 			else:
-				await emformat.genericmsg(ctx.message.channel,"i couldn't find a command matching that search term.","error",'command')
+				await emformat.genericmsg(ctx.channel,"i couldn't find a command matching that search term.","error",'command')
 
-	@commands.command(pass_context=True, no_pm=False)
+	@commands.command(no_pm=False)
 	async def hint(self,ctx):
 		"""Give users hints on how to use merely"""
 		if globals.verbose: print('hint command')
-		await emformat.make_embed(ctx.message.channel,'',title="Did you know...",
+		await emformat.make_embed(ctx.channel,'',title="Did you know...",
 				description=random.choice(
 				[f"`{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}help` followed by a command name explains the command in more detail. eg. `{globals.prefix_short}help meme`",
 				 f"click the title of any command's message to be taken to the online docs, which includes interactive tutorials for each command!",
@@ -111,11 +111,11 @@ class Help(commands.Cog):
 				footer=globals.name+" v"+globals.ver+" - created by Yiays#5930"
 			)
 	
-	@commands.command(pass_context=True, no_pm=False, aliases=['about'])
+	@commands.command(no_pm=False, aliases=['about'])
 	async def info(self,ctx):
 		if globals.verbose:print('info command')
 		
-		await emformat.make_embed(ctx.message.channel,'go to '+globals.apiurl+' to learn more!',globals.name+' info','',color=0x2C5ECA,thumbnail=globals.emurl+'greet.gif',
+		await emformat.make_embed(ctx.channel,'go to '+globals.apiurl+' to learn more!',globals.name+' info','',color=0x2C5ECA,thumbnail=globals.emurl+'greet.gif',
 		fields={
 		'🆕 fantastic features!':f"{globals.name} can do lots of stuff, it currently has **{len(dhelp)}** commands available to **{len(self.bot.guilds)}** servers.\ntype `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}help` for a full list of commands or type `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}changelog` to see all the recent additions and fixes!",
 		'😊🤖 mobile and human friendly!':f"{globals.name} is activated by 3 prefixes; `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}<command>`, `{globals.prefix_short}<command>` and `@{globals.name} <command>` pick whichever is easiest for you to type on your device.",
@@ -129,27 +129,27 @@ class Help(commands.Cog):
 		footer_icon=globals.iconurl,
 		footer=f"{globals.name} v{globals.ver} - created by Yiays#5930")
 	
-	@commands.command(pass_context=True, no_pm=False)
+	@commands.command(no_pm=False)
 	async def feedback(self,ctx,*,feedback):
 		if globals.verbose:print('feedback command')
 		owner=self.bot.get_user(globals.owner)
 		if globals.feedbackchannel:
 			try:
-				await self.bot.get_channel(globals.feedbackchannel).send("<@!140297042709708800>, feedback from @{}#{} in {};```{}```".format(ctx.message.author.name,ctx.message.author.discriminator,ctx.message.guild.name,feedback))
+				await self.bot.get_channel(globals.feedbackchannel).send("<@!140297042709708800>, feedback from @{}#{} in {};```{}```".format(ctx.author.name,ctx.author.discriminator,ctx.guild.name,feedback))
 			except Exception as e:
 				print(e)
-				await self.bot.get_channel(globals.feedbackchannel).send("<@!140297042709708800>, feedback from @{}#{};```{}```".format(ctx.message.author.name,ctx.message.author.discriminator,feedback))
-			await emformat.genericmsg(ctx.message.channel,"feedback sent!","done","feedback")
+				await self.bot.get_channel(globals.feedbackchannel).send("<@!140297042709708800>, feedback from @{}#{};```{}```".format(ctx.author.name,ctx.author.discriminator,feedback))
+			await emformat.genericmsg(ctx.channel,"feedback sent!","done","feedback")
 			if owner is None or globals.invite is None:
-				await ctx.message.author.send("thanks for your feedback.\nthe owner of this bot hasn't provided contact details, however they may send a friend request if they require further information.")
+				await ctx.author.send("thanks for your feedback.\nthe owner of this bot hasn't provided contact details, however they may send a friend request if they require further information.")
 			else:
-				await ctx.message.author.send("thanks for your feedback.\nyou may receive a friend request from "+owner.username+'#'+owner.discriminator+" if further information is needed.\n"+\
+				await ctx.author.send("thanks for your feedback.\nyou may receive a friend request from "+owner.username+'#'+owner.discriminator+" if further information is needed.\n"+\
 																			f"alternatively, join {globals.name}'s main discord server, and we can talk directly there; https://discord.gg/"+globals.invite)
-			await ctx.message.channel.send("feedback sent!")
+			await ctx.send("feedback sent!")
 		else:
-			await ctx.message.channel.send(f"unfortunately, the administrator of {globals.name} currently doesn't have a channel in place for receiving feedback. the developers should find your feedback in the logs.")
+			await ctx.send(f"unfortunately, the administrator of {globals.name} currently doesn't have a channel in place for receiving feedback. the developers should find your feedback in the logs.")
 	@feedback.error
 	async def feedback_error(self,ctx,error):
 		print(error)
-		await emformat.genericmsg(ctx.message.channel,"unfortunately there was an error when trying to send your feedback, but the developers should read this error and find your feedback.","error","feedback")
+		await emformat.genericmsg(ctx.channel,"unfortunately there was an error when trying to send your feedback, but the developers should read this error and find your feedback.","error","feedback")
 	

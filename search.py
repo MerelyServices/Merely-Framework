@@ -88,97 +88,97 @@ class Search(commands.Cog):
 					print('google search: error '+str(r.status))
 					return({})
 
-	@commands.command(pass_context=True, no_pm=False, aliases=['gsearch','search'])
+	@commands.command(no_pm=False, aliases=['gsearch','search'])
 	async def google(self, ctx, *, query=''):
 		"""Search Google."""
-		if not (ctx.message.guild.id not in self.results or self.results[ctx.message.guild.id]==None) and query=='more': #show top 5 google search results
+		if not (ctx.guild.id not in self.results or self.results[ctx.guild.id]==None) and query=='more': #show top 5 google search results
 			if globals.verbose: print('google more command')
 			results={}
-			for i in range(max(5,len(self.results[ctx.message.guild.id]['title']))):
-				results[self.results[ctx.message.guild.id]['title'][i]]=self.results[ctx.message.guild.id]['description'][i]+' - [read more](https://www.google.com'+self.results[ctx.message.guild.id]['url'][i]+')'
-			await emformat.make_embed(ctx.message.channel,"here's some more results...",
+			for i in range(max(5,len(self.results[ctx.guild.id]['title']))):
+				results[self.results[ctx.guild.id]['title'][i]]=self.results[ctx.guild.id]['description'][i]+' - [read more](https://www.google.com'+self.results[ctx.guild.id]['url'][i]+')'
+			await emformat.make_embed(ctx.channel,"here's some more results...",
 				query,"showing the top 5 results.",color=0x4385F6,author='google.com',thumbnail=globals.emurl+'result.gif',
 				fields=results,
 				footer=globals.name+" v"+globals.ver+" - created by Yiays#5930",
 				footer_icon=globals.iconurl,
 				link="http://www.google.com/search?q="+urllib.parse.quote(query,safe='').replace('%20','+'))
-			self.results[ctx.message.guild.id]=None
+			self.results[ctx.guild.id]=None
 		else:
 			if globals.verbose: print('google command')
 			if query=='':
-				await emformat.genericmsg(ctx.message.channel,globals.dhelp['google'],'help','google')
+				await emformat.genericmsg(ctx.channel,globals.dhelp['google'],'help','google')
 				return
 			danger=self.bot.cogs['Censor'].dangerous(query, guild=ctx.guild.id)
-			if danger and not ctx.message.channel.is_nsfw():
+			if danger and not ctx.channel.is_nsfw():
 				nope=self.bot.cogs['Censor'].sass()
 				nope+="\ni found these filthy words in your search; `"+(', '.join(danger))+"`"
-				await emformat.genericmsg(ctx.message.channel,nope,'error','google')
+				await emformat.genericmsg(ctx.channel,nope,'error','google')
 				return
-			async with ctx.message.channel.typing():
+			async with ctx.channel.typing():
 				print("searching for '"+query+"'...")
-				self.results[ctx.message.guild.id]=await self.googscrape(query)
+				self.results[ctx.guild.id]=await self.googscrape(query)
 				print("complete!")
-				if self.results[ctx.message.guild.id]['title']:
-					await emformat.make_embed(ctx.message.channel,"here's what I found...",
+				if self.results[ctx.guild.id]['title']:
+					await emformat.make_embed(ctx.channel,"here's what I found...",
 						query,f"showing the top result.\ntype `{globals.prefix_long+' ' if globals.prefix_long else globals.prefix_short}google more` for more results.",
 						color=0x4385F6,author='google.com',thumbnail=globals.emurl+'result.gif',
-						fields={self.results[ctx.message.guild.id]['title'][0]:self.results[ctx.message.guild.id]['description'][0]+' - [read more](https://www.google.com'+self.results[ctx.message.guild.id]['url'][0]+')'},
+						fields={self.results[ctx.guild.id]['title'][0]:self.results[ctx.guild.id]['description'][0]+' - [read more](https://www.google.com'+self.results[ctx.guild.id]['url'][0]+')'},
 						footer=globals.name+" v"+globals.ver+" - created by Yiays#5930",
 						footer_icon=globals.iconurl,
 						link="http://www.google.com/search?q="+urllib.parse.quote(query,safe='').replace('%20','+'))
 				else:
-					await ctx.message.channel.send("it appears that google has completely blocked this bot.")
+					await ctx.send("it appears that google has completely blocked this bot.")
 	@google.error
 	async def google_error(self,ctx,error):
 		print(error)
-		await emformat.genericmsg(ctx.message.channel,"something went wrong when trying to fulfil your search! please try another search term.","error","google")
+		await emformat.genericmsg(ctx.channel,"something went wrong when trying to fulfil your search! please try another search term.","error","google")
 	
-	@commands.command(pass_context=True, no_pm=False, aliases=['images','gimage','googleimage','gimages','googleimages'])
+	@commands.command(no_pm=False, aliases=['images','gimage','googleimage','gimages','googleimages'])
 	async def image(self, ctx, *, query=''):
 		"""Search Google Images"""
 		if globals.verbose: print('google images command')
 		if query=='':
-			await emformat.genericmsg(ctx.message.channel,globals.dhelp['image'],'help','image')
-		if query=='more' and ctx.message.guild.id in self.imgs and self.imgs[ctx.message.guild.id]!=None:
+			await emformat.genericmsg(ctx.channel,globals.dhelp['image'],'help','image')
+		if query=='more' and ctx.guild.id in self.imgs and self.imgs[ctx.guild.id]!=None:
 			await ctx.message.delete()
-			await self.sendimgs(ctx.message.channel,self.imgs[ctx.message.guild.id],5)
+			await self.sendimgs(ctx.channel,self.imgs[ctx.guild.id],5)
 		else:
-			if not ctx.message.channel.is_nsfw():
+			if not ctx.channel.is_nsfw():
 				danger=self.bot.cogs['Censor'].dangerous(query, guild=ctx.guild.id)
 			else: danger=False
 			if danger: #cancel search if the query is dangerous
 				nope=self.bot.cogs['Censor'].sass()
 				nope+="\ni found these filthy words in your search; `"+(', '.join(danger))+"`"
-				await emformat.genericmsg(ctx.message.channel,nope,'error','image')
+				await emformat.genericmsg(ctx.channel,nope,'error','image')
 			else:
-				async with ctx.message.channel.typing():
+				async with ctx.channel.typing():
 					nsfw=100
-					if not ctx.message.channel.is_nsfw():
+					if not ctx.channel.is_nsfw():
 						query+=' -nsfw'
 						nsfw=-6
 					if globals.verbose: print("image searching for '"+query+"'...")
 					imglist, autocorrect = await self.imgscrape(query)
 					if globals.verbose: print("search complete!")
 					
-					if len(autocorrect)>0 and autocorrect!=query[:nsfw] and not ctx.message.channel.is_nsfw():
+					if len(autocorrect)>0 and autocorrect!=query[:nsfw] and not ctx.channel.is_nsfw():
 						if globals.verbose: print(f"'{query}' was autocorrected to '{autocorrect}'!")
 						danger=self.bot.cogs['Censor'].dangerous(autocorrect, guild=ctx.guild.id)
 					else: danger=False
 					if danger: #don't show search results if google autocorrected them to something nefarious.
 						nope=self.bot.cogs['Censor'].sass()
 						nope+="\ni found these filthy words in your *autocorrected* search; `"+(', '.join(danger))+"`"
-						await emformat.genericmsg(ctx.message.channel,nope,'error','image')
+						await emformat.genericmsg(ctx.channel,nope,'error','image')
 					else:
-						self.imgs[ctx.message.guild.id]=imglist
+						self.imgs[ctx.guild.id]=imglist
 						if ctx.invoked_with.lower() in ['images','gimages','googleimages']:
-							await self.sendimgs(ctx.message.channel,imglist,1)
-							await self.sendimgs(ctx.message.channel,imglist,5)
+							await self.sendimgs(ctx.channel,imglist,1)
+							await self.sendimgs(ctx.channel,imglist,5)
 						else:
-							await self.sendimgs(ctx.message.channel,imglist,1)
+							await self.sendimgs(ctx.channel,imglist,1)
 	@image.error
 	async def image_error(self,ctx,error):
 		print(error)
-		await emformat.genericmsg(ctx.message.channel,"something went wrong when trying to fulfil your image search! please try another search term.\n```"+str(error)+"```","error","image")
+		await emformat.genericmsg(ctx.channel,"something went wrong when trying to fulfil your image search! please try another search term.\n```"+str(error)+"```","error","image")
 	
 	async def sendimgs(self,channel,imglist,count):
 		if len(imglist)>=1:

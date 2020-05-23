@@ -33,10 +33,10 @@ class Stats(commands.Cog):
 	def cog_unload(self):
 		self.runstats.cancel()
 	
-	@commands.command(pass_context=True, no_pm=False, aliases=['status','ver','version'])
+	@commands.command(no_pm=False, aliases=['status','ver','version'])
 	async def stats(self,ctx):
 		if globals.verbose:print('stats command')
-		await emformat.make_embed(ctx.message.channel,'for constantly updating stats, go to '+globals.apiurl+'stats.html',
+		await emformat.make_embed(ctx.channel,'for constantly updating stats, go to '+globals.apiurl+'stats.html',
 		globals.name+' stats','',color=0x2C5ECA,thumbnail=globals.emurl+'greet.gif',
 		fields={
 			'exposure': self.exposure,

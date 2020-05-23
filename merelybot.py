@@ -117,16 +117,16 @@ if globals.modules['core']:
 		def __init__(self, bot):
 			bot = bot
 		
-		@commands.command(pass_context=True,no_pm=False)
+		@commands.command(no_pm=False)
 		async def reload(self,ctx,*,modulename:str):
 			modulename = modulename.lower()
-			if ctx.message.author.id in globals.superusers:
+			if ctx.author.id in globals.superusers:
 				# if module exists and is enabled
 				if modulename in globals.modules and globals.modules[modulename]:
 					# edge case module that needs special treatment
 					if modulename=='config':
 						globals.reload()
-						await ctx.message.channel.send("reloaded `config` succesfully!")
+						await ctx.send("reloaded `config` succesfully!")
 						return
 					
 					if modulename.capitalize() not in bot.cogs:
@@ -160,19 +160,19 @@ if globals.modules['core']:
 					
 					except Exception as e:
 						print(e)
-						await ctx.message.channel.send("failed to reload `"+modulename+"`!")
+						await ctx.send("failed to reload `"+modulename+"`!")
 						return
 					
-					await ctx.message.channel.send("reloaded `"+modulename+"` succesfully!")
+					await ctx.send("reloaded `"+modulename+"` succesfully!")
 				else:
-					await ctx.message.channel.send('`'+modulename+"` isn't available for reloading.")
+					await ctx.send('`'+modulename+"` isn't available for reloading.")
 			else:
-				await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","reload")
+				await emformat.genericmsg(ctx.channel,"this command is restricted.","error","reload")
 		
-		@commands.command(pass_context=True,no_pm=False)
+		@commands.command(no_pm=False)
 		async def load(self,ctx,*,modulename:str):
 			modulename = modulename.lower()
-			if ctx.message.author.id in globals.superusers:
+			if ctx.author.id in globals.superusers:
 				# if module exists
 				if modulename in globals.modules:
 					try:
@@ -192,25 +192,25 @@ if globals.modules['core']:
 					
 					except Exception as e:
 						print(e)
-						await ctx.message.channel.send("failed to load `"+modulename+"`!")
+						await ctx.send("failed to load `"+modulename+"`!")
 						return
 					
 					globals.modules[modulename] = True
-					await ctx.message.channel.send("loaded `"+modulename+"` succesfully!")
+					await ctx.send("loaded `"+modulename+"` succesfully!")
 				else:
-					await ctx.message.channel.send('`'+modulename+"` isn't available for loading.")
+					await ctx.send('`'+modulename+"` isn't available for loading.")
 			else:
-				await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","load")
+				await emformat.genericmsg(ctx.channel,"this command is restricted.","error","load")
 		
-		@commands.command(pass_context=True,no_pm=False)
+		@commands.command(no_pm=False)
 		async def unload(self,ctx,*,modulename:str):
 			modulename = modulename.lower()
-			if ctx.message.author.id in globals.superusers:
+			if ctx.author.id in globals.superusers:
 				# if module exists and is currently in cogs
 				if modulename in globals.modules and modulename.capitalize() in bot.cogs:
 					# edge case module that needs special treatment
 					if modulename in ['config', 'core', 'emformat']:
-						await ctx.message.channel.send('`'+modulename+"` must remain loaded for stability!")
+						await ctx.send('`'+modulename+"` must remain loaded for stability!")
 						return
 					
 					cog = bot.cogs[modulename.capitalize()]
@@ -225,11 +225,11 @@ if globals.modules['core']:
 					del sys.modules[modulename]
 					
 					globals.modules[modulename] = False
-					await ctx.message.channel.send("unloaded `"+modulename+"` succesfully!")
+					await ctx.send("unloaded `"+modulename+"` succesfully!")
 				else:
-					await ctx.message.channel.send('`'+modulename+"` isn't available for unloading!")
+					await ctx.send('`'+modulename+"` isn't available for unloading!")
 			else:
-				await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","load")
+				await emformat.genericmsg(ctx.channel,"this command is restricted.","error","load")
 	
 	bot.add_cog(Core(bot))
 	if globals.verbose: print('reload done!')
@@ -267,13 +267,13 @@ async def on_check(ctx):
 		if not (globals.musicbuddy and ctx.guild.get_member(globals.musicbuddy) is None):
 			# the music bot will handle this one
 			return False
-	if str(ctx.message.author.id) in globals.lockout:
-		if int(globals.lockout[str(ctx.message.author.id)]) > time.time():
-			await ctx.message.channel.send(f"you're banned from using this bot for {utils.time_fold(int(globals.lockout[str(ctx.message.author.id)])-time.time())}.")
+	if str(ctx.author.id) in globals.lockout:
+		if int(globals.lockout[str(ctx.author.id)]) > time.time():
+			await ctx.send(f"you're banned from using this bot for {utils.time_fold(int(globals.lockout[str(ctx.author.id)])-time.time())}.")
 			return False
 		else:
-			await ctx.message.channel.send("your ban is over. you may use commands again.")
-			globals.lockout.pop(str(ctx.message.author.id),None)
+			await ctx.send("your ban is over. you may use commands again.")
+			globals.lockout.pop(str(ctx.author.id),None)
 			globals.save()
 	return True
 	

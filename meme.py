@@ -215,7 +215,7 @@ class Meme(commands.Cog):
 																footer_icon = "https://meme.yiays.com/img/icon.png")
 			
 			if self.type in ['audio', 'video', 'webm', 'url']: # Follow up with a link that should be automatically embedded in situations where we have to
-				await ctx.channel.send(self.url)
+				await ctx.send(self.url)
 			
 			return True
 		
@@ -527,16 +527,16 @@ class Meme(commands.Cog):
 			return None
 		
 		async def post(self, ctx, n=1):
-			await ctx.channel.send(f"**{self.title}** - {len(self.results)} results total.")
+			await ctx.send(f"**{self.title}** - {len(self.results)} results total.")
 			if self.message:
-				await ctx.channel.send(self.message)
+				await ctx.send(self.message)
 				if not self.message.startswith("Warning: "): return False
 			
 			i = 0
 			while i < int(n):
 				meme = self.pick(ctx.guild.id)
 				if meme is None:
-					await ctx.channel.send(f"Can't find any{' more ' if len(self.results)>0 else ' '}memes with this query! Try a less specific search.")
+					await ctx.send(f"Can't find any{' more ' if len(self.results)>0 else ' '}memes with this query! Try a less specific search.")
 					return False
 				success = await meme.post(ctx)
 				if success:
@@ -856,23 +856,23 @@ class Meme(commands.Cog):
 		else:
 			self.RemoveVote(message_id,user_id)
 	
-	@commands.command(pass_context=True, no_pm=True)
+	@commands.command(no_pm=True)
 	async def memedbtest(self, ctx):
-		await ctx.channel.send(await self.OnMemePosted(ctx.message))
+		await ctx.send(await self.OnMemePosted(ctx.message))
 	
-	@commands.command(pass_context=True, no_pm=False)
+	@commands.command(no_pm=False)
 	async def memedbscan(self,ctx,skip='0'):
-		await ctx.channel.send('Starting message history scan for unreacted memes and reactions...')
+		await ctx.send('Starting message history scan for unreacted memes and reactions...')
 		if skip.isdigit(): skip = int(skip)
 		else: skip = 0
 		try:
 			await self.BackgroundService(skip)
 		except Exception as e:
-			await ctx.channel.send('Failed to complete service: ```py\n'+str(e)+'```')
+			await ctx.send('Failed to complete service: ```py\n'+str(e)+'```')
 		else:
-			await ctx.channel.send('Background service ended.')
+			await ctx.send('Background service ended.')
 
-	@commands.command(pass_context=True, no_pm=False, aliases=['memes','mem'])
+	@commands.command(no_pm=False, aliases=['memes','mem'])
 	async def meme(self, ctx, *, n='1'):
 		if n.isdigit():
 			if globals.verbose: print('meme n command')
@@ -899,11 +899,11 @@ class Meme(commands.Cog):
 		
 		elif n == 'delet':
 			if globals.verbose: print('meme delet command')
-			await ctx.channel.send("deleting memes is no longer possible, you can, however, downvote it.")
+			await ctx.send("deleting memes is no longer possible, you can, however, downvote it.")
 		
 		elif n == 'add':
 			if globals.verbose: print('meme add command')
-			await ctx.channel.send("memes are no longer added by a command. they must be added using a designated channel and upvoted.")
+			await ctx.send("memes are no longer added by a command. they must be added using a designated channel and upvoted.")
 		
 		else:
 			if globals.verbose: print('meme search command')
@@ -916,12 +916,12 @@ class Meme(commands.Cog):
 			
 			if search not in self.searches:
 				async with ctx.channel.typing():
-					searcher = Meme.DBSearch(parent=self, owner=ctx.message.author, search=search, result_type=Meme.DBMeme, include_tags=True, nsfw=ctx.channel.is_nsfw())
+					searcher = Meme.DBSearch(parent=self, owner=ctx.author, search=search, result_type=Meme.DBMeme, include_tags=True, nsfw=ctx.channel.is_nsfw())
 					searcher.get_results()
 					self.searches[search] = searcher
 			else:
 				searcher = self.searches[search]
-				searcher.owner = ctx.message.author
+				searcher.owner = ctx.author
 				searcher.get_results()
 			
 			await searcher.post(ctx, n=n)
@@ -929,63 +929,63 @@ class Meme(commands.Cog):
 	@commands.group(aliases=['memesources'])
 	async def memesource(self, ctx):
 		if ctx.invoked_subcommand is None:
-			await ctx.channel.send(help.dhelp['memesource'])
+			await ctx.send(help.dhelp['memesource'])
 	
-	@memesource.command(pass_context=True, no_pm=True, name="add")
+	@memesource.command(no_pm=True, name="add")
 	@commands.has_permissions(administrator=True)
 	async def addmemesource(self, ctx):
 		if ctx.channel.id not in globals.memesources.keys():
 			globals.memesources[ctx.channel.id]=""
 			globals.save()
-			await ctx.channel.send("done! any image or link posted here can now be added to MemeDB.")
+			await ctx.send("done! any image or link posted here can now be added to MemeDB.")
 		else:
-			await ctx.channel.send("this channel is already a memesource!")
+			await ctx.send("this channel is already a memesource!")
 	
-	@memesource.command(pass_context=True, no_pm=True, name="remove")
+	@memesource.command(no_pm=True, name="remove")
 	@commands.has_permissions(administrator=True)
 	async def removememesource(self, ctx):
 		if ctx.channel.id in globals.memesources.keys():
 			del globals.memesources[ctx.channel.id]
 			globals.save()
-			await ctx.channel.send(f"done! {globals.name} will no longer consider images and links in this channel memes.")
+			await ctx.send(f"done! {globals.name} will no longer consider images and links in this channel memes.")
 		else:
-			await ctx.channel.send("this channel isn't a memesource, so can't remove it.")
+			await ctx.send("this channel isn't a memesource, so can't remove it.")
 	
 	@removememesource.error
 	@addmemesource.error
 	async def memesource_failed(self, ctx, error):
-		await ctx.channel.send(error.lower())
+		await ctx.send(error.lower())
 	
 	
 	@commands.group(aliases=['memesubscription','memesubscriptions','memesubs'])
 	async def memesub(self, ctx):
 		if ctx.invoked_subcommand is None:
-			await ctx.channel.send(help.dhelp['memesub'])
+			await ctx.send(help.dhelp['memesub'])
 	
-	@memesub.command(pass_context=True, no_pm=True, name="add")
+	@memesub.command(no_pm=True, name="add")
 	@commands.has_permissions(administrator=True)
 	async def addmemesub(self, ctx, search=""):
 		if len(search)>0:
 			globals.memesubscriptions[ctx.channel.id]=search
 			globals.save()
 			if ctx.channel.id not in globals.memesubscriptions.keys():
-				await ctx.channel.send("done! any new memes matching the provided search term will be posted here!")
+				await ctx.send("done! any new memes matching the provided search term will be posted here!")
 			else:
-				await ctx.channel.send("updated the search term for this memesubscription.")
+				await ctx.send("updated the search term for this memesubscription.")
 		else:
-			await ctx.channel.send("a search term is required! (eg. `edge:1 tag:discord` for sfw discord memes, `edge:2 -cat:anime` for edgy non-anime memes, or `edge:1` for all sfw memes)")
+			await ctx.send("a search term is required! (eg. `edge:1 tag:discord` for sfw discord memes, `edge:2 -cat:anime` for edgy non-anime memes, or `edge:1` for all sfw memes)")
 	
-	@memesub.command(pass_context=True, no_pm=True, name="remove")
+	@memesub.command(no_pm=True, name="remove")
 	@commands.has_permissions(administrator=True)
 	async def removememesub(self, ctx):
 		if ctx.channel.id in globals.memesubscriptions.keys():
 			del globals.memesubscriptions[ctx.channel.id]
 			globals.save()
-			await ctx.channel.send(f"done! {globals.name} will no longer post memes here.")
+			await ctx.send(f"done! {globals.name} will no longer post memes here.")
 		else:
-			await ctx.channel.send("this channel doesn't have a memesubscription, so can't remove it.")
+			await ctx.send("this channel doesn't have a memesubscription, so can't remove it.")
 	
 	@removememesub.error
 	@addmemesub.error
 	async def memesub_failed(self, ctx, error):
-		await ctx.channel.send(error.lower())
+		await ctx.send(error.lower())

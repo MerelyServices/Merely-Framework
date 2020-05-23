@@ -232,7 +232,7 @@ class Censor(commands.Cog):
 		if matches: pprint(matches)
 		return matches
 
-	@commands.command(pass_context=True, no_pm=True, aliases=['blacklist','whitelist'])
+	@commands.command(no_pm=True, aliases=['blacklist','whitelist'])
 	async def xlist(self, ctx, mode=None, *, words=None):
 		"""View and manage the blacklist or whitelist."""
 		
@@ -258,11 +258,11 @@ class Censor(commands.Cog):
 			if globals.verbose: print(('black' if black else 'white')+'list '+mode+' command')
 			
 			# security check
-			if ctx.message.author.id not in globals.authusers and ctx.message.author.id != ctx.message.guild.owner.id:
-				await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","blacklist")
+			if ctx.author.id not in globals.authusers and ctx.author.id != ctx.guild.owner.id:
+				await emformat.genericmsg(ctx.channel,"this command is restricted.","error","blacklist")
 				return
 			if words==None:
-				await ctx.channel.send(help.dhelp[('black' if black else 'white')+'list'])
+				await ctx.send(help.dhelp[('black' if black else 'white')+'list'])
 				return
 			
 			warnings = []
@@ -302,10 +302,10 @@ class Censor(commands.Cog):
 					result = whitelist.add(words) if words else []
 				
 				if result:
-					await emformat.genericmsg(ctx.message.channel,f"{'the words ' if len(result)>1 else ''}*'{', '.join(result)}'* {'is' if len(result)==1 else 'are'} now {'black' if black else 'white'}listed{'!' if len(warnings)==0 else ' with some warnings;```'+chr(10).join(warnings)+'```'}","done",('black' if black else 'white')+"list")
+					await emformat.genericmsg(ctx.channel,f"{'the words ' if len(result)>1 else ''}*'{', '.join(result)}'* {'is' if len(result)==1 else 'are'} now {'black' if black else 'white'}listed{'!' if len(warnings)==0 else ' with some warnings;```'+chr(10).join(warnings)+'```'}","done",('black' if black else 'white')+"list")
 					if len(result)>1 and random.random() < 1/3:
-						await ctx.channel.send(f"hint: you shouldn't blacklist multiple words if they have valid uses, to ban two words that are only bad together, remove the space between them. ie. `{globals.prefix_short}blacklist add badword` as opposed to `{globals.prefix_short}blacklist add bad word`.")
-				else: await emformat.genericmsg(ctx.message.channel,f"no changes were made! {'these warnings' if len(warnings)>1 else 'this warning'} might explain why...```{chr(10).join(warnings)}```","error",('black' if black else 'white')+"list")
+						await ctx.send(f"hint: you shouldn't blacklist multiple words if they have valid uses, to ban two words that are only bad together, remove the space between them. ie. `{globals.prefix_short}blacklist add badword` as opposed to `{globals.prefix_short}blacklist add bad word`.")
+				else: await emformat.genericmsg(ctx.channel,f"no changes were made! {'these warnings' if len(warnings)>1 else 'this warning'} might explain why...```{chr(10).join(warnings)}```","error",('black' if black else 'white')+"list")
 				return
 				
 			elif mode == 'remove':
@@ -331,8 +331,8 @@ class Censor(commands.Cog):
 					
 					result = whitelist.remove(words) if words else []
 				
-				if result: await emformat.genericmsg(ctx.message.channel,f"{'the words ' if len(result)>1 else ''}*'{', '.join(result)}'* {'is' if len(words)==1 else 'are'} no longer {'black' if black else 'white'}listed{'!' if len(warnings)==0 else ' with some warnings;```'+chr(10).join(warnings)+'```'}","done",('black' if black else 'white')+"list")
-				else: await emformat.genericmsg(ctx.message.channel,f"no changes were made! {'these warnings' if len(warnings)>1 else 'this warning'} might explain why...```{chr(10).join(warnings)}```","error",('black' if black else 'white')+"list")
+				if result: await emformat.genericmsg(ctx.channel,f"{'the words ' if len(result)>1 else ''}*'{', '.join(result)}'* {'is' if len(words)==1 else 'are'} no longer {'black' if black else 'white'}listed{'!' if len(warnings)==0 else ' with some warnings;```'+chr(10).join(warnings)+'```'}","done",('black' if black else 'white')+"list")
+				else: await emformat.genericmsg(ctx.channel,f"no changes were made! {'these warnings' if len(warnings)>1 else 'this warning'} might explain why...```{chr(10).join(warnings)}```","error",('black' if black else 'white')+"list")
 				return
 			
 			elif mode == 'train':
@@ -353,10 +353,10 @@ class Censor(commands.Cog):
 										await emformat.genericmsg(ctx.channel,f"downloading the provided url caused an `error {r.status}`...","error",('black' if black else 'white')+"list")
 										return
 							except Exception as e:
-								await ctx.channel.send("failed to download the file!")
+								await ctx.send("failed to download the file!")
 								print(e)
 				else:
-					await ctx.channel.send("this command takes a url to a text file, please provide one (you can upload a text file to this chat and copy the link to it)")
+					await ctx.send("this command takes a url to a text file, please provide one (you can upload a text file to this chat and copy the link to it)")
 					return
 				
 				if training_data:
@@ -389,12 +389,12 @@ class Censor(commands.Cog):
 					if results:
 						await self.send_list('\n'.join(results), "here's the results of processing the training data...", ctx.channel, seporator='\n')
 					else:
-						await ctx.channel.send("after processing the training data, no changes were made!")
+						await ctx.send("after processing the training data, no changes were made!")
 				else:
-					await ctx.channel.send("that text file appears to be empty!")
+					await ctx.send("that text file appears to be empty!")
 
 			else:
-				await ctx.channel.send(help.dhelp[('black' if black else 'white')+'list'])
+				await ctx.send(help.dhelp[('black' if black else 'white')+'list'])
 				return
 		
 		else: # print the xlist
@@ -403,11 +403,11 @@ class Censor(commands.Cog):
 			for word in (blacklist.get() if black else whitelist.get()):
 				wordprint+=word+", "
 			
-			await self.send_list(wordprint,"here's the current list of "+('black' if black else 'white')+"listed words;",ctx.message.channel)
+			await self.send_list(wordprint,"here's the current list of "+('black' if black else 'white')+"listed words;",ctx.channel)
 
-	@commands.command(pass_context=True, no_pm=False)
+	@commands.command(no_pm=False)
 	async def censor(self, ctx, *, text):
 		if globals.verbose: print('censor command')
 		danger=self.dangerous(text, guild=(ctx.guild.id if ctx.invoked_with.lower() == 'censor' else 0))
-		await ctx.message.channel.send(danger)
+		await ctx.send(danger)
 	
