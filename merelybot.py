@@ -46,72 +46,7 @@ if globals.verbose: print('events done!')
 if globals.verbose: print('importing modules...')
 
 # bot command modules
-# globals
-if globals.verbose: print('globals done!')
-
-# emformat
-if globals.verbose: print('emformat done!')
-
-#	help
-if globals.modules['help']:
-	import help
-	bot.add_cog(help.Help(bot))
-	if globals.verbose: print('help done!')
-
-#	censor
-if globals.modules['censor']:
-	import censor
-	bot.add_cog(censor.Censor(bot))
-	if globals.verbose: print('censor done!')
-
-#	fun
-if globals.modules['fun']:
-	import fun
-	bot.add_cog(fun.Fun(bot))
-	if globals.verbose: print('fun done!')
-
-#	meme
-if globals.modules['meme']:
-	import meme
-	bot.add_cog(meme.Meme(bot, os.environ.get("MemeDB")))
-	if globals.verbose: print('meme done!')
-
-#	search
-if globals.modules['search']:
-	import search
-	bot.add_cog(search.Search(bot))
-	if globals.verbose: print('search done!')
-
-#	admin
-if globals.modules['admin']:
-	import admin
-	bot.add_cog(admin.Admin(bot))
-	if globals.verbose: print('admin done!')
-
-#	tools
-if globals.modules['tools']:
-	import tools
-	bot.add_cog(tools.Tools(bot, os.environ.get("MemeDB")))
-	if globals.verbose: print('tools done!')
-
-#	obsolete
-if globals.modules['obsolete']:
-	import obsolete
-	bot.add_cog(obsolete.Obsolete(bot))
-	if globals.verbose: print('obsolete done!')
-
-#	webserver
-if globals.modules['webserver']:
-	import webserver
-	bot.add_cog(webserver.Webserver(bot))
-	if globals.verbose: print('webserver done!')
-
-# stats
-if globals.modules['stats']:
-	import stats
-	bot.add_cog(stats.Stats(bot))
-	if globals.verbose: print('stats done!')
-
+#core
 if globals.modules['core']:
 	class Core(commands.Cog):
 		def __init__(self, bot):
@@ -232,7 +167,73 @@ if globals.modules['core']:
 				await emformat.genericmsg(ctx.channel,"this command is restricted.","error","load")
 	
 	bot.add_cog(Core(bot))
-	if globals.verbose: print('reload done!')
+	if globals.verbose: print('core done!')
+
+# globals
+if globals.verbose: print('globals done!')
+
+# emformat
+if globals.verbose: print('emformat done!')
+
+#	help
+if globals.modules['help']:
+	import help
+	bot.add_cog(help.Help(bot))
+	if globals.verbose: print('help done!')
+
+#	censor
+if globals.modules['censor']:
+	import censor
+	bot.add_cog(censor.Censor(bot))
+	if globals.verbose: print('censor done!')
+
+#	fun
+if globals.modules['fun']:
+	import fun
+	bot.add_cog(fun.Fun(bot))
+	if globals.verbose: print('fun done!')
+
+#	meme
+if globals.modules['meme']:
+	import meme
+	bot.add_cog(meme.Meme(bot, os.environ.get("MemeDB")))
+	if globals.verbose: print('meme done!')
+
+#	search
+if globals.modules['search']:
+	import search
+	bot.add_cog(search.Search(bot))
+	if globals.verbose: print('search done!')
+
+#	admin
+if globals.modules['admin']:
+	import admin
+	bot.add_cog(admin.Admin(bot))
+	if globals.verbose: print('admin done!')
+
+#	tools
+if globals.modules['tools']:
+	import tools
+	bot.add_cog(tools.Tools(bot, os.environ.get("MemeDB")))
+	if globals.verbose: print('tools done!')
+
+#	obsolete
+if globals.modules['obsolete']:
+	import obsolete
+	bot.add_cog(obsolete.Obsolete(bot))
+	if globals.verbose: print('obsolete done!')
+
+#	webserver
+if globals.modules['webserver']:
+	import webserver
+	bot.add_cog(webserver.Webserver(bot))
+	if globals.verbose: print('webserver done!')
+
+# stats
+if globals.modules['stats']:
+	import stats
+	bot.add_cog(stats.Stats(bot))
+	if globals.verbose: print('stats done!')
 
 async def onconnect():
 	print('connected!')
