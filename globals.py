@@ -26,6 +26,7 @@ bot={}
 store='merely_data/'
 dhelp={}
 connected=False
+changes = []
 
 owner=0
 invite=None
@@ -108,7 +109,7 @@ def reload():
 	lastver=config.get('settings','lastver',fallback=lastver)
 	
 	if assurepath(store+'changes.md'):
-		changes=''
+		changes=[]
 	else:
 		with open(store+'changes.md', 'r', encoding='utf-8') as file:
 			changes=file.readlines()
@@ -154,7 +155,9 @@ def save():
 	config.set('memesites','trusted',','.join([str(a) for a in memesites['trusted']]))
 	config.set('memesites','blocked',','.join([str(a) for a in memesites['blocked']]))
 	
-	config.set('memechannels', str(memechannel.edge), ','.join([str(m.id) for m in memechannels]))
+	for edge in range(0,3):
+		config.set('memechannels', str(edge), ','.join([str(m.id) for m in memechannels if m.edge == edge]))
+	
 	for memechannel in memechannels:
 		config.set(str(memechannel.id), 'memetags', ','.join(memechannel.tags))
 		config.set(str(memechannel.id), 'memecats', ','.join(memechannel.categories))
