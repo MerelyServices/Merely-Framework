@@ -77,7 +77,7 @@ class Admin(commands.Cog):
 			await ctx.send("removed and disabled the welcome message!")
 	
 	async def welcome_member(self, member):
-		if member.id == bot.user.id:
+		if member.id == self.bot.user.id:
 			return
 		globals.config.read(globals.store+'config.ini')
 		if str(member.guild.id) in globals.config.sections() and globals.config.get(str(member.guild.id),'welcome_message') != '':
@@ -266,18 +266,9 @@ class Admin(commands.Cog):
 		"""Purge the channel of bot related messages"""
 		if globals.verbose: print('purge command')
 		if ctx.author.id in globals.superusers or ctx.author.id == ctx.guild.owner.id:
-			try:
-				n=int(n)
-			except:
-				n=100
-			try:
-				start=int(start)
-			except:
-				start=0
-			try:
-				end=int(end)
-			except:
-				end=0
+			n=int(n) if n.isdigit() else 100
+			start=int(start) if start.isdigit() else 0
+			end=int(end) if end.isdigit() else 0
 			
 			if start==0 or end==0:
 				await ctx.send("you must enable developer mode and copy the IDs of the first and last message to be purged.\noptionally, set an absolute number of messages to scan.")

@@ -9,6 +9,7 @@ import aiohttp
 import urllib.parse
 import re
 import random
+import hashlib
 
 # ['meme']=['meme','memedbscan','memedbtest']
 
@@ -24,6 +25,14 @@ def typeconverter(type):
 	if type.startswith('text/html'):
 		return 'url'
 	return None
+
+EDGEMEANING = {
+	1: "Regular content, safe for everyone",
+	2: "NSFW or edgy, not safe for children",
+	3: "Very NSFW or edgy, not for casuals",
+	4: "Banned, only available to admins",
+	5: "Unrated, banned to be safe"
+}
 
 class DudMeme():
 	"""Dud version of Meme class for passing through to DB* elements"""
@@ -44,6 +53,7 @@ class Meme(commands.Cog):
 		self.dbpassword = dbpassword
 		self.session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60))
 		self.searches = {}
+		self.newmemes = []
 		self.usedmemes = Meme.UsedMemes(self)
 		self.users = {}
 		
@@ -57,13 +67,13 @@ class Meme(commands.Cog):
 		if globals.verbose: print("meme/tags/categories cache done!")
 		
 		self.bot.events['on_ready'].append(self.BackgroundService)
-		self.bot.events['on_message'].append(self.on_message)
+		self.bot.events['on_message'].append(self.OnMemePosted)
 		self.bot.events['on_raw_reaction_add'].append(self.on_raw_reaction_add)
 		self.bot.events['on_raw_reaction_remove'].append(self.on_raw_reaction_remove)
 	
 	def cog_unload(self):
 		self.bot.events['on_ready'].remove(self.BackgroundService)
-		self.bot.events['on_message'].remove(self.on_message)
+		self.bot.events['on_message'].remove(self.OnMemePosted)
 		self.bot.events['on_raw_reaction_add'].remove(self.on_raw_reaction_add)
 		self.bot.events['on_raw_reaction_remove'].remove(self.on_raw_reaction_remove)
 		
@@ -103,9 +113,9 @@ class Meme(commands.Cog):
 			self.connection.close()
 		
 		def selectquery(self, selects:list, _from:str, joins=[], wheres=[], groups=[], havings=[], orders=[], limit="") -> str:
-			query = []
+			query = ["SELECT"]
 			
-			query.append(f"SELECT {','.join(selects)}")
+			query.append(','.join(selects))
 			
 			if len(joins)>0:
 				query.append(f"FROM {'('*len(joins) + _from}")
@@ -126,7 +136,45 @@ class Meme(commands.Cog):
 				query.append(f"ORDER BY {','.join(orders)}")
 			
 			if len(limit)>0:
-				query.append(f"LIMIT {limit};")
+				query.append(f"LIMIT {limit}")
+			
+			return ' '.join(query)
+			
+		def insertquery(self, into:str, inserts:list, values:list, ignore=False, on_duplicate="") -> str:
+			query = ["INSERT"]
+			
+			if ignore:
+				query.append("IGNORE")
+			
+			query.append(f"INTO {into}({','.join(inserts)})")
+			
+			if type(values[0]) == tuple:
+				rows = []
+				for row in values:
+					rows.append(','.join(f"\"{val}\"" if isinstance(val, str) else 'null' if val is None else str(val) for val in row))
+				query.append(f"VALUES({'),('.join(rows)})")
+			else:
+				row = ','.join(f"\"{val}\"" if isinstance(val, str) else 'null' if val is None else str(val) for val in values)
+				query.append(f"VALUES({row})")
+			
+			if on_duplicate:
+				query.append(f"ON DUPLICATE KEY UPDATE {on_duplicate}")
+			
+			return ' '.join(query)
+		
+		def updatequery(self, table:str, sets:dict, wheres=[], orders=[], limit=""):
+			query = ["UPDATE", table, "SET"]
+			
+			query.append(','.join(f"{key} = "+(f"\"{val}\"" if isinstance(val, str) else 'null' if val is None else str(val)) for key,val in sets.items()))
+			
+			if len(wheres)>0:
+				query.append(f"WHERE {' AND '.join(wheres)}")
+			
+			if len(orders)>0:
+				query.append(f"ORDER BY {','.join(orders)}")
+			
+			if len(limit)>0:
+				query.append(f"LIMIT {limit}")
 			
 			return ' '.join(query)
 		
@@ -160,13 +208,13 @@ class Meme(commands.Cog):
 			self.origin = None
 			self.author = None
 			self.type = None
-			self.collectionparent = None
+			self.collectionparent = None # This is an int when in_db, else it's a newmeme object
 			self.url = None
 			self.originalurl = None
 			self.color = 0xF9CA24
 			self.date = int(time.time())
 			self.hidden = False
-			self.edge = 4.0
+			self.edge = 5.0
 			self.nsfw = False
 			self.categories = {}
 			self.tags = {}
@@ -174,6 +222,10 @@ class Meme(commands.Cog):
 			self.transcriptions = []
 			self.in_db = False
 			self.status = 200
+			
+			self.collector_msg = {}
+			self.contribs = 0
+			self.contrib_min = 2
 			
 			self.cache_age = 0
 			self.depth = -1 # depth is a value that can only increase, as it increases, the cache date applies to all of it
@@ -194,41 +246,51 @@ class Meme(commands.Cog):
 			
 			return data
 		
-		async def post(self, channel, owner=None, force=False):
-			if self.id in self.parent.usedmemes.get(channel.guild.id) and not force:
-				return False
+		async def post(self, channel, owner=None, force=False, msg='', edit=None):
+			kwargs = {}
+			if edit is not None:
+				kwargs['edit'] = edit
 			
-			self.parent.usedmemes.append(channel.guild.id, self.id)
+			if not force and self.id is not None: # Track when memes are used in each guild to avoid repetition
+				if self.id in self.parent.usedmemes.get(channel.guild.id):
+					return False
+				self.parent.usedmemes.append(channel.guild.id, self.id)
 			
 			if self.status == 404:
-				await emformat.make_embed(channel, message='', title="Not found!", description="Unable to locate this meme, are you sure it exists?", author=None)
+				await emformat.make_embed(channel, message=msg, title="Not found!", description="Unable to locate this meme, are you sure it exists?", author=None)
 				return False
 			if self.status == 403:
-				await emformat.make_embed(channel, message='', title="Permission denied!", description="To view this meme, open the meme in MemeDB and login with an administrative account.", author=None, link=f"https://meme.yiays.com/meme/{self.id}" if self.in_db else '')
+				await emformat.make_embed(channel, message=msg, title="Permission denied!", description="To view this meme, open the meme in MemeDB and login with an administrative account.", author=None, link=f"https://meme.yiays.com/meme/{self.id}" if self.in_db else '')
 				return False
 			if self.nsfw and not channel.is_nsfw():
-				await emformat.make_embed(channel, message='', title="This meme is potentially nsfw!", description="The channel must be marked as nsfw for this meme to be shown.", author=None, link=f"https://meme.yiays.com/meme/{self.id}" if self.in_db else '')
+				await emformat.make_embed(channel, message=msg, title="This meme is potentially nsfw!", description="The channel must be marked as nsfw for this meme to be shown.", author=None, link=f"https://meme.yiays.com/meme/{self.id}" if self.in_db else '')
 				return False
-			await emformat.make_embed(channel,
-																message = '',
-																title = "Meme" + (f" #{self.id} on MemeDB" if self.in_db else ''),
-																description = self.url if self.type == 'text' else self.descriptions[0].text if len(self.descriptions) else f"This meme needs a description. *({globals.prefix_short}meme #{self.id} describe)*" if self.in_db else "Upvote this meme to add it to MemeDB!",
-																color = self.color,
-																author = "Posted by "+owner.mention if owner else None,
-																author_icon = owner.avatar_url if owner else '',
-																image = self.url if self.type in ['image', 'gif'] else f"https://cdn.yiays.com/meme/{self.id}.thumb.jpg" if type in ['video', 'webm'] else '',
-																fields = {
-																	"categories": ', '.join([name for name in self.categories.keys()]) if len(self.categories) else f"None yet, you should suggest one! *({globals.prefix_short}meme #{self.id} cat)*",
-																	"tags": ', '.join([name for name in self.tags.keys()]) if len(self.tags) else f"None yet, you should suggest some! *({globals.prefix_short}meme #{self.id} tag)*"
-																} if self.in_db else {},
-																link = f"https://meme.yiays.com/meme/{self.id}" if self.in_db else '',
-																footer = "powered by MemeDB (meme.yiays.com)",
-																footer_icon = "https://meme.yiays.com/img/icon.png")
+			mememsg = await emformat.make_embed(channel,
+				message = msg,
+				title = (f"Meme #{self.id} on MemeDB" if self.in_db else "Candidate for MemeDB"),
+				description = self.url if self.type == 'text' else self.descriptions[0].text if len(self.descriptions) else f"This meme needs a description. `{globals.prefix_short}meme #{self.id} describe`",
+				color = self.color,
+				author = "Posted by "+owner.mention if owner else None,
+				author_icon = owner.avatar_url if owner else '',
+				image = self.url if self.type in ['image', 'gif'] else f"https://cdn.yiays.com/meme/{self.id}.thumb.jpg" if type in ['video', 'webm'] else '',
+				fields = {
+					"categories": ', '.join([name for name in self.categories.keys()]) if len(self.categories) else f"None yet, you should suggest one! `{globals.prefix_short}meme #{self.id} cat`",
+					"tags": ', '.join([name for name in self.tags.keys()]) if len(self.tags) else f"None yet, you should suggest some! `{globals.prefix_short}meme #{self.id} tag`"
+				} if self.in_db else {
+					"edge": f"Edge is currently {'🌶'*round(self.edge)} ({self.edge} - {EDGEMEANING[round(self.edge)]}) vote for an edge rating with `{globals.prefix_short}meme #{self.id} edge n` where the n is 1 if the meme is safe for everyone, and 2 if it isn't.",
+					"transcription": self.transcriptions[0].text if len(self.transcriptions) else f"This meme needs a transcription. `{globals.prefix_short}meme #{self.id} transcribe`",
+					"categories": ', '.join([name for name in self.categories.keys()]) if len(self.categories) else f"None yet, you should suggest one! `{globals.prefix_short}meme #{self.id} cat`",
+					"tags": ', '.join([name for name in self.tags.keys()]) if len(self.tags) else f"None yet, you should suggest some! `{globals.prefix_short}meme #{self.id} tag`"
+				},
+				link = f"https://meme.yiays.com/meme/{self.id}" if self.in_db else '',
+				footer = "powered by MemeDB (meme.yiays.com)",
+				footer_icon = "https://meme.yiays.com/img/icon.png",
+				**kwargs)
 			
-			if self.type in ['audio', 'video', 'webm', 'url']: # Follow up with a link that should be automatically embedded in situations where we have to
+			if edit is None and self.type in ['audio', 'video', 'webm', 'url']: # Follow up with a link that should be automatically embedded in situations where we have to
 				await channel.send(self.url)
 			
-			return True
+			return mememsg
 		
 		def announce(self):
 			""" Checks if this new meme is suitable for any memesubscriptions and posts it there """
@@ -309,6 +371,19 @@ class Meme(commands.Cog):
 				# announce new memes to memesubscriptions if this is, in fact, a new meme
 				if after>0: targetmeme.announce()
 				
+		async def collect_info(self, channel):
+			requirement = self.contrib_min - self.contribs
+			if requirement>0:
+				if channel.id not in self.collector_msg:
+					self.collector_msg[channel.id] = await self.post(channel, force=True, msg=f"This meme requires **{requirement}** more contribution{'s' if requirement!=1 else ''} before it can be posted publicly.")
+				else:
+					await self.post(channel, force=True, msg=f"This meme requires **{requirement}** more contribution{'s' if requirement!=1 else ''} before it can be posted publicly.", edit=self.collector_msg[channel.id])
+			elif self.edge == 5.0:
+				await self.post(channel, force=True, msg=f"This is ready to be posted publicly, but it needs an edge rating.", edit=self.collector_msg[channel.id])
+			elif not self.in_db:
+				if self.savememe():
+					await self.announce()
+					await self.post(channel, force=True, msg=f"This meme has been posted publicly! You can now upvote and downvote it.", edit=self.collector_msg[channel.id])
 		
 		def getmeme(self, id=None, depth=2, row='fetchplz'):
 			# depth 0; just the meme
@@ -394,7 +469,6 @@ class Meme(commands.Cog):
 			self.transcriptions = []
 			for row in self.runquery(query, 2):
 				self.transcriptions.append(Meme.DBTranscription(id=row['Id'], meme=self, author=row['userId'], editid=row['editId'], text=row['Text']))
-			
 		
 		def gettags(self):
 			query = self.selectquery(selects=['tagvote.*', 'tag.*'], _from='tagvote', joins=['LEFT JOIN tag ON tagvote.tagId = tag.Id'], wheres=['memeId = '+str(self.id)])
@@ -417,7 +491,10 @@ class Meme(commands.Cog):
 			return self.categories
 		
 		def savememe(self):
-			# TODO
+			if self.in_db:
+				return True
+			
+			query = self.insertquery() #TODO: finish this
 			
 			self.savetags()
 			self.savecats()
@@ -436,7 +513,7 @@ class Meme(commands.Cog):
 		if len(self.memes)>0:
 			after = max(self.memes.keys())
 		else: after = 0
-		Meme.DBMeme(self).fetchall(after=after) # <- this takes 5 seconds on the main thread (after memedb caches the first query), probably can't be optimized much, but makes all searches instant
+		Meme.DBMeme(self).fetchall(after=after) # <- this takes 5-20 seconds on the main thread first time, probably can't be optimized much, but makes all searches instant
 	
 	class DBSearch(DB):
 		def __init__(self, parent, owner, search, include_tags=True, nsfw=False):
@@ -878,20 +955,27 @@ class Meme(commands.Cog):
 			return memes
 		else: return None
 
-	async def on_message(self, message):
-		if message.channel in globals.memesources.keys():
-			self.OnMemePosted(message)
-
 	async def OnMemePosted(self,message):
-		result = await self.GetMessageUrls(message)
-		if result:
-			await message.add_reaction('🔼')
-			await message.add_reaction('🔽')
-			out = ''
-			for item in result:
-				out+='found type '+item[1]+' at '+item[0]+'\n'
-			return out
-		return "couldn't find a meme!"
+		if message.channel in globals.memesources.keys():
+			results = await self.GetMessageUrls(message)
+			if results:
+				parentmeme = None
+				for url in results:
+					newmeme = Meme.DBMeme(self)
+					newmeme.id = 'p'+hashlib.md5(int(message.id).to_bytes(8, 'big')+url.to_bytes()).hexdigest()[4:]
+					newmeme.author = message.author
+					newmeme.url = url
+					if parentmeme is not None:
+						newmeme.collectionparent = parentmeme
+					asyncio.ensure_future(newmeme.collect_info())
+					self.newmemes.append(newmeme)
+					if parentmeme is None: parentmeme = newmeme
+				
+				out = ''
+				for item in results:
+					out+='found type '+item[1]+' at '+item[0]+'\n'
+				return out
+			return "couldn't find a meme!"
 	
 	async def on_raw_reaction_add(self, e):
 		pass #TODO: check if the message is by this bot and is a meme somehow

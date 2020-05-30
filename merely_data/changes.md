@@ -114,3 +114,9 @@ With this release, we are launching [MemeDB](https://meme.yiays.com) - an online
  - An uber blacklist has been added, which is a set of words in the blacklist that can never be removed for legal, discord TOS, or moral reasons.
 ### 0.9.0
  - The codebase has been restructured to improve stability and maintainability.
+ - Some unit tests have been added to help catch bugs early
+## 1.0.0
+ - Overhauled merelybot; bot can be renamed and the prefixes can be changed, modules can be dynamically enabled and disabled.
+ - Overhauled meme; search, subscribe to search results, submit memes with presets for metadata or manually assign your own, and upvote or downvote memes in any context.
+ - Cleaned up old code, improved documentation.
+ - Merely is now feature-frozen, pending a rewrite...
