@@ -214,7 +214,7 @@ class Meme(commands.Cog):
 			self.color = 0xF9CA24
 			self.date = int(time.time())
 			self.hidden = False
-			self.edge = 5.0
+			self.edgevotes = {}
 			self.nsfw = False
 			self.categories = {}
 			self.tags = {}
@@ -229,6 +229,10 @@ class Meme(commands.Cog):
 			
 			self.cache_age = 0
 			self.depth = -1 # depth is a value that can only increase, as it increases, the cache date applies to all of it
+		
+		@property
+		def edge(self):
+			return sum(self.edgevotes.values())/len(self.edgevotes) if len(self.edgevotes)>0 else 4.0
 		
 		@property
 		def searchdata(self):
@@ -277,7 +281,7 @@ class Meme(commands.Cog):
 					"categories": ', '.join([name for name in self.categories.keys()]) if len(self.categories) else f"None yet, you should suggest one! `{globals.prefix_short}meme #{self.id} cat`",
 					"tags": ', '.join([name for name in self.tags.keys()]) if len(self.tags) else f"None yet, you should suggest some! `{globals.prefix_short}meme #{self.id} tag`"
 				} if self.in_db else {
-					"edge": f"Edge is currently {'🌶'*round(self.edge)} ({self.edge} - {EDGEMEANING[round(self.edge)]}) vote for an edge rating with `{globals.prefix_short}meme #{self.id} edge n` where the n is 1 if the meme is safe for everyone, and 2 if it isn't.",
+					"edge": f"Edge is currently {'🌶'*round(self.edge+1)} ({self.edge+1} - {EDGEMEANING[round(self.edge+1)]}) vote for an edge rating with `{globals.prefix_short}meme #{self.id} edge n` where the n is 1 if the meme is safe for everyone, and 2 if it isn't.",
 					"transcription": self.transcriptions[0].text if len(self.transcriptions) else f"This meme needs a transcription. `{globals.prefix_short}meme #{self.id} transcribe`",
 					"categories": ', '.join([name for name in self.categories.keys()]) if len(self.categories) else f"None yet, you should suggest one! `{globals.prefix_short}meme #{self.id} cat`",
 					"tags": ', '.join([name for name in self.tags.keys()]) if len(self.tags) else f"None yet, you should suggest some! `{globals.prefix_short}meme #{self.id} tag`"
@@ -303,7 +307,7 @@ class Meme(commands.Cog):
 					asyncio.ensure_future(self.post(self.parent.bot.get_channel(channel), force=True))
 		
 		def fetch(self, id):
-			query = self.selectquery(selects=['meme.*', 'IFNULL(AVG(edge.Rating),4) AS Edge'], _from='meme', joins=['LEFT JOIN edge ON meme.Id = edge.memeId'], wheres=['Id = '+str(id)], limit='1')
+			query = self.selectquery(selects=['meme.*'], _from='meme', wheres=['Id = '+str(id)], limit='1')
 			
 			return self.runquery(query, 1)
 		
@@ -322,7 +326,8 @@ class Meme(commands.Cog):
 					'tag.Name AS tagName',
 					'category.Id AS categoryId',
 					'category.Name AS categoryName',
-					'IFNULL(AVG(edge.Rating),4) AS Edge'
+					'edge.userId AS edgeVoter',
+					'edge.Rating AS edgeRating'
 				],
 				_from='meme',
 				wheres=['meme.Id > '+str(after)],
@@ -335,7 +340,7 @@ class Meme(commands.Cog):
 					"LEFT JOIN tag ON tagvote.tagId = tag.Id",
 					"LEFT JOIN edge ON meme.Id = edge.memeId"
 				],
-				groups=['description.Id', 'transcription.Id', 'tag.Id', 'category.Id', 'meme.Id'],
+				groups=['description.Id', 'transcription.Id', 'tag.Id', 'category.Id', 'edge.memeId', 'meme.Id'],
 				orders=['meme.Id DESC']
 			)
 			
@@ -366,6 +371,10 @@ class Meme(commands.Cog):
 				if row['tagId'] is not None:
 					targetmeme.tags[row['tagName']] = Meme.DBTag(parent=self.parent, id=row['tagId'], meme=targetmeme, name=row['tagName']) # voters could be an issue eventually
 				
+				#edge
+				if row['edgeVoter'] is not None:
+					targetmeme.edgevotes[row['edgeVoter']] = row['edgeRating']
+				
 				targetmeme.depth = 2 # more or less...
 				
 				# announce new memes to memesubscriptions if this is, in fact, a new meme
@@ -378,7 +387,7 @@ class Meme(commands.Cog):
 					self.collector_msg[channel.id] = await self.post(channel, force=True, msg=f"This meme requires **{requirement}** more contribution{'s' if requirement!=1 else ''} before it can be posted publicly.")
 				else:
 					await self.post(channel, force=True, msg=f"This meme requires **{requirement}** more contribution{'s' if requirement!=1 else ''} before it can be posted publicly.", edit=self.collector_msg[channel.id])
-			elif self.edge == 5.0:
+			elif self.edge == 4.0:
 				await self.post(channel, force=True, msg=f"This is ready to be posted publicly, but it needs an edge rating.", edit=self.collector_msg[channel.id])
 			elif not self.in_db:
 				if self.savememe():
@@ -395,6 +404,7 @@ class Meme(commands.Cog):
 			
 			if self.in_db and self.cache_age > int(time.time()) - 60*60*24: # < cache lasts 24 hours
 				if self.depth >= depth:
+					self.getedge()
 					return self
 				else:
 					if self.depth == 0:
@@ -427,13 +437,13 @@ class Meme(commands.Cog):
 				if row['Color'] is not None: self.color	= int('0x' + row['Color'][1:], 16)
 				self.date		= row['Date'].timestamp()
 				self.hidden = row['Hidden']
-				self.edge		= row['Edge']
 				self.nsfw 	= row['Nsfw']
 				self.in_db	= True
 				
 				if self.hidden:
 					self.status = 403
 				
+				self.getedge()
 				if self.edge >= 0.5:
 					self.nsfw = True
 					if self.edge >= 1.5:
@@ -455,6 +465,13 @@ class Meme(commands.Cog):
 				print(f"ERROR: failed to fetch meme {self.id}!")
 			
 			return self
+		
+		def getedge(self):
+			query = self.selectquery(selects=['userId', 'Rating'], _from='edge', wheres=['edge.memeId = '+str(self.id)])
+			
+			self.edgevotes = {}
+			for row in self.runquery(query, 2):
+				self.edgevotes[row['userId']] = row['Rating']
 		
 		def getdescriptions(self):
 			query = self.selectquery(selects=['description.*'], _from='description', joins=['LEFT JOIN descvote ON description.Id = descvote.descId'], wheres=['memeId = '+str(self.id)], groups=['description.Id'], orders=['SUM(descvote.Value) DESC'])
@@ -494,18 +511,43 @@ class Meme(commands.Cog):
 			if self.in_db:
 				return True
 			
-			query = self.insertquery() #TODO: finish this
+			if type(self.collectionparent) == Meme.DBMeme:
+				if not self.collectionparent.in_db:
+					self.collectionparent.savememe()
+				self.collectionparent = self.collectionparent.Id
 			
+			query = self.insertquery(into='meme', inserts=['DiscordOrigin', 'Type', 'CollectionParent', 'Url', 'Nsfw'], values=[self.origin, self.type, self.collectionparent, self.url, self.nsfw])
+			
+			result = self.runquery(query, 0)
+			self.id = result.lastrowid
+			self.in_db = True
+			
+			self.saveedge()
+			self.savedesc()
+			self.savetrans()
 			self.savetags()
 			self.savecats()
 			
 			return True
 		
+		def saveedge(self):
+			self.runquery(self.insertquery(into='edge', inserts=['memeId', 'userId', 'Value'], values=[(self.id, user, value) for user,value in self.edgevotes], on_duplicate="Value = Value"))
+		
+		def savedesc(self):
+			# This will probably need to be done in each object so they can collect their ids
+			self.runquery(self.insertquery(into='description', inserts=['userId', 'memeId', 'editId', 'Text'], values=[(desc.author, self.id, desc.editid, desc.text) for desc in self.descriptions]))
+			#self.runquery(self.insertquery(into='descvote')) TODO: Figure this out
+		
+		def savetrans(self):
+			# This will probably need to be done in each object so they can collect their ids
+			self.runquery(self.insertquery(into='transcription', inserts=['userId', 'memeId', 'editId', 'Text'], values=[(trans.author, self.id, trans.editid, trans.text) for trans in self.transcriptions]))
+			#self.runquery(self.insertquery(into='transvote')) TODO: Figure this out
+		
 		def savetags(self):
-			return True
+			pass # This will probably need to be done in each object so they can collect their ids
 		
 		def savecats(self):
-			return True
+			pass # This will probably need to be done in each object so they can collect their ids
 	
 	@tasks.loop(hours=1)
 	async def fetch_new_memes(self):
@@ -529,7 +571,7 @@ class Meme(commands.Cog):
 			self.include_tags = include_tags
 			self.tag_filters = {}
 			self.cat_filters = {}
-			self.edge_filter = 0
+			self.edge_filter = 1
 			self.text_filter = ""
 			
 			self.searchre = {
@@ -550,19 +592,19 @@ class Meme(commands.Cog):
 			
 			self.tag_filters = {'+':[], '-':[]}
 			self.cat_filters = {'+':[], '-':[]}
-			self.edge_filter = 1.5 if self.nsfw else 0.5
+			self.edge_filter = 2 if self.nsfw else 1
 			
 			title = []
 			
 			remainder = self.search
 			
 			edge_min = 1
-			edge_max = 2 if self.owner.id not in globals.superusers else 4 #TODO: instead fetch the DBUser and check for Admin
+			edge_max = 2 if self.owner.id not in globals.superusers else 5 #TODO: instead fetch the DBUser and check for Admin
 			
 			edge = self.searchre['edge'].match(self.search)
 			if edge and edge.group(1).isdigit(): # sanity check
 				target_edge = int(edge.group(1))
-				self.edge_filter = min(max(target_edge, edge_min), edge_max)-0.5
+				self.edge_filter = min(max(target_edge, edge_min), edge_max)
 				if target_edge != self.edge_filter: self.message = f"Warning: Your requested edge level is invalid or unavailable to your account, rounded to {self.edge_filter}"
 				
 				remainder = remainder.replace(edge.group(0),'')
@@ -607,6 +649,7 @@ class Meme(commands.Cog):
 			else: self.title = "Memes"
 			if self.text_filter:
 				self.title += f" which match the search term '{self.text_filter}'"
+			self.title += " ({})".format('🌶'*round(self.edge_filter))
 			
 		def get_results(self):
 			if self.title is None:
@@ -620,7 +663,7 @@ class Meme(commands.Cog):
 			result = []
 			for meme in source:
 				#edge search
-				if meme.edge > self.edge_filter or meme.edge < self.edge_filter - 1.0:
+				if meme.edge > self.edge_filter-0.5 or meme.edge < self.edge_filter - 1.5:
 					continue
 				
 				#text search - also inadvertently fetches tags and cats as a result
@@ -669,6 +712,8 @@ class Meme(commands.Cog):
 				success = await meme.post(ctx.channel)
 				if success:
 					i += 1
+				elif self.edge_filter>=2 and not ctx.channel.is_nsfw():
+					return # Break the loop if the search is impossible to complete
 				await asyncio.sleep(1)
 			return True
 	
