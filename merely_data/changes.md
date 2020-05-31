@@ -115,3 +115,5 @@ With this release, we are launching [MemeDB](https://meme.yiays.com) - an online
 ### 0.9.0
  - The codebase has been restructured to improve stability and maintainability.
  - Some unit tests have been added to help catch bugs early
+#### 0.9.1
+ - Countless bugfixes while continuing work on the 1.0.0 release
