@@ -42,6 +42,7 @@ apiurl='https://merely.yiays.com/'
 apiport=8080
 iconurl="https://cdn.discordapp.com/avatars/309270899909984267/1d574f78b4d4acec14c1ef8290a543cb.png?size=64"
 thonks=''
+server='unknown'
 ver='0.0.0'
 lastver='0.0.0'
 changes=[]
@@ -62,7 +63,7 @@ class MemeChannel():
 
 def reload():
 	global modules,prefix_short,prefix_long,name,verbose,logchannel,musicbuddy,feedbackchannel,modchannel
-	global emurl,apiurl,apiport,iconurl,thonks,ver,lastver,changes,lockout,authusers,superusers
+	global emurl,apiurl,apiport,iconurl,thonks,server,ver,lastver,changes,lockout,authusers,superusers
 	global memesources,memesubscriptions,memesites,owner,invite,beta,owneroptout
 	
 	print('reading config...')
@@ -93,6 +94,7 @@ def reload():
 		'apiport':apiport,
 		'iconurl':iconurl,
 		'thonks':thonks,
+		'server':server,
 		'ver':ver,
 		'lastver':lastver,
 		'authusers':','.join([str(u) for u in authusers]),
@@ -113,6 +115,9 @@ def reload():
 
 	#hmm
 	thonks=config.get('settings','thonks',fallback=thonks)
+
+	#server info for stats
+	server=config.get('settings','server',fallback=server)
 
 	#versioning
 	ver=config.get('settings','ver',fallback=ver)

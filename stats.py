@@ -23,7 +23,7 @@ class Stats(commands.Cog):
 		self.memes="unavailable"
 		self.cpu_usage='0%'
 		self.ram_usage='0MB/0MB (0%)'
-		self.hardware=globals.name+' is running on a custom windows server.'
+		self.hardware=f"{globals.name} is running on {globals.server}."
 		self.gentime='please wait...'
 		self.lastuptime=0
 		
