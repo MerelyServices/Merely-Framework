@@ -158,15 +158,19 @@ class Fun(commands.Cog):
 	async def dice(self,ctx,*args):
 		"""Rolls several n sided die"""
 		if not args: args=[6]
-		n = -1
+		if len(args)>32:
+			await ctx.send("i will roll at most 32 dice.")
+			return
+		results = []
 		for i,v in enumerate(args):
-			counter = str(i+1)+") " if len(args)>1 else ''
-			try:
-				r = random.randint(1,int(v))
-				n = r if r != n else random.randint(1,int(v))
-				await ctx.message.channel.send(counter+"rolled a "+str(n)+"!")
-			except:
-				await ctx.message.channel.send(counter+"please use positive whole numbers only.")
+			counter = f"dice {i+1}"+(f", {v} sides" if len(set(args))>1 else '')+") " if len(args)>1 else ''
+			n = random.choice(range(1, int(v)+1))
+			results.append(f"{counter}rolled a {n}!")
+		await ctx.send('\n'.join(results))
+	@dice.error
+	async def dice_error(self, ctx, error):
+		print(error)
+		await ctx.send("please use positive whole numbers only.")
 
 	@commands.command(pass_context=True, no_pm=False, aliases=['think'])
 	async def thonk(self,ctx):
