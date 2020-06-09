@@ -57,14 +57,14 @@ class Meme(commands.Cog):
 		self.usedmemes = Meme.UsedMemes(self)
 		self.users = {}
 		
-		if globals.verbose: print("filling meme/tags/categories cache...")
+		if globals.verbose: print("filling tags/categories cache...")
 		self.memes = {}
 		self.fetch_new_memes.start()
 		self.tags = {}
 		Meme.DBTag(self).fetchall()
 		self.categories = {}
 		Meme.DBCategory(self).fetchall()
-		if globals.verbose: print("meme/tags/categories cache done!")
+		if globals.verbose: print("tags/categories cache done!")
 		
 		self.bot.events['on_ready'].append(self.BackgroundService)
 		self.bot.events['on_message'].append(self.OnMemePosted)
@@ -298,7 +298,7 @@ class Meme(commands.Cog):
 		
 		def announce(self):
 			""" Checks if this new meme is suitable for any memesubscriptions and posts it there """
-			for channel,subsearch in globals.memesubscriptions:
+			for channel,subsearch in globals.memesubscriptions.items():
 				if subsearch not in self.parent.searches:
 					self.parent.searches[subsearch] = Meme.DBSearch(self.parent, self.parent.bot.user, subsearch)
 					self.parent.searches[subsearch].construct()
@@ -566,6 +566,7 @@ class Meme(commands.Cog):
 			self.search = search
 			self.nsfw = nsfw
 			self.results = []
+			self.success = None
 			self.message = None
 			
 			self.include_tags = include_tags
@@ -601,13 +602,13 @@ class Meme(commands.Cog):
 			edge_min = 1
 			edge_max = 2 if self.owner.id not in globals.superusers else 5 #TODO: instead fetch the DBUser and check for Admin
 			
-			edge = self.searchre['edge'].match(self.search)
-			if edge and edge.group(1).isdigit(): # sanity check
-				target_edge = int(edge.group(1))
+			edge = self.searchre['edge'].findall(self.search)
+			if edge and edge[0].isdigit(): # sanity check
+				target_edge = int(edge[0])
 				self.edge_filter = min(max(target_edge, edge_min), edge_max)
 				if target_edge != self.edge_filter: self.message = f"Warning: Your requested edge level is invalid or unavailable to your account, rounded to {self.edge_filter}"
 				
-				remainder = remainder.replace(edge.group(0),'')
+				remainder = remainder.replace('edge:'+edge[0],'')
 			
 			tags = self.searchre['tags'].findall(self.search)
 			for tag in tags:
@@ -621,6 +622,7 @@ class Meme(commands.Cog):
 				else:
 					self.title = "Invalid search"
 					self.message = f"Couldn't find a tag by the name {name}!"
+					self.success = False
 					return False
 				
 				remainder = remainder.replace('tag:'+name,'')
@@ -638,11 +640,12 @@ class Meme(commands.Cog):
 				else:
 					self.title = "Invalid search"
 					self.message = f"Couldn't find a category by the name {name}!"
+					self.success = False
 					return False
 				
 				remainder = remainder.replace('cat:'+name,'')
 			
-			self.text_filter = remainder
+			self.text_filter = remainder.strip()
 			
 			if title:
 				self.title = "{} memes".format(', '.join(title))
@@ -650,11 +653,12 @@ class Meme(commands.Cog):
 			if self.text_filter:
 				self.title += f" which match the search term '{self.text_filter}'"
 			self.title += " ({})".format('🌶'*round(self.edge_filter))
+			self.success = True
 			
 		def get_results(self):
 			if self.title is None:
 				self.construct()
-			if self.cache_age < int(time.time()) - 60*60*24: # < cache lasts 24 hours
+			if self.cache_age < int(time.time()) - 60*60*24 and self.success: # < cache lasts 24 hours
 				self.results = self.search_in(self.parent.memes.values())
 			
 			return self.results
@@ -663,7 +667,7 @@ class Meme(commands.Cog):
 			result = []
 			for meme in source:
 				#edge search
-				if meme.edge > self.edge_filter-0.5 or meme.edge < self.edge_filter - 1.5:
+				if round(meme.edge) != (self.edge_filter-1):
 					continue
 				
 				#text search - also inadvertently fetches tags and cats as a result
@@ -701,7 +705,7 @@ class Meme(commands.Cog):
 			await ctx.send(f"**{self.title}** - {len(self.results)} results total.")
 			if self.message:
 				await ctx.send(self.message)
-				if not self.message.startswith("Warning: "): return False
+				if self.success == False: return False
 			
 			i = 0
 			while i < int(n):
