@@ -18,7 +18,7 @@ in place of `m/`, you can also use `merely ` or `@merely `, eg `m/help`, `merely
 > [add merely to your server >](https://discordapp.com/oauth2/authorize?client_id=309270899909984267&scope=bot&permissions=0)
 
 ## news
-merely is approaching three years of development and simultaneously the 1.0.0 update. merely has reached a high level of stability, scalability and modularity.
+merely v1.0.0 has launched! with this update comes a wave of potential for 3rd party modules and custom discord bots.
 > [see the roadmap for future updates >](https://github.com/yesiateyoursheep/merely/projects/1)
 
 ## changelog
@@ -43,9 +43,16 @@ after the first run, you can enable commands by editing the file at merely_data/
 once modules have been enabled, you can list commands available to you using `m/help` in a discord channel the bot has access to.
 
 ## contributing
-work is being done towards making merely customisible, with custom prefixes and dynamic help menus. the ultimate goal is to make it possible for people to host their own customized discord bots using merely as a base, perhaps even being able to install more modules made by other people.
+keeping the following design philosophy in mind, feel free to fix any bugs or add new features to a fork, and send me a pull request. you can also create modules independantly and keep them to yourself if you want.
 
-feel free to fix any bugs or add new features to a fork, and send me a pull request, pretty standard github stuff.
+### design
+merely is a highly customizable and extensible discord bot. through the config file, people can create their own discord bots by enabling and disabling modules, changing the bot name and prefix. other developers can even write their own modules!
+
+### code structure
+modules need to be able to be entirely independant of each other and communicate to each other through the merelybot core module or globals. modules must inherit from the [discord.py ext.commands.Cog](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#cogs) class. effort should be made to avoid clashes with existing commands, preferably by using subcommands.
+
+### file structure
+modules are placed in the modules folder, from there, they will be added to the config and can be enabled.
 
 ## modules
 | module | description | added |
@@ -64,6 +71,8 @@ feel free to fix any bugs or add new features to a fork, and send me a pull requ
 | [obsolete](obsolete.py) | stores stubs for old obsolete commands and promotes merely music when someone attempts to use musicbot commands | 0.2.3 |
 | [utils](utils.py) | provides useful general functions for programming merely | 0.7.3 |
 | [tools](tools.py) | provides tools for all users (unlike admin, which is for mods and server owners) like `m/shorten` | 0.7.4 |
+| [test](test.py) | a set of CI tests to help catch bugs early | 0.9.0 |
+| [events](events.py) | a new events API for modules to use, allows for multiple modules to subscribe to the same events. | 1.0.0 |
 
  - \* = must be imported for minimal functionality
  - <sup>n</sup> = these modules are codependant - they must be enabled together
