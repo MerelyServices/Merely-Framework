@@ -18,12 +18,18 @@ class Logger(object):
 		self.terminal = sys.stdout
 		self.err = err
 	def write(self, message):
+		# Make the directory in case the month changes or a folder was deleted
+		if not os.path.exists(globals.store+"logs/"+time.strftime("%m-%y")):
+			os.makedirs(globals.store+"logs/"+time.strftime("%m-%y"))
 		self.terminal.write(message.encode('utf-8').decode('ascii','ignore'))
-		with open(globals.store+"logs/merely"+('-errors' if self.err else '')+"-"+globals.ver+"-"+time.strftime("%d-%m-%y")+".log", "a", encoding='utf-8') as log:
+		with open(globals.store+"logs/"+time.strftime("%m-%y")+"/merely"+('-errors' if self.err else '')+"-"+globals.ver+"-"+time.strftime("%d-%m-%y")+".log", "a", encoding='utf-8') as log:
 			log.write(message)
 	def flush(self):
 		return self
 
+# Make the directory before changing the logger so errors can be printed if need be.
+if not os.path.exists(globals.store+"logs/"+time.strftime("%m-%y")):
+	os.makedirs(globals.store+"logs/"+time.strftime("%m-%y"))
 sys.stdout = Logger()
 sys.stderr = Logger(err=True)
 
