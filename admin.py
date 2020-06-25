@@ -28,7 +28,7 @@ class Admin(commands.Cog):
 			await ctx.message.channel.send(help.dhelp['welcome'])
 	@welcome.command(pass_context=True,name='get')
 	async def welcomeget(self,ctx):
-		if globals.config.get(str(ctx.message.guild.id),'welcome_message')!='':
+		if globals.config.get(str(ctx.message.guild.id), 'welcome_message', fallback='')!='':
 			await ctx.message.channel.send('the welcome message is currently;\n'+globals.config.get(str(ctx.message.guild.id),'welcome_message').format('@USER',ctx.message.guild.name))
 		else:
 			await ctx.message.channel.send("you currently don't have a welcome message on this server.\n"+\
@@ -56,7 +56,7 @@ class Admin(commands.Cog):
 		if ctx.message.author.id not in globals.authusers and ctx.message.author.id != ctx.message.guild.owner.id:
 			await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","welcome")
 			return
-		if str(ctx.message.guild.id) not in globals.config.sections() or globals.config.get(str(ctx.message.guild.id),'welcome_message')=='':
+		if globals.config.get(str(ctx.message.guild.id), 'welcome_message', fallback=None) is None:
 			await ctx.message.channel.send("you currently don't have a welcome message on this server.")
 		else:
 			globals.config.set(str(ctx.message.guild.id),'welcome_message','')
@@ -74,7 +74,7 @@ class Admin(commands.Cog):
 			await ctx.message.channel.send(help.dhelp['farewell'])
 	@farewell.command(pass_context=True,name='get')
 	async def farewellget(self,ctx):
-		if globals.config.get(str(ctx.message.guild.id),'farewell_message')!='':
+		if globals.config.get(str(ctx.message.guild.id), 'farewell_message', fallback='')!='':
 			await ctx.message.channel.send('the farewell message is currently;\n'+globals.config.get(str(ctx.message.guild.id),'farewell_message').format('USER#1234'))
 		else:
 			await ctx.message.channel.send("you currently don't have a farewell message on this server.\n"+\
@@ -102,7 +102,7 @@ class Admin(commands.Cog):
 		if ctx.message.author.id not in globals.authusers and ctx.message.author.id != ctx.message.guild.owner.id:
 			await ctx.message.channel.send('this command is restricted.')
 			return
-		if str(ctx.message.guild.id) not in globals.config.sections() or globals.config.get(str(ctx.message.guild.id),'farewell_message')=='':
+		if globals.config.get(str(ctx.message.guild.id), 'farewell_message', fallback='')=='':
 			await ctx.message.channel.send("you currently don't have a farewell message on this server.")
 		else:
 			globals.config.set(str(ctx.message.guild.id),'farewell_message','')
@@ -110,14 +110,14 @@ class Admin(commands.Cog):
 			await ctx.message.channel.send("removed and disabled the farewell message!")
 	
 	async def janitorservice(self,msg):
-		if str(msg.channel.id) in globals.config.get('janitor','strict',fallback='').split(' '):
+		if str(msg.channel.id) in globals.config.get('janitor', 'strict', fallback='').split(' '):
 			await asyncio.sleep(30)
 			try:
 				await msg.delete()
 			except Exception as e:
 				print(e)
 				return
-		elif str(msg.channel.id) in globals.config.get('janitor','relaxed',fallback='').split(' '):
+		elif str(msg.channel.id) in globals.config.get('janitor', 'relaxed', fallback='').split(' '):
 			if msg.author==self.bot.user or self.bot.user in msg.mentions or msg.content.lower().startswith('m/') or msg.content.lower().startswith('merely'):
 				await asyncio.sleep(30)
 				try:
@@ -140,12 +140,12 @@ class Admin(commands.Cog):
 		if ctx.message.author.id not in globals.authusers and ctx.message.author.id != ctx.message.guild.owner.id:
 			await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","janitor")
 			return
-		if str(ctx.message.channel.id) in globals.config.get('janitor','strict').split(' ') or str(ctx.message.channel.id) in globals.config.get('janitor','relaxed').split(' '):
+		if str(ctx.message.channel.id) in globals.config.get('janitor', 'strict', fallback='').split(' ') or str(ctx.message.channel.id) in globals.config.get('janitor', 'relaxed', fallback='').split(' '):
 			await ctx.message.channel.send("this channel has already opted into the janitor service!")
 		elif mode not in ['strict','relaxed']:
 			await ctx.message.channel.send('you must specify whether you want a strict janitor or a relaxed janitor.\n*strict*; all messages from everyone are deleted after 30 seconds.\n*relaxed*; messages to and from merely are deleted after 30 seconds.')
 		else:
-			globals.config.set('janitor',mode,globals.config.get('janitor',mode)+' '+str(ctx.message.channel.id))
+			globals.config.set('janitor',mode,globals.config.get('janitor', mode, fallback='')+' '+str(ctx.message.channel.id))
 			globals.save()
 			await ctx.message.channel.send('opted in to janitor!')
 	@janitor.command(pass_context=True,name='leave')
@@ -154,14 +154,14 @@ class Admin(commands.Cog):
 			await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","janitor")
 			return
 		mode=''
-		if str(ctx.message.channel.id) in globals.config.get('janitor','strict').split(' '):
+		if str(ctx.message.channel.id) in globals.config.get('janitor', 'strict', fallback='').split(' '):
 			mode='strict'
-		elif str(ctx.message.channel.id) in globals.config.get('janitor','relaxed').split(' '):
+		elif str(ctx.message.channel.id) in globals.config.get('janitor', 'relaxed', fallback='').split(' '):
 			mode='relaxed'
 		else:
 			await ctx.message.channel.send("this channel hasn't opted in to the janitor service!")
 		if mode in ['strict','relaxed']:
-			t=globals.config.get('janitor',mode).split(' ')
+			t=globals.config.get('janitor', mode, fallback='').split(' ')
 			t.remove(str(ctx.message.channel.id))
 			t=' '.join(t)
 			globals.config.set('janitor',mode,t)

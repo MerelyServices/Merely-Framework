@@ -279,7 +279,7 @@ async def on_member_join(member):
 	if member.id == bot.user.id:
 		return
 	globals.config.read(globals.store+'config.ini')
-	if str(member.guild.id) in globals.config.sections() and globals.config.get(str(member.guild.id),'welcome_message') != '':
+	if globals.config.get(str(member.guild.id),'welcome_message', fallback='') != '':
 		await bot.get_channel(int(globals.config.get(str(member.guild.id),'welcome_channel'))).send(globals.config.get(str(member.guild.id),'welcome_message').format('<@!'+str(member.id)+'>',member.guild.name))
 
 @bot.event
@@ -287,7 +287,7 @@ async def on_member_remove(member):
 	if member.id == bot.user.id:
 		return
 	globals.config.read(globals.store+'config.ini')
-	if str(member.guild.id) in globals.config.sections() and globals.config.get(str(member.guild.id),'farewell_message') != '':
+	if globals.config.get(str(member.guild.id),'farewell_message', fallback='') != '':
 		await bot.get_channel(int(globals.config.get(str(member.guild.id),'farewell_channel'))).send(globals.config.get(str(member.guild.id),'farewell_message').format(member.name+'#'+str(member.discriminator)))
 
 def truncate(str ,l):
