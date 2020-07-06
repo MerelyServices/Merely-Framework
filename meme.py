@@ -1,6 +1,6 @@
 import globals
 import utils,emformat,help
-import asyncio
+import asyncio,aiomysql
 import discord
 from discord.ext import commands,tasks
 import time, datetime
@@ -55,17 +55,27 @@ class Meme(commands.Cog):
 		self.users = {}
 		
 		self.memes = {}
-		self.fetch_new_memes.start()
 		self.tags = {}
-		self.fetch_new_tags.start()
 		self.categories = {}
-		self.fetch_new_categories.start()
+
+		if self.bot.is_ready():
+			self.fetch_new_memes.start()
+			self.fetch_new_tags.start()
+			self.fetch_new_categories.start()
+		else:
+			self.bot.events['on_ready'].append(self.start_cache)
 		
 		self.bot.events['on_ready'].append(self.BackgroundService)
 		self.bot.events['on_message'].append(self.OnMemePosted)
 		self.bot.events['on_raw_reaction_add'].append(self.on_raw_reaction_add)
 		self.bot.events['on_raw_reaction_remove'].append(self.on_raw_reaction_remove)
-	
+
+	async def start_cache(self):
+		self.fetch_new_memes.start()
+		self.fetch_new_tags.start()
+		self.fetch_new_categories.start()
+		self.bot.events['on_ready'].remove(self.start_cache)
+
 	def cog_unload(self):
 		self.bot.events['on_ready'].remove(self.BackgroundService)
 		self.bot.events['on_message'].remove(self.OnMemePosted)
@@ -73,6 +83,8 @@ class Meme(commands.Cog):
 		self.bot.events['on_raw_reaction_remove'].remove(self.on_raw_reaction_remove)
 		
 		self.fetch_new_memes.stop()
+		self.fetch_new_tags.stop()
+		self.fetch_new_categories.stop()
 		
 		#TODO: make this work...
 		# await self.session.close()
@@ -170,13 +182,13 @@ class Meme(commands.Cog):
 			""" fetchmode 0: fetches nothing, 1: fetches one, 2: fetches all """
 			result = None
 			async with self.pool.acquire() as conn:
-				async with conn.cursor() as cursor:
+				async with conn.cursor(aiomysql.DictCursor) as cursor:
 					try:
 						await cursor.execute(query)
 						if fetchmode>1:
 							result = await cursor.fetchall()
 						elif fetchmode==1:
-							(result, ) = await cursor.fetchone()
+							result = await cursor.fetchone()
 						else:
 							result = True
 					except Exception as e:
@@ -263,7 +275,8 @@ class Meme(commands.Cog):
 				image = self.url if self.type in ['image', 'gif'] else f"https://cdn.yiays.com/meme/{self.id}.thumb.jpg" if type in ['video', 'webm'] else '',
 				fields = {
 					"categories": ', '.join([name for name in self.categories.keys()]) if len(self.categories) else f"None yet, you should suggest one! `{globals.prefix_short}meme #{self.id} cat`",
-					"tags": ', '.join([name for name in self.tags.keys()]) if len(self.tags) else f"None yet, you should suggest some! `{globals.prefix_short}meme #{self.id} tag`"
+					"tags": ', '.join([name for name in self.tags.keys()]) if len(self.tags) else f"None yet, you should suggest some! `{globals.prefix_short}meme #{self.id} tag`",
+					"edge": f"Edge is currently {'🌶'*round(self.edge+1)} ({self.edge+1} - {EDGEMEANING[round(self.edge+1)]})",
 				} if self.in_db else {
 					"edge": f"Edge is currently {'🌶'*round(self.edge+1)} ({self.edge+1} - {EDGEMEANING[round(self.edge+1)]}) vote for an edge rating with `{globals.prefix_short}meme #{self.id} edge n` where the n is 1 if the meme is safe for everyone, and 2 if it isn't.",
 					"transcription": self.transcriptions[0].text if len(self.transcriptions) else f"This meme needs a transcription. `{globals.prefix_short}meme #{self.id} transcribe`",
@@ -324,12 +337,14 @@ class Meme(commands.Cog):
 					"LEFT JOIN tag ON tagvote.tagId = tag.Id",
 					"LEFT JOIN edge ON meme.Id = edge.memeId"
 				],
-				groups=['description.Id', 'transcription.Id', 'tag.Id', 'category.Id', 'edge.memeId', 'meme.Id'],
+				groups=['description.Id', 'transcription.Id', 'tag.Id', 'category.Id', 'edge.userId', 'meme.Id'],
 				orders=['meme.Id DESC']
 			)
 			
 			lastid = -1
-			for row in await self.runquery(query, fetchmode=2):
+
+			result = await self.runquery(query, fetchmode=2)
+			for row in result:
 				# record the first row of the meme as a meme, the rest are for metadata only
 				if row['Id']!=lastid:
 					if row['Id'] not in self.parent.memes:
@@ -428,11 +443,12 @@ class Meme(commands.Cog):
 				if self.hidden:
 					self.status = 403
 				
-				await self.getedge()
-				if self.edge >= 0.5:
-					self.nsfw = True
-					if self.edge >= 1.5:
-						self.status = 403
+				#TODO: fix everything to do with edge
+				#await self.getedge()
+				#if self.edge >= 0.5:
+					#self.nsfw = True
+					#if self.edge >= 1.5:
+						#self.status = 403
 				
 				if depth >= 1:
 					await self.gettags()
@@ -545,16 +561,18 @@ class Meme(commands.Cog):
 	
 	@tasks.loop(hours=1)
 	async def fetch_new_tags(self):
-		if globals.verbose: print("hourly meme tag cache update done!")
+		if globals.verbose: print("running hourly meme tag cache update...")
 		if len(self.tags)>0:
 			after = max(self.tags.keys())
 		else: after = 0
 		await Meme.DBTag(self).fetchall(after=after)
+		if globals.verbose: print("hourly meme tag cache update done!")
 	
 	@tasks.loop(hours=1)
 	async def fetch_new_categories(self):
-		if globals.verbose: print("hourly meme category cache update done!")
+		if globals.verbose: print("running hourly meme category cache update...")
 		await Meme.DBCategory(self).fetchall()
+		if globals.verbose: print("hourly meme category cache update done!")
 	
 	class DBSearch(DB):
 		def __init__(self, parent, owner, search, include_tags=True, nsfw=False):
@@ -873,7 +891,7 @@ class Meme(commands.Cog):
 				
 				result = None
 				async with self.bot.meme_db.acquire() as conn:
-					async with conn.cursor() as cursor:
+					async with conn.cursor(aiomysql.DictCursor) as cursor:
 						cursor.execute(f"SELECT Id FROM meme WHERE DiscordOrigin = {message.id} AND CollectionParent IS NULL LIMIT 1")
 						result = cursor.fetchone()
 				
@@ -1063,7 +1081,7 @@ class Meme(commands.Cog):
 	@commands.command(no_pm=False, aliases=['memes','mem'])
 	async def meme(self, ctx, *, n='1'):
 		if len(self.memes) < 1:
-			await ctx.send("the meme database is empty! - unable to run meme commands.")
+			await ctx.send("please wait, the meme database is still loading...")
 			return
 
 		if n.isdigit():
@@ -1117,6 +1135,9 @@ class Meme(commands.Cog):
 				searcher.get_results()
 			
 			await searcher.post(ctx, n=n)
+	@meme.error
+	async def meme_error(self, ctx, error):
+		await ctx.send("there was an unhandled error while handling your meme command; `"+str(error)+"`")
 	
 	@commands.group(aliases=['memesources'])
 	async def memesource(self, ctx):

@@ -47,7 +47,7 @@ bot.db = None
 
 if globals.verbose: print('setting up events...')
 import events
-events.events(bot)
+eventmod = events.events(bot)
 if globals.verbose: print('events done!')
 
 if globals.verbose: print('importing modules...')
@@ -242,7 +242,7 @@ async def onconnect():
 		bot.meme_db = await aiomysql.create_pool(host='192.168.1.120', port=3306, user='meme', password=os.environ.get('MemeDB'), db='meme', loop=asyncio.get_event_loop())
 	else:
 		pass #TODO: disable meme and tools, warn the log
-bot.events['on_connect'].append(onconnect)
+bot.events['on_connect'].insert(0, onconnect)
 
 async def ondisconnect():
 	print('disconnected!')
@@ -250,7 +250,8 @@ async def ondisconnect():
 	if bot.meme_db is not None:
 		bot.meme_db.close()
 		await bot.meme_db.wait_closed()
-		bot.meme_db = None
+		bot.meme_db = None #TODO: There seems to be cases where on_connected isn't fired...
+bot.events['on_disconnect'].insert(0, ondisconnect)
 
 async def onready():
 	print('logged in as')
@@ -259,7 +260,7 @@ async def onready():
 	print('------')
 	
 	if globals.logchannel: await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - **logged in and restored settings.**")
-bot.events['on_ready'].append(onready)
+bot.events['on_ready'].insert(0,onready)
 
 async def command_handler(message):
 	ctx = await bot.get_context(message)
@@ -272,7 +273,7 @@ async def command_handler(message):
 			await log("Unknown command: ```"+message.content+"```")
 		else:
 			await bot.invoke(ctx)
-bot.events['on_message'].append(command_handler)
+bot.events['on_message'].insert(0,command_handler)
 
 @bot.check_once
 async def on_check(ctx):
@@ -299,12 +300,12 @@ async def log_guildjoin(server):
 	if globals.modules['fun']:
 		await asyncio.sleep(30)
 		await bot.cogs['Fun'].recover_status()
-bot.events['on_guild_join'].append(log_guildjoin)
+bot.events['on_guild_join'].insert(0,log_guildjoin)
 
 async def log_guildleave(server):
 	if globals.verbose: print(time.strftime("%H:%M:%S",time.localtime())+" - Left server "+server.name+"!")
 	if globals.logchannel: await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - **Left server *"+server.name+"*!**")
-bot.events['on_guild_remove'].append(log_guildleave)
+bot.events['on_guild_remove'].insert(0,log_guildleave)
 
 def truncate(str ,l):
 	return (str[:l] + '...') if len(str) > l+3 else str
@@ -343,7 +344,7 @@ async def msglog(msg:discord.Message):
 		if globals.logchannel:
 			await bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - ["+channel+"] "+msg.author.name+"#"+msg.author.discriminator+": "+content, embed=embed)
 		print(time.strftime("%H:%M:%S",time.localtime())+" - ["+channel+"] "+msg.author.name+"#"+msg.author.discriminator+": "+content_logsafe)
-bot.events['on_message'].append(msglog)
+bot.events['on_message'].insert(0,msglog)
 
 async def log(msg:str):
 	print(time.strftime("%H:%M:%S",time.localtime())+": "+msg)
@@ -359,7 +360,7 @@ async def log_error(error, *args):
 	if globals.logchannel:
 		channel = bot.get_channel(globals.logchannel)
 		await channel.send(time.strftime("%H:%M:%S",time.localtime())+" - **encountered an error;**\n```"+truncate(error,1950)+'```')
-bot.events['on_error'].append(log_error)
+bot.events['on_error'].insert(0,log_error)
 
 if __name__ == '__main__':
 	if ('Merely' in os.environ and not globals.beta) or ('MerelyBeta' in os.environ and globals.beta):

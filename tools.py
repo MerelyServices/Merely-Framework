@@ -49,7 +49,7 @@ class Tools(commands.Cog):
 						chars = [chr(i) for i in list(range(48,57)) + list(range(65,90)) + list(range(97,122))]
 						short = ''.join([random.choice(chars) for _ in range(random.randint(3,6))])
 					async with self.bot.meme_db.acquire() as conn:
-						async with conn.cursor() as cursor:
+						async with conn.cursor(aiomysql.DictCursor) as cursor:
 							await cursor.execute("SELECT short FROM link WHERE short = %s", (short,))
 							await cursor.fetchall()
 							if cursor.rowcount == 0:
