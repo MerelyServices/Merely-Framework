@@ -5,4 +5,4 @@ pprint
 configparser
 bs4
 psutil
-mysql-connector
+aiomysql

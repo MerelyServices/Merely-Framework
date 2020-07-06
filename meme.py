@@ -3,7 +3,6 @@ import utils,emformat,help
 import asyncio
 import discord
 from discord.ext import commands,tasks
-import mysql.connector
 import time, datetime
 import aiohttp
 import urllib.parse
@@ -37,34 +36,30 @@ EDGEMEANING = {
 class DudMeme():
 	"""Dud version of Meme class for passing through to DB* elements"""
 	def __init__(self):
-		dbpassword = ""
-		searches = {}
-		usedmemes = Meme.UsedMemes(self)
-		users = {}
-		memes = {}
-		tags = {}
-		categories = {}
+		self.searches = {}
+		self.usedmemes = Meme.UsedMemes(self)
+		self.users = {}
+		self.memes = {}
+		self.tags = {}
+		self.categories = {}
 
 class Meme(commands.Cog):
 	"""Database and API for collecting, organizing and presenting memes"""
-	def __init__(self, bot, dbpassword):
+	def __init__(self, bot):
 		self.bot = bot
 		self.backgroundservice = None
-		self.dbpassword = dbpassword
 		self.session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60))
 		self.searches = {}
 		self.newmemes = []
 		self.usedmemes = Meme.UsedMemes(self)
 		self.users = {}
 		
-		if globals.verbose: print("filling tags/categories cache...")
 		self.memes = {}
 		self.fetch_new_memes.start()
 		self.tags = {}
-		Meme.DBTag(self).fetchall()
+		self.fetch_new_tags.start()
 		self.categories = {}
-		Meme.DBCategory(self).fetchall()
-		if globals.verbose: print("tags/categories cache done!")
+		self.fetch_new_categories.start()
 		
 		self.bot.events['on_ready'].append(self.BackgroundService)
 		self.bot.events['on_message'].append(self.OnMemePosted)
@@ -101,16 +96,9 @@ class Meme(commands.Cog):
 				self.usedmemes[guild].pop(0)
 	
 	class DB():
-		def __init__(self, dbpassword):
-			self.dbpassword = dbpassword
-			self.connection = None
+		def __init__(self, pool):
+			self.pool = pool
 			self.cache_age = 0
-		
-		def connect(self):
-			self.connection = mysql.connector.connect(host='192.168.1.120',user='meme',password=self.dbpassword,database='meme')
-		
-		def disconnect(self):
-			self.connection.close()
 		
 		def selectquery(self, selects:list, _from:str, joins=[], wheres=[], groups=[], havings=[], orders=[], limit="") -> str:
 			query = ["SELECT"]
@@ -178,31 +166,26 @@ class Meme(commands.Cog):
 			
 			return ' '.join(query)
 		
-		def runquery(self, query, fetchmode, dictionary=True):
+		async def runquery(self, query, fetchmode, dictionary=True):
 			""" fetchmode 0: fetches nothing, 1: fetches one, 2: fetches all """
-			if self.connection is None or not self.connection.is_connected():
-				self.connect()
 			result = None
-			cursor = self.connection.cursor(dictionary=dictionary)
-			try:
-				cursor.execute(query)
-				if fetchmode>1:
-					result = cursor.fetchall()
-				elif fetchmode==1:
-					result = cursor.fetchone()
-				else:
-					result = True
-			except Exception as e:
-				print("ERROR: Query `{}` resulted in an error; `{}`".format(query, e))
-			finally:
-				cursor.close()
-				if self.connection.is_connected():
-					self.disconnect()
+			async with self.pool.acquire() as conn:
+				async with conn.cursor() as cursor:
+					try:
+						await cursor.execute(query)
+						if fetchmode>1:
+							result = await cursor.fetchall()
+						elif fetchmode==1:
+							(result, ) = await cursor.fetchone()
+						else:
+							result = True
+					except Exception as e:
+						print("ERROR: Query `{}` resulted in an error; `{}`".format(query, e))
 			return result
 	
 	class DBMeme(DB):
 		def __init__(self, parent, id=None):
-			super().__init__(parent.dbpassword)
+			super().__init__(parent.bot.meme_db)
 			self.parent = parent
 			self.id = id
 			self.origin = None
@@ -237,7 +220,8 @@ class Meme(commands.Cog):
 		@property
 		def searchdata(self):
 			if self.depth < 2: # all metadata is required for this task
-				self.getmeme(depth=2)
+				print(f"WARNING: meme#{self.id}.searchdata fetched without depth>=2!")
+				#self.getmeme(depth=2)  <- can't count on this redundant code anymore.
 			
 			data = ''.join([desc.text for desc in self.descriptions])
 			data += ''.join([trans.text for trans in self.transcriptions])
@@ -246,7 +230,7 @@ class Meme(commands.Cog):
 			data += self.type
 			
 			data = data.strip(' ').strip('\n').lower().replace('<br/>','')
-			# could consider caching this..?
+			#TODO: consider caching this..?
 			
 			return data
 		
@@ -296,7 +280,7 @@ class Meme(commands.Cog):
 			
 			return mememsg
 		
-		def announce(self):
+		async def announce(self):
 			""" Checks if this new meme is suitable for any memesubscriptions and posts it there """
 			for channel,subsearch in globals.memesubscriptions.items():
 				if subsearch not in self.parent.searches:
@@ -304,14 +288,14 @@ class Meme(commands.Cog):
 					self.parent.searches[subsearch].construct()
 				searcher = self.parent.searches[subsearch]
 				if searcher.search_in([self]):
-					asyncio.ensure_future(self.post(self.parent.bot.get_channel(channel), force=True))
+					await self.post(self.parent.bot.get_channel(channel))
 		
-		def fetch(self, id):
+		async def fetch(self, id):
 			query = self.selectquery(selects=['meme.*'], _from='meme', wheres=['Id = '+str(id)], limit='1')
 			
-			return self.runquery(query, 1)
+			return await self.runquery(query, 1)
 		
-		def fetchall(self, after=0):
+		async def fetchall(self, after=0):
 			# Builds cache of all memes in the database, cats and tags will need to be fetched later if and when needed
 			query = self.selectquery(
 				selects=[
@@ -345,12 +329,12 @@ class Meme(commands.Cog):
 			)
 			
 			lastid = -1
-			for row in self.runquery(query, fetchmode=2):
+			for row in await self.runquery(query, fetchmode=2):
 				# record the first row of the meme as a meme, the rest are for metadata only
 				if row['Id']!=lastid:
 					if row['Id'] not in self.parent.memes:
 						self.parent.memes[row['Id']] = Meme.DBMeme(self.parent)
-					self.parent.memes[row['Id']].getmeme(depth=0, row=row)
+					await self.parent.memes[row['Id']].getmeme(depth=0, row=row)
 				lastid = row['Id']
 				
 				targetmeme = self.parent.memes[row['Id']]
@@ -378,7 +362,9 @@ class Meme(commands.Cog):
 				targetmeme.depth = 2 # more or less...
 				
 				# announce new memes to memesubscriptions if this is, in fact, a new meme
-				if after>0: targetmeme.announce()
+				if after>0:
+					await targetmeme.announce()
+					await asyncio.sleep(1)
 				
 		async def collect_info(self, channel):
 			requirement = self.contrib_min - self.contribs
@@ -394,35 +380,34 @@ class Meme(commands.Cog):
 					await self.announce()
 					await self.post(channel, force=True, msg=f"This meme has been posted publicly! You can now upvote and downvote it.", edit=self.collector_msg[channel.id])
 		
-		def getmeme(self, id=None, depth=2, row='fetchplz'):
+		async def getmeme(self, id=None, depth=2, row='fetchplz'):
 			# depth 0; just the meme
 			# depth 1; tags and cats
 			# depth 2; everything: tags, cats, desc and trans
 			if id is None: id = self.id
 			else: self.id = id
 			
-			
 			if self.in_db and self.cache_age > int(time.time()) - 60*60*24: # < cache lasts 24 hours
 				if self.depth >= depth:
-					self.getedge()
+					await self.getedge()
 					return self
 				else:
 					if self.depth == 0:
-						self.getcats()
-						self.gettags()
+						await self.getcats()
+						await self.gettags()
 						if depth > 1:
-							self.getdescriptions()
-							self.gettranscriptions()
+							await self.getdescriptions()
+							await self.gettranscriptions()
 					elif self.depth == 1:
-						self.getdescriptions()
-						self.gettranscriptions()
+						await self.getdescriptions()
+						await self.gettranscriptions()
 					
 					# this doesn't increase the base cache because the base meme isn't fetched
 					self.depth = max(depth, self.depth)
 					return self
 			
 			if row == 'fetchplz':
-				row = self.fetch(id)
+				row = await self.fetch(id)
 			
 			self.status = 404
 			if row is not None and row['Id'] is not None:
@@ -443,18 +428,18 @@ class Meme(commands.Cog):
 				if self.hidden:
 					self.status = 403
 				
-				self.getedge()
+				await self.getedge()
 				if self.edge >= 0.5:
 					self.nsfw = True
 					if self.edge >= 1.5:
 						self.status = 403
 				
 				if depth >= 1:
-					self.gettags()
-					self.getcats()
+					await self.gettags()
+					await self.getcats()
 					if depth >= 2:
-						self.getdescriptions()
-						self.gettranscriptions()
+						await self.getdescriptions()
+						await self.gettranscriptions()
 		
 				self.cache_age = int(time.time())
 				self.depth = max(depth, self.depth)
@@ -466,87 +451,87 @@ class Meme(commands.Cog):
 			
 			return self
 		
-		def getedge(self):
+		async def getedge(self):
 			query = self.selectquery(selects=['userId', 'Rating'], _from='edge', wheres=['edge.memeId = '+str(self.id)])
 			
 			self.edgevotes = {}
-			for row in self.runquery(query, 2):
+			for row in await self.runquery(query, 2):
 				self.edgevotes[row['userId']] = row['Rating']
 		
-		def getdescriptions(self):
+		async def getdescriptions(self):
 			query = self.selectquery(selects=['description.*'], _from='description', joins=['LEFT JOIN descvote ON description.Id = descvote.descId'], wheres=['memeId = '+str(self.id)], groups=['description.Id'], orders=['SUM(descvote.Value) DESC'])
 			
 			self.descriptions = []
-			for row in self.runquery(query, 2):
+			for row in await self.runquery(query, 2):
 				self.descriptions.append(Meme.DBDescription(id=row['Id'], meme=self, author=row['userId'], editid=row['editId'], text=row['Text']))
 			
-		def gettranscriptions(self):
+		async def gettranscriptions(self):
 			query = self.selectquery(selects=['transcription.*'], _from='transcription', joins=['LEFT JOIN transvote ON transcription.Id = transvote.transId'], wheres=['memeId = '+str(self.id)], groups=['transcription.Id'], orders=['SUM(transvote.Value) DESC'])
 			
 			self.transcriptions = []
-			for row in self.runquery(query, 2):
+			for row in await self.runquery(query, 2):
 				self.transcriptions.append(Meme.DBTranscription(id=row['Id'], meme=self, author=row['userId'], editid=row['editId'], text=row['Text']))
 		
-		def gettags(self):
+		async def gettags(self):
 			query = self.selectquery(selects=['tagvote.*', 'tag.*'], _from='tagvote', joins=['LEFT JOIN tag ON tagvote.tagId = tag.Id'], wheres=['memeId = '+str(self.id)])
 			
-			for row in self.runquery(query, 2):
+			for row in await self.runquery(query, 2):
 				if row['Name'] not in self.tags:
 					self.tags[row['Name']] = Meme.DBTag(parent=self.parent, id=row['Id'], meme=self, name=row['Name'], voters={})
 				self.tags[row['Name']].voters[row['userId']] = row['Value']
 			
 			return self.tags
 		
-		def getcats(self):
+		async def getcats(self):
 			query = self.selectquery(selects=['categoryvote.*', 'category.*'], _from='categoryvote', joins=['LEFT JOIN category ON categoryvote.categoryId = category.Id'], wheres=['memeId = '+str(self.id)])
 			
-			for row in self.runquery(query, 2):
+			for row in await self.runquery(query, 2):
 				if row['Name'] not in self.categories:
 					self.categories[row['Name']] = Meme.DBCategory(parent=self.parent, id=row['Id'], meme=self, name=row['Name'], voters={})
 				self.categories[row['Name']].voters[row['userId']] = row['Value']
 			
 			return self.categories
 		
-		def savememe(self):
+		async def savememe(self):
 			if self.in_db:
 				return True
 			
 			if type(self.collectionparent) == Meme.DBMeme:
 				if not self.collectionparent.in_db:
-					self.collectionparent.savememe()
+					await self.collectionparent.savememe()
 				self.collectionparent = self.collectionparent.Id
 			
 			query = self.insertquery(into='meme', inserts=['DiscordOrigin', 'Type', 'CollectionParent', 'Url', 'Nsfw'], values=[self.origin, self.type, self.collectionparent, self.url, self.nsfw])
+			result = await self.runquery(query, 0)
 			
-			result = self.runquery(query, 0)
 			self.id = result.lastrowid
 			self.in_db = True
 			
-			self.saveedge()
-			self.savedesc()
-			self.savetrans()
-			self.savetags()
-			self.savecats()
+			await self.saveedge()
+			await self.savedesc()
+			await self.savetrans()
+			await self.savetags()
+			await self.savecats()
 			
 			return True
 		
-		def saveedge(self):
-			self.runquery(self.insertquery(into='edge', inserts=['memeId', 'userId', 'Value'], values=[(self.id, user, value) for user,value in self.edgevotes], on_duplicate="Value = Value"))
+		async def saveedge(self):
+			await self.runquery(self.insertquery(into='edge', inserts=['memeId', 'userId', 'Value'], values=[(self.id, user, value) for user,value in self.edgevotes], on_duplicate="Value = Value"))
 		
-		def savedesc(self):
+		async def savedesc(self):
 			# This will probably need to be done in each object so they can collect their ids
-			self.runquery(self.insertquery(into='description', inserts=['userId', 'memeId', 'editId', 'Text'], values=[(desc.author, self.id, desc.editid, desc.text) for desc in self.descriptions]))
-			#self.runquery(self.insertquery(into='descvote')) TODO: Figure this out
+			await self.runquery(self.insertquery(into='description', inserts=['userId', 'memeId', 'editId', 'Text'], values=[(desc.author, self.id, desc.editid, desc.text) for desc in self.descriptions]))
+			#await self.runquery(self.insertquery(into='descvote')) TODO: Figure this out
 		
-		def savetrans(self):
+		async def savetrans(self):
 			# This will probably need to be done in each object so they can collect their ids
-			self.runquery(self.insertquery(into='transcription', inserts=['userId', 'memeId', 'editId', 'Text'], values=[(trans.author, self.id, trans.editid, trans.text) for trans in self.transcriptions]))
-			#self.runquery(self.insertquery(into='transvote')) TODO: Figure this out
+			await self.runquery(self.insertquery(into='transcription', inserts=['userId', 'memeId', 'editId', 'Text'], values=[(trans.author, self.id, trans.editid, trans.text) for trans in self.transcriptions]))
+			#await self.runquery(self.insertquery(into='transvote')) TODO: Figure this out
 		
-		def savetags(self):
+		async def savetags(self):
 			pass # This will probably need to be done in each object so they can collect their ids
 		
-		def savecats(self):
+		async def savecats(self):
 			pass # This will probably need to be done in each object so they can collect their ids
 	
 	@tasks.loop(hours=1)
@@ -555,11 +540,25 @@ class Meme(commands.Cog):
 		if len(self.memes)>0:
 			after = max(self.memes.keys())
 		else: after = 0
-		Meme.DBMeme(self).fetchall(after=after) # <- this takes 5-20 seconds on the main thread first time, probably can't be optimized much, but makes all searches instant
+		await Meme.DBMeme(self).fetchall(after=after)
+		if globals.verbose: print("hourly meme cache update done!")
+	
+	@tasks.loop(hours=1)
+	async def fetch_new_tags(self):
+		if globals.verbose: print("hourly meme tag cache update done!")
+		if len(self.tags)>0:
+			after = max(self.tags.keys())
+		else: after = 0
+		await Meme.DBTag(self).fetchall(after=after)
+	
+	@tasks.loop(hours=1)
+	async def fetch_new_categories(self):
+		if globals.verbose: print("hourly meme category cache update done!")
+		await Meme.DBCategory(self).fetchall()
 	
 	class DBSearch(DB):
 		def __init__(self, parent, owner, search, include_tags=True, nsfw=False):
-			super().__init__(parent.dbpassword)
+			super().__init__(parent.bot.meme_db)
 			self.parent = parent
 			self.owner = owner
 			self.title = None
@@ -723,7 +722,7 @@ class Meme(commands.Cog):
 	
 	class DBTag(DB):
 		def __init__(self, parent, id=None, meme=None, name="", voters=None, popularity=None):
-			super().__init__(parent.dbpassword)
+			super().__init__(parent.bot.meme_db)
 			self.parent = parent
 			self.id = id
 			self.meme = meme
@@ -737,14 +736,14 @@ class Meme(commands.Cog):
 		def __str__(self):
 			return self.name
 		
-		def fetchall(self):
+		async def fetchall(self, after=0):
 			self.parent.tags = {}
-			for row in self.runquery(self.selectquery(selects=['Id', 'Name', 'COUNT(tagId) AS Popularity'], _from='tag', joins=['LEFT JOIN tagvote ON tag.Id=tagvote.tagId'], groups=['Id']), fetchmode=2):
+			for row in await self.runquery(self.selectquery(selects=['Id', 'Name', 'COUNT(tagId) AS Popularity'], _from='tag', joins=['LEFT JOIN tagvote ON tag.Id=tagvote.tagId'], wheres=(['tag.Id > '+str(after)] if after>0 else []), groups=['Id']), fetchmode=2):
 				self.parent.tags[row['Id']] = Meme.DBTag(parent=self.parent, id=row['Id'], name=row['Name'], popularity=row['Popularity'])
 	
 	class DBCategory(DB):
 		def __init__(self, parent, id=None, meme=None, name="", description="", voters=None, popularity=None):
-			super().__init__(parent.dbpassword)
+			super().__init__(parent.bot.meme_db)
 			self.parent = parent
 			self.id = id
 			self.meme = meme
@@ -759,9 +758,9 @@ class Meme(commands.Cog):
 		def __str__(self):
 			return self.name
 	
-		def fetchall(self):
+		async def fetchall(self):
 			self.parent.categories = {}
-			for row in self.runquery(self.selectquery(selects=['Id', 'Name', 'Description', 'COUNT(categoryId) AS Popularity'], _from='category', joins=['LEFT JOIN categoryvote ON category.Id=categoryvote.categoryId'], groups=['Id']), fetchmode=2):
+			for row in await self.runquery(self.selectquery(selects=['Id', 'Name', 'Description', 'COUNT(categoryId) AS Popularity'], _from='category', joins=['LEFT JOIN categoryvote ON category.Id=categoryvote.categoryId'], groups=['Id']), fetchmode=2):
 				self.parent.categories[row['Name']] = Meme.DBCategory(parent=self.parent, id=row['Id'], name=row['Name'], description=row['Description'], popularity=row['Popularity'])
 	
 	class DBDescription():
@@ -790,7 +789,7 @@ class Meme(commands.Cog):
 	
 	class DBUser(DB):
 		def __init__(self, parent, id=None, username=None, discriminator=None):
-			super().__init__(parent.dbpassword)
+			super().__init__(parent.bot.meme_db)
 			self.parent = parent
 			self.id = id
 			self.username = username
@@ -799,13 +798,13 @@ class Meme(commands.Cog):
 			self.is_admin = False
 			self.is_banned = False
 		
-		def fetch(self, id=None):
+		async def fetch(self, id=None):
 			if id is None: id = self.id
 			else: self.id = id
 			
 			query = self.selectquery(selects=['user.*'], _from='user', wheres=['user.Id = '+str(id)])
 			
-			row = self.runquery(query, 1)
+			row = await self.runquery(query, 1)
 			
 			self.username = row['Username']
 			self.discriminator = row['Discriminator']
@@ -834,6 +833,8 @@ class Meme(commands.Cog):
 			if globals.logchannel and self.bot.is_ready(): await self.bot.get_channel(globals.logchannel).send(time.strftime("%H:%M:%S",time.localtime())+" - background service ended.")
 	
 	async def ReactionCrawler(self,message,channel):
+		raise NotImplementedError()
+		"""
 		result = -1
 		up = []
 		down = []
@@ -870,18 +871,20 @@ class Meme(commands.Cog):
 				await message.add_reaction('🔼')
 				await message.add_reaction('🔽')
 				
-				mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=self.dbpassword,database='meme')
-				cursor = mydb.cursor()
-				cursor.execute(f"SELECT Id FROM meme WHERE DiscordOrigin = {message.id} AND CollectionParent IS NULL LIMIT 1")
-				result = cursor.fetchone()
-				cursor.close()
+				result = None
+				async with self.bot.meme_db.acquire() as conn:
+					async with conn.cursor() as cursor:
+						cursor.execute(f"SELECT Id FROM meme WHERE DiscordOrigin = {message.id} AND CollectionParent IS NULL LIMIT 1")
+						result = cursor.fetchone()
+				
 				if not verified and result != None:
 					await message.add_reaction('☑')
 				elif verified and result == None:
-					await verified.remove(self.bot.user)
+					await verified.remove(self.bot.user)"""
 	
 	async def RecordMeme(self,result,message,up=[],down=[]):
-		mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=self.dbpassword,database='meme')
+		raise NotImplementedError()
+		"""mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=self.dbpassword,database='meme')
 		cursor = mydb.cursor()
 		
 		# Add meme, in case it doesn't already exist
@@ -944,14 +947,15 @@ class Meme(commands.Cog):
 					cursor.execute(f"INSERT IGNORE INTO categoryvote(categoryId, userId, memeId, Value) VALUES{inserts}")
 					mydb.commit()
 		
-		mydb.close()
+		mydb.close()"""
 	
 	def RemoveVote(self,mid,uid):
-		mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=self.dbpassword,database='meme')
+		raise NotImplementedError()
+		"""mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=self.dbpassword,database='meme')
 		cursor = mydb.cursor()
 		cursor.execute('DELETE FROM memevote WHERE memeId = (SELECT Id FROM meme WHERE DiscordOrigin='+str(mid)+') and userId = '+str(uid)+';')
 		mydb.commit()
-		mydb.close()
+		mydb.close()"""
 	
 	async def GetMessageUrls(self,message):
 		urls = utils.FindURLs(message.content)+[a.url for a in message.attachments]
@@ -1058,6 +1062,10 @@ class Meme(commands.Cog):
 
 	@commands.command(no_pm=False, aliases=['memes','mem'])
 	async def meme(self, ctx, *, n='1'):
+		if len(self.memes) < 1:
+			await ctx.send("the meme database is empty! - unable to run meme commands.")
+			return
+
 		if n.isdigit():
 			if globals.verbose: print('meme n command')
 			i = 0
@@ -1078,7 +1086,7 @@ class Meme(commands.Cog):
 				meme = Meme.DBMeme(parent=self, id=id)
 			else:
 				meme = self.memes[id]
-			meme.getmeme(depth=2)
+			await meme.getmeme(depth=2)
 			await meme.post(ctx.channel, force=True)
 		
 		elif n == 'delet':

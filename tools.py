@@ -3,7 +3,6 @@ import emformat
 import asyncio
 import discord
 from discord.ext import commands
-import mysql.connector
 import random
 import re
 import urllib.parse
@@ -12,9 +11,8 @@ import urllib.parse
 
 class Tools(commands.Cog):
 	"""Tools for all users"""
-	def __init__(self, bot, dbpassword):
+	def __init__(self, bot):
 		self.bot = bot
-		self.dbpassword = dbpassword
 		self.validurl = re.compile(
 			r'^(?:http|ftp)s?://' # http:// or https://
 			r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #domain...
@@ -37,7 +35,6 @@ class Tools(commands.Cog):
 				rand = False
 				taken = False
 				done = False
-				mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=self.dbpassword,database='linkshortener')
 				short = str.replace(str.replace(urllib.parse.quote(short, safe = ''), '%20', '+'), '%2F', '+')
 				while not done:
 					if short == '' or taken:
@@ -51,14 +48,14 @@ class Tools(commands.Cog):
 						rand = True
 						chars = [chr(i) for i in list(range(48,57)) + list(range(65,90)) + list(range(97,122))]
 						short = ''.join([random.choice(chars) for _ in range(random.randint(3,6))])
-					cursor = mydb.cursor()
-					cursor.execute("SELECT short FROM link WHERE short = %s", (short,))
-					cursor.fetchall()
-					if cursor.rowcount == 0:
-						cursor.execute("INSERT INTO link(short, original, discordId) VALUES(%s, %s, %s)", (short, long, ctx.author.id))
-						mydb.commit()
-						cursor.close()
-						await ctx.send("done - *shortened by {} character(s)*: {}".format(len(long)-(len(short)+12),"https://l.yiays.com/"+short))
-						done = True
-					elif not rand:
-						taken = True
+					async with self.bot.meme_db.acquire() as conn:
+						async with conn.cursor() as cursor:
+							await cursor.execute("SELECT short FROM link WHERE short = %s", (short,))
+							await cursor.fetchall()
+							if cursor.rowcount == 0:
+								await cursor.execute("INSERT INTO link(short, original, discordId) VALUES(%s, %s, %s)", (short, long, ctx.author.id))
+								mydb.commit()
+								await ctx.send("done - *shortened by {} character(s)*: {}".format(len(long)-(len(short)+12),"https://l.yiays.com/"+short))
+								done = True
+							elif not rand:
+								taken = True

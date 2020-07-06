@@ -6,7 +6,7 @@
 	merelybot.py is a barebones core to be extended upon with plugins
 """
 
-import os, sys, traceback, asyncio, time, importlib
+import os, sys, traceback, asyncio, time, importlib, aiomysql
 import discord
 from discord.ext import commands
 import emformat, globals, utils
@@ -43,6 +43,7 @@ bot=commands.Bot(command_prefix=commands.when_mentioned_or(*prefixes), help_attr
 bot.remove_command('help')
 
 globals.bot=bot
+bot.db = None
 
 if globals.verbose: print('setting up events...')
 import events
@@ -88,12 +89,8 @@ if globals.modules['core']:
 						# make discord.py refresh the available commands
 						bot.remove_cog(modulename.capitalize())
 						
-						# modules that need extra parameters
-						if modulename in ['meme', 'tools']:
-							bot.add_cog(getattr(reloadedmodule, modulename.capitalize())(bot, os.environ.get("MemeDB")))
-						# start the module the normal way
-						else:
-							bot.add_cog(getattr(reloadedmodule, modulename.capitalize())(bot))
+						# start the module
+						bot.add_cog(getattr(reloadedmodule, modulename.capitalize())(bot))
 						
 						# start other components of the module
 						if modulename=='webserver':
@@ -120,12 +117,8 @@ if globals.modules['core']:
 						# - load the module
 						loadedmodule = importlib.import_module(modulename)
 						
-						# modules that need extra parameters
-						if modulename in ['meme', 'tools']:
-							bot.add_cog(getattr(loadedmodule, modulename.capitalize())(bot, os.environ.get("MemeDB")))
-						# start the module the normal way
-						else:
-							bot.add_cog(getattr(loadedmodule, modulename.capitalize())(bot))
+						# start the module
+						bot.add_cog(getattr(loadedmodule, modulename.capitalize())(bot))
 						
 						# start other components of the module
 						if modulename=='webserver':
@@ -202,7 +195,7 @@ if globals.modules['fun']:
 #	meme
 if globals.modules['meme']:
 	import meme
-	bot.add_cog(meme.Meme(bot, os.environ.get("MemeDB")))
+	bot.add_cog(meme.Meme(bot))
 	if globals.verbose: print('meme done!')
 
 #	search
@@ -220,7 +213,7 @@ if globals.modules['admin']:
 #	tools
 if globals.modules['tools']:
 	import tools
-	bot.add_cog(tools.Tools(bot, os.environ.get("MemeDB")))
+	bot.add_cog(tools.Tools(bot))
 	if globals.verbose: print('tools done!')
 
 #	obsolete
@@ -243,7 +236,21 @@ if globals.modules['stats']:
 
 async def onconnect():
 	print('connected!')
+	
+	if "MemeDB" in os.environ:
+		if globals.verbose: print('setting up database...')
+		bot.meme_db = await aiomysql.create_pool(host='192.168.1.120', port=3306, user='meme', password=os.environ.get('MemeDB'), db='meme', loop=asyncio.get_event_loop())
+	else:
+		pass #TODO: disable meme and tools, warn the log
 bot.events['on_connect'].append(onconnect)
+
+async def ondisconnect():
+	print('disconnected!')
+	
+	if bot.meme_db is not None:
+		bot.meme_db.close()
+		await bot.meme_db.wait_closed()
+		bot.meme_db = None
 
 async def onready():
 	print('logged in as')
@@ -362,5 +369,4 @@ if __name__ == '__main__':
 		print('ERROR: you must supply a token as an environment variable before merely can start.')
 
 	#shutdown
-
 	print('exited.')
