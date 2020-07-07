@@ -216,7 +216,6 @@ class Meme(commands.Cog):
 			self.descriptions = []
 			self.transcriptions = []
 			self.in_db = False
-			self.status = 200
 			
 			self.collector_msg = {}
 			self.contribs = 0
@@ -256,13 +255,13 @@ class Meme(commands.Cog):
 					return False
 				self.parent.usedmemes.append(channel.guild.id, self.id)
 			
-			if self.status == 404:
+			if self.type is None:
 				await emformat.make_embed(channel, message=msg, title="Not found!", description="Unable to locate this meme, are you sure it exists?", author=None)
 				return False
-			if self.status == 403:
+			if self.edge >= 1.5 or self.hidden:
 				await emformat.make_embed(channel, message=msg, title="Permission denied!", description="To view this meme, open the meme in MemeDB and login with an administrative account.", author=None, link=f"https://meme.yiays.com/meme/{self.id}" if self.in_db else '')
 				return False
-			if self.nsfw and not channel.is_nsfw():
+			if (self.nsfw or self.edge >= 0.5) and not channel.is_nsfw():
 				await emformat.make_embed(channel, message=msg, title="This meme is potentially nsfw!", description="The channel must be marked as nsfw for this meme to be shown.", author=None, link=f"https://meme.yiays.com/meme/{self.id}" if self.in_db else '')
 				return False
 			mememsg = await emformat.make_embed(channel,
@@ -404,7 +403,7 @@ class Meme(commands.Cog):
 			
 			if self.in_db and self.cache_age > int(time.time()) - 60*60*24: # < cache lasts 24 hours
 				if self.depth >= depth:
-					await self.getedge()
+					#await self.getedge() #TODO: figure out what to do with edge
 					return self
 				else:
 					if self.depth == 0:
@@ -424,10 +423,7 @@ class Meme(commands.Cog):
 			if row == 'fetchplz':
 				row = await self.fetch(id)
 			
-			self.status = 404
 			if row is not None and row['Id'] is not None:
-				self.status = 200
-				
 				self.id			= row['Id']
 				self.origin	= row['DiscordOrigin']
 				self.type		= row['Type']
@@ -439,16 +435,6 @@ class Meme(commands.Cog):
 				self.hidden = row['Hidden']
 				self.nsfw 	= row['Nsfw']
 				self.in_db	= True
-				
-				if self.hidden:
-					self.status = 403
-				
-				#TODO: fix everything to do with edge
-				#await self.getedge()
-				#if self.edge >= 0.5:
-					#self.nsfw = True
-					#if self.edge >= 1.5:
-						#self.status = 403
 				
 				if depth >= 1:
 					await self.gettags()
@@ -661,6 +647,7 @@ class Meme(commands.Cog):
 					return False
 				
 				remainder = remainder.replace('cat:'+name,'')
+				remainder = remainder.replace('category:'+name,'')
 			
 			self.text_filter = remainder.strip()
 			
