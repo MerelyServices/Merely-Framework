@@ -114,8 +114,10 @@ class Meme(commands.Cog):
 				mid = result[0]
 				try:
 					await self.session.get("https://cdn.yiays.com/meme/dl.php?singledl="+str(mid))
-					await self.session.get("https://cdn.yiays.com/meme/"+str(mid)+".thumb.jpg")
-					await self.session.get("https://cdn.yiays.com/meme/"+str(mid)+".mini.jpg")
+					cursor.execute(f"SELECT CONCAT(Id, 'x', Hash) FROM meme WHERE Id = {mid}")
+					filename = cursor.fetchone()[0]
+					await self.session.get(f"https://cdn.yiays.com/meme/{filename}.thumb.jpg")
+					await self.session.get(f"https://cdn.yiays.com/meme/{filename}.mini.jpg")
 				except Exception as e:
 					print(e)
 		
