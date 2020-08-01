@@ -123,7 +123,7 @@ class Meme(commands.Cog):
 		
 			# Add user, in case they don't exist
 			for voter in list(dict.fromkeys(up+down)):
-				cursor.execute(f"CALL AddUser({voter},NULL,NULL);")
+				cursor.execute(f"CALL AddUser({voter},NULL,NULL,NULL);")
 				mydb.commit()
 			
 			# Add their vote, finally.
