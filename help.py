@@ -6,8 +6,8 @@ import time, random, asyncio
 
 helpdict={
 	':grey_question: help':'```help, command, hint, feedback```',
-	':information_source:':'```info, stats, servers, changelog```',
-	':joy: fun':'```playing, meme, echo, thonk, vote, dice```',
+	':information_source:':'```info, stats, changelog```',
+	':joy: fun':'```meme, echo, thonk, vote, dice```',
 	':tools: tools':'```shorten```',
 	':levitate: admin':'```blacklist, whitelist, clean, purge```',
 	':new: new':'```changelog, dice, shorten```'
@@ -22,7 +22,6 @@ dhelp={
 	'stats':"***merely stats***\ntechnical information and interesting statistics.",
 	'clean':"***merely clean [limit] [strict]***\n**MODERATORS ONLY** - clean deletes all messages that either activated merely or are from merely in the current channel. If you provide a limit and the word 'strict' at the end, it will delete everything indescriminately.\n\n*note that all discord bots are only allowed to delete messages from the last 2 months.*",
 	'purge':"***merely purge (first message id) (last message id) [limit]***\n**MODS ONLY** - purge purges all messages that are within a range of ids. get message ids by enabling developer mode in discord and then clicking on the menu next to the messages.",
-	'playing':"***merely playing|watching|streaming [(status)]***\nchanges the playing status text to anything you desire, or alternatively resets the playing text if you provide no arguments. is subject to censorship from the blacklist.",
 	'command':"***merely command (search)***\nsearches the list of known commands for any command containing the query.",
 	'image':"***merely image more|(search)***\nsearches google images for your query and returns the top image. `m/image more` returns 5 more results, `m/images` returns 5 from the begining.",
 	'google':"***merely google more|(search)***\nsearches google for your query and returns the top search result. more returns the top 5 results.",
@@ -32,15 +31,10 @@ dhelp={
 	'blacklist':"***merely blacklist [add (words)|remove (words)|train (url)]***\n**SERVER OWNERS ONLY** - blacklist lists all banned words. you can also add or remove one word at a time to your server's local blacklist\n\n*note that the blacklist exists to prevent users from searching for nsfw content on non-nsfw channels in line with discord's terms of service.*",
 	'whitelist':"***merely whitelist [add (words)|remove (words)|train (url)]***\n**SERVER OWNERS ONLY** - whitelist lists all words that are exempt to the blacklist. you can also add or remove one word at a time to your server's local whitelist.\n\n*note that the whitelist exists because the blacklist may mistake valid words as mispellings of bad words. as a server owner, you are allowed to fix this.*",
 	'hint':"***merely hint***\ngives you handy hints on how to better use this bot.",
-	'echo':"***merely echo (echo)***\nrepeats whatever you say to it. and no, it will not echo itself or other bots. is subject to censorship rules in the blacklist.",
 	'dice':"***merely dice [(dice1sides) (dice2sides) (dice3sides) (dice4sides) (dice5sides) etc...]***\ndice will roll a 6 sided dice by default, but you can specify how many sides if you want, just leave a number, if you want to roll more than one dice, just leave more than one number separated by spaces.",
 	'lockout':"***merely lockout (user#discriminator) [time in minutes]***\n**SERVER OWNERS ONLY** - prevents any user from interacting with the bot if it appears they are trying to abuse it.",
-	'servers':"***merely servers***\nlists all the servers merely is in with an interactive page list system. also shows how many members each server has.",
-	'logcat':"***merely logcat (lines)***\noutputs the last 10 lines, by default, in the log, for the sake of debugging.",
-	'reload':"***merely reload (module)***\n**MERELY SUPERUSERS ONLY** - this command reloads changes made to merely's code without restarting the bot.",
 	'changelog':"***merely changelog***\nlists all the recent changes made to merely over the previous few updates.",
 	'shorten':"***merely shorten (long link) [short name]***\ntakes the provided long link and shortens it using https://l.yiays.com. If the requested short link is *0*, the short link will be randomized.",
-	'die':"***merely die***\n**MERELY SUPERUSERS ONLY** - shuts down merely safely."
 }
 globals.dhelp=dhelp
 
@@ -98,8 +92,8 @@ class Help(commands.Cog):
 				 "`merely info` shows off the features of merely and gives you a few relevant links.",
 				 "`merely stats` shows technical information about what the bot runs on and how much work it's doing.",
 				 "set the playing status of merely with `merely (playing|watching|streaming|listening) (status)`",
-				 #"`m/blacklist`, `m/whitelist` and `m/meme` have a public list and a private list, changes made on your server affect only your server.",
-				 "`m/thonk` is the best command. it makes use of Discord Nitro to bring you 50+ thinking emoji.",
+				 "`m/blacklist`, `m/whitelist` have a global and local list, changes made on your server affect only your server.",
+				 "`m/thonk` is the best command. it makes use of free bot nitro to bring you 50+ thinking emoji.",
 				 "`m/vote` is one of the most advanced commands made yet! it supports live updating polls, countdown timers and helps decide a winner."#,
 				 #"like merely? consider upvoting merely on the discord bot list; https://discordbots.org/bot/309270899909984267"
 				]),

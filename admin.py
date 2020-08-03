@@ -172,7 +172,7 @@ class Admin(commands.Cog):
 	async def die(self, ctx):
 		"""Shut down the bot for 30 seconds"""
 		if globals.verbose: print('die command')
-		if ctx.message.author.id in globals.authusers:
+		if ctx.message.author.id in globals.superusers:
 			#await emformat.genericmsg(ctx.message.channel,"shutting down...","bye","die")
 			await emformat.make_embed(ctx.message.channel, "", "merely die", "shutting down...", image="https://media.discordapp.net/attachments/302695523360440322/685087322844299284/tenor.gif", footer="merely v"+globals.ver+" - created by Yiays#5930", icon=globals.iconurl, link=globals.apiurl+"#/die")
 			with open(globals.store+'alive.txt','w') as f:
@@ -265,7 +265,7 @@ class Admin(commands.Cog):
 	async def logcat(self,ctx,n=20):
 		"""Return the last n lines from the log."""
 		if globals.verbose: print('logcat command')
-		if ctx.message.author.id in globals.superusers or ctx.message.author.id == ctx.message.guild.owner.id:
+		if ctx.message.author.id in globals.superusers:
 			if os.path.isfile(globals.store+"logs/merely-"+globals.ver+"-"+time.strftime("%d-%m-%y")+".log"):
 				loglines=[]
 				for _, line in zip(range(n),reversed(list(open(globals.store+"logs/merely-"+globals.ver+"-"+time.strftime("%d-%m-%y")+".log", "r", encoding='utf-8')))):
@@ -284,30 +284,33 @@ class Admin(commands.Cog):
 	async def servers(self, ctx):
 		"""Return list of servers"""
 		
-		page=0
-		servers=sorted(self.bot.guilds,key=lambda x: len(x.members), reverse=True)
-		
-		msg = await ctx.message.channel.send(self.printlist([s.name+' ('+str(s.id)+') - '+str(len(s.members))+' members.' for s in servers],page,10))
-		await msg.add_reaction("\U000025C0") #reverse symbol
-		await msg.add_reaction("\U000025B6") #play symbol
-		
-		def check(reaction,user):
-			return str(reaction.emoji) in ["\U000025C0","\U000025B6"] and not user.bot
-		
-		while True:
-			try:
-				reaction, user = await self.bot.wait_for('reaction_add',timeout=300,check=check)
-			except asyncio.TimeoutError:
-				await msg.edit(content="interactive server list expired. type `m/servers` again.")
-				await msg.clear_reactions()
-				break
-			else:
-				page = page+1 if reaction.emoji=="\U000025B6" else page-1
-				if page in range(math.ceil(len(servers)/10)):
-					await msg.edit(content=self.printlist([s.name+' ('+str(s.id)+') - '+str(len(s.members))+' members.' for s in servers],page,10))
+		if ctx.message.author.id in globals.superusers:
+			page=0
+			servers=sorted(self.bot.guilds,key=lambda x: len(x.members), reverse=True)
+			
+			msg = await ctx.message.channel.send(self.printlist([s.name+' ('+str(s.id)+') - '+str(len(s.members))+' members.' for s in servers],page,10))
+			await msg.add_reaction("\U000025C0") #reverse symbol
+			await msg.add_reaction("\U000025B6") #play symbol
+			
+			def check(reaction,user):
+				return str(reaction.emoji) in ["\U000025C0","\U000025B6"] and not user.bot
+			
+			while True:
+				try:
+					reaction, user = await self.bot.wait_for('reaction_add',timeout=300,check=check)
+				except asyncio.TimeoutError:
+					await msg.edit(content="interactive server list expired. type `m/servers` again.")
+					await msg.clear_reactions()
+					break
 				else:
-					page = sorted((0, page, math.ceil(len(servers)/10)))[1]
-				await msg.remove_reaction(reaction.emoji,user)
+					page = page+1 if reaction.emoji=="\U000025B6" else page-1
+					if page in range(math.ceil(len(servers)/10)):
+						await msg.edit(content=self.printlist([s.name+' ('+str(s.id)+') - '+str(len(s.members))+' members.' for s in servers],page,10))
+					else:
+						page = sorted((0, page, math.ceil(len(servers)/10)))[1]
+					await msg.remove_reaction(reaction.emoji,user)
+		else:
+			await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","servers")
 		
 	
 	@commands.command(pass_context=True, no_pm=True)

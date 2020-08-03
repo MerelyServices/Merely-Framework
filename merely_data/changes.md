@@ -117,3 +117,5 @@ With this release, we are launching [MemeDB](https://meme.yiays.com) - an online
  - Some unit tests have been added to help catch bugs early
 #### 0.9.1
  - Countless bugfixes while continuing work on the 1.0.0 release
+#### 0.9.2
+ - Tightening up security and professioinalism. Removed several commands that shouldn't be available to the public.

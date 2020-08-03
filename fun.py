@@ -40,33 +40,37 @@ class Fun(commands.Cog):
 
 	@commands.command(pass_context=True, no_pm=False, aliases=['watching','streaming','listening'])
 	async def playing(self, ctx, *, status=''):
-		"""Command Description"""
-		mode=ctx.invoked_with.lower()
-		type={
-			'playing':discord.ActivityType.playing,
-			'streaming':discord.ActivityType.streaming,
-			'watching':discord.ActivityType.watching,
-			'listening':discord.ActivityType.listening
-		}.get(mode,discord.ActivityType.unknown)
-		if globals.verbose: print(mode+' command')
-		if len(status)>0:
-			if not globals.modules['censor']:
-				await emformat.genericmsg(ctx.message.channel, "the censor module isn't running, so this command can't be used.","error",mode)
-				return
-			danger=self.bot.cogs['Censor'].dangerous(status)
-			if danger:
-				await emformat.genericmsg(ctx.message.channel,
-				"can't set the status with such filthy language like `"+' ,'.join(danger)+"`","error",mode)
+		"""Controls the bot status"""
+		
+		if ctx.message.author.id in globals.authusers:
+			mode=ctx.invoked_with.lower()
+			type={
+				'playing':discord.ActivityType.playing,
+				'streaming':discord.ActivityType.streaming,
+				'watching':discord.ActivityType.watching,
+				'listening':discord.ActivityType.listening
+			}.get(mode,discord.ActivityType.unknown)
+			if globals.verbose: print(mode+' command')
+			if len(status)>0:
+				if not globals.modules['censor']:
+					await emformat.genericmsg(ctx.message.channel, "the censor module isn't running, so this command can't be used.","error",mode)
+					return
+				danger=self.bot.cogs['Censor'].dangerous(status)
+				if danger:
+					await emformat.genericmsg(ctx.message.channel,
+					"can't set the status with such filthy language like `"+' ,'.join(danger)+"`","error",mode)
+				else:
+					await self.bot.change_presence(activity=discord.Activity(name=status,type=type))
+					await emformat.genericmsg(ctx.message.channel,"status: "+mode.capitalize()+" **"+status+"**","done",mode)
+					with open(globals.store+"playing.txt","w") as file:
+						file.write(mode+' '+status)
 			else:
-				await self.bot.change_presence(activity=discord.Activity(name=status,type=type))
-				await emformat.genericmsg(ctx.message.channel,"status: "+mode.capitalize()+" **"+status+"**","done",mode)
+				await self.bot.change_presence(activity=discord.Game(name='m/help'))
+				await emformat.genericmsg(ctx.message.channel,"done!\nreset status","done",mode)
 				with open(globals.store+"playing.txt","w") as file:
-					file.write(mode+' '+status)
+					file.write('')
 		else:
-			await self.bot.change_presence(activity=discord.Game(name='m/help'))
-			await emformat.genericmsg(ctx.message.channel,"done!\nreset status","done",mode)
-			with open(globals.store+"playing.txt","w") as file:
-				file.write('')
+			await emformat.genericmsg(ctx.message.channel,"this command is restricted.","error","playing")
 	@playing.error
 	async def playing_error(self,ctx,error):
 		print(error)
