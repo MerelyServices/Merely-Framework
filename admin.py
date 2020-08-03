@@ -220,7 +220,7 @@ class Admin(commands.Cog):
 	@clean.error
 	async def clean_failed(self,ctx,error):
 		print(error)
-		await emformat.genericmsg(ctx.message.channel,globals.apiurl+'#/clear_failed\nunable to delete messages because some of limitations in the discord api.\nvisit the website in order to get a list of solutions you can try.','error','clean')
+		await emformat.genericmsg(ctx.message.channel,globals.apiurl+'#/clear_failed\nunable to delete messages, ensure I have permission to manage messages.\nvisit the website in order to get a list of solutions you can try.','error','clean')
 	
 	@commands.command(pass_context=True, no_pm=True)
 	async def purge(self,ctx,start=0,end=0,n=100):
@@ -259,7 +259,7 @@ class Admin(commands.Cog):
 	@purge.error
 	async def purge_failed(self,ctx,error):
 		print(error)
-		await emformat.genericmsg(ctx.message.channel,globals.apiurl+'#/clear_failed\nunable to delete messages because some of limitations in the discord api.\nvisit the website in order to get a list of solutions you can try.','error','purge')
+		await emformat.genericmsg(ctx.message.channel,globals.apiurl+'#/clear_failed\nunable to delete messages, ensure I have permission to manage messages.\nvisit the website in order to get a list of solutions you can try.','error','purge')
 
 	@commands.command(pass_context=True, no_pm=False, aliases=['log'])
 	async def logcat(self,ctx,n=20):

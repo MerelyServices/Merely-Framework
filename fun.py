@@ -99,10 +99,10 @@ class Fun(commands.Cog):
 					return
 			
 			cmd = list(filter(None,[x.strip(' ') for x in msg.split(' ')]))
+			timelimit=time.time()+300 #5 minutes default
 			if cmd[-1].isdigit() and 1<=int(cmd[-1])<=180:
 				timelimit = time.time()+int(cmd[-1])*60
 				cmd=cmd[:-1]
-			else: t=time.time()+300 #5 minutes default
 			
 			msg = ' '.join(cmd)
 			
@@ -125,10 +125,18 @@ class Fun(commands.Cog):
 			# trim emoji list to only the emoji available for voting
 			emoji = emoji[:len(votes)]
 			
-			votemsg = await ctx.message.channel.send(f'{ctx.message.author} has started a vote.',embed=self.printvote(question,votes,timelimit,emoji))
+			try:
+				votemsg = await ctx.message.channel.send(f'{ctx.message.author} has started a vote.',embed=self.printvote(question,votes,timelimit,emoji))
+			except Exception:
+				await ctx.channel.send("failed to start vote! embed messages permission is required.")
+				return
 			
-			for i in range(0, len(votes)):
-				await votemsg.add_reaction(emoji[i])
+			try:
+				for i in range(0, len(votes)):
+					await votemsg.add_reaction(emoji[i])
+			except Exception:
+				await ctx.channel.send("failed to add reactions! cancelled vote.")
+				return
 			
 			while timelimit - time.time() > 0:
 				await asyncio.sleep(0.5)
@@ -181,6 +189,9 @@ class Fun(commands.Cog):
 		""":thinking:"""
 		if globals.verbose: print('thonk command')
 		await ctx.message.channel.send(random.choice(self.thonks))
+	@thonk.error
+	async def thonkerr(self, ctx, error):
+		await ctx.channel.send("use external emojis permission is required to send thonks.")
 		
 	@commands.command(pass_context=True, no_pm=False, aliases=['thinkall'])
 	async def thonkall(self,ctx):

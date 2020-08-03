@@ -7,12 +7,10 @@ async def genericmsg(channel,content,status,command):
 	embed.set_footer(text="merely v"+globals.ver+" - created by Yiays#5930", icon_url=globals.iconurl)
 
 	try:
-		msg = await channel.send(embed=embed)
-	except Exception as e:
-		print(e)
-		msg = await channel.send(content)
-	
-	return msg
+		return await channel.send(embed=embed)
+	except Exception:
+		return await channel.send(content+"\n\n> *consider giving merely permission to embed links for a greater experience.*")
+
 async def make_embed(channel, message, title, description='', color=0x0063B1, author='', image='', thumbnail='', fields={}, footer='', icon='', link='', **kwargs):
 	em=discord.Embed(title=title, type='rich', description=description, color=color, url=link)
 	if author!='': em.set_author(name=author,icon_url=icon)
@@ -25,17 +23,15 @@ async def make_embed(channel, message, title, description='', color=0x0063B1, au
 	else: em.set_footer(text="merely v"+globals.ver+" - created by Yiays#5930")
 	try:
 		if 'edit' not in kwargs:
-			msg = await channel.send(message,embed=em)
+			return await channel.send(message,embed=em)
 		else:
-			msg = await kwargs['edit'].edit(content=message,embed=em)
+			return await kwargs['edit'].edit(content=message,embed=em)
 	except Exception as e:
 		print(e)
 		manualfields=''
 		for field in fields:
 			manualfields+='**'+field+'**\n'+fields[field]+'\n\n'
 		if 'edit' not in kwargs:
-			msg = await channel.send("{}\n***{}***({})\n{}\n{}{} | either merely is missing `EMBED_LINKS` permission or this embed is too long".format(message,title,link,description,manualfields,footer))
+			return await channel.send("{}\n***{}***({})\n{}\n{}{}\n\n> *consider giving merely permission to embed links for a greater experience.*".format(message,title,link,description,manualfields,footer))
 		else:
-			msg = await kwargs['edit'].edit(content="{}\n***{}***({})\n{}\n{}{} | either merely is missing `EMBED_LINKS` permission or this embed is too long".format(message,title,link,description,manualfields,footer))
-	
-	return msg
+			return await kwargs['edit'].edit(content="{}\n***{}***({})\n{}\n{}{}\n\n> *consider giving merely permission to embed links for a greater experience.*".format(message,title,link,description,manualfields,footer))
