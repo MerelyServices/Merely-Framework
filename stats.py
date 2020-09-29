@@ -87,7 +87,7 @@ class Stats(commands.Cog):
 			self.h, self.m = divmod(self.m, 60)
 			self.d, self.h = divmod(self.h, 24)
 			
-			self.exposure="**"+str(len(self.bot.guilds))+"** servers with **"+str(sum([len(s.members) for s in self.bot.guilds]))+"** members."
+			self.exposure="**"+str(len(self.bot.guilds))+"** servers."
 			self.responses=str(self.sentcount)+"/"+str(self.recievedcount)+" messages responded to since last reboot."
 			self.modules=', '.join(list(globals.modules.keys()))
 			self.uptime=str(round((self.upmins*100)/max(self.upmins+self.downmins,1),2))+'%'

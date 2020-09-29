@@ -286,9 +286,9 @@ class Admin(commands.Cog):
 		
 		if ctx.message.author.id in globals.superusers:
 			page=0
-			servers=sorted(self.bot.guilds,key=lambda x: len(x.members), reverse=True)
+			servers=sorted(self.bot.guilds,key=lambda x: x.name)
 			
-			msg = await ctx.message.channel.send(self.printlist([s.name+' ('+str(s.id)+') - '+str(len(s.members))+' members.' for s in servers],page,10))
+			msg = await ctx.message.channel.send(self.printlist([s.name+' ('+str(s.id)+')' for s in servers],page,10))
 			await msg.add_reaction("\U000025C0") #reverse symbol
 			await msg.add_reaction("\U000025B6") #play symbol
 			
@@ -305,7 +305,7 @@ class Admin(commands.Cog):
 				else:
 					page = page+1 if reaction.emoji=="\U000025B6" else page-1
 					if page in range(math.ceil(len(servers)/10)):
-						await msg.edit(content=self.printlist([s.name+' ('+str(s.id)+') - '+str(len(s.members))+' members.' for s in servers],page,10))
+						await msg.edit(content=self.printlist([s.name+' ('+str(s.id)+')' for s in servers],page,10))
 					else:
 						page = sorted((0, page, math.ceil(len(servers)/10)))[1]
 					await msg.remove_reaction(reaction.emoji,user)

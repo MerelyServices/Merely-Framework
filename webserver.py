@@ -50,7 +50,6 @@ class Webserver(commands.Cog):
 			'gentime': self.bot.cogs['Stats'].gentime,
 			'raw':{
 				'servers':len(self.bot.guilds),
-				'members':sum([len(s.members) for s in self.bot.guilds]),
 				'sentcount':self.bot.cogs['Stats'].sentcount,
 				'recievedcount':self.bot.cogs['Stats'].recievedcount,
 				'uptime_d':self.bot.cogs['Stats'].d,
