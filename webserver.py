@@ -4,25 +4,16 @@ from aiohttp import web
 from discord.ext import commands
 
 class Webserver(commands.Cog):
-	"""A webserver, no commands included"""
+	"""A simple api server"""
 	def __init__(self, bot):
 		self.bot = bot
 		self.routes = web.RouteTableDef()
 		
 		self.app=web.Application()
 		self.app.add_routes([web.get('/', self.index),
-												 web.get('/index.html', self.index),
-												 web.get('/main.css', self.maincss),
-												 web.get('/main.js', self.mainjs),
-												 web.get('/stats.html', self.stats),
-												 web.get('/stats.css', self.statscss),
-												 web.get('/stats.js', self.statsjs),
-												 web.get('/changes.html', self.changes),
-												 web.get('/changes.js', self.changesjs),
+												 web.get('/changes', self.changes),
 												 web.get('/stats', self.statsapi),
-												 web.get('/dhelp', self.dhelp),
-												 web.get('/lacket', self.lacket),
-												 web.get('/favicon.ico', self.favicon)])
+												 web.get('/dhelp', self.dhelp)])
 		self.runner=web.AppRunner(self.app)
 	
 	async def start(self):
@@ -61,9 +52,9 @@ class Webserver(commands.Cog):
 			}
 		}
 		return web.Response(text=json.dumps(stats),status=200,headers={'Access-Control-Allow-Origin':'https://merely.yiays.com',
-																							'Cache-Control':'no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0',
-																							'Pragma':'no-cache',
-																							'content-type':'application/json'})
+																											'Cache-Control':'no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0',
+																											'Pragma':'no-cache',
+																											'content-type':'application/json'})
 	
 	async def dhelp(self, request):
 		if globals.verbose: print('GET /dhelp')
@@ -74,53 +65,12 @@ class Webserver(commands.Cog):
 	
 	async def index(self, request):
 		if globals.verbose: print('GET /')
-		with open('templates/index.html',encoding='utf8') as f:
-			file=f.read().replace('{$globals.ver}',globals.ver)
-		return web.Response(text=file,status=200,headers={'Access-Control-Allow-Origin':'https://merely.yiays.com','content-type':'text/html'})
-	async def maincss(self, request):
-		if globals.verbose: print('GET /main.css')
-		with open('templates/main.css',encoding='utf8') as f:
-			file=f.read()
-		return web.Response(text=file,status=200,headers={'content-type':'text/css'})
-	async def mainjs(self, request):
-		if globals.verbose: print('GET /main.js')
-		with open('templates/main.js',encoding='utf8') as f:
-			file=f.read()
-		return web.Response(text=file,status=200,headers={'content-type':'application/javascript'})
-	
-	async def stats(self, request):
-		if globals.verbose: print('GET /stats.html')
-		with open('templates/stats.html',encoding='utf8') as f:
-			file=f.read()
-		return web.Response(text=file,status=200,headers={'content-type':'text/html'})
-	async def statscss(self, request):
-		if globals.verbose: print('GET /stats.css')
-		with open('templates/stats.css',encoding='utf8') as f:
-			file=f.read()
-		return web.Response(text=file,status=200,headers={'content-type':'text/css'})
-	async def statsjs(self, request):
-		if globals.verbose: print('GET /stats.js')
-		with open('templates/stats.js',encoding='utf8') as f:
-			file=f.read()
-		return web.Response(text=file,status=200,headers={'content-type':'application/javascript'})
+		return web.Response(text="{'status':'up'}", status=200, headers={'Access-Control-Allow-Origin':'https://merely.yiays.com',
+																											'content-type':'application/json'})
 	
 	async def changes(self, request):
-		if globals.verbose: print('GET /changes.html')
-		with open('templates/changes.html',encoding='utf8') as f:
-			file=f.read().replace('{$globals.ver}',globals.ver).replace('{$changes}',''.join(globals.changes))
-		return web.Response(text=file,status=200,headers={'content-type':'text/html'})
-	async def changesjs(self, request):
-		if globals.verbose: print('GET /changes.js')
-		with open('templates/changes.js',encoding='utf8') as f:
-			file=f.read()
-		return web.Response(text=file,status=200,headers={'content-type':'application/javascript'})
-	
-	async def lacket(self, request):
-		if globals.verbose: print('GET /lacket')
-		with open('templates/lacket.html',encoding='utf8') as f:
-			file=f.read().replace('{$globals.ver}',globals.ver)
-		return web.Response(text=file,status=200,headers={'Access-Control-Allow-Origin':'https://merely.yiays.com','content-type':'text/html'})
-	
-	async def favicon(self, request):
-		if globals.verbose: print('GET /favicon.ico')
-		return web.Response(text='',status=404,headers={'content-type':'image/x-icon'})
+		if globals.verbose: print('GET /changes')
+		return web.Response(text=''.join(globals.changes),status=200,headers={'Access-Control-Allow-Origin':'https://merely.yiays.com',
+																											'Cache-Control':'no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0',
+																											'Pragma':'no-cache',
+																											'content-type':'text/markdown'})
