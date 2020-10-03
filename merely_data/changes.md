@@ -120,3 +120,7 @@ With this release, we are launching [MemeDB](https://meme.yiays.com) - an online
 #### 0.9.2
  - Tightening up security and professioinalism. Removed several commands that shouldn't be available to the public.
  - More error handling when minimal permissions are given.
+#### 0.9.3
+ - Removal of a few features related to counting members for the Discord API reform.
+ - Improved error handling when merely isn't given enough permissions.
+ - Moved website hosting to apache2 instead of in python.
