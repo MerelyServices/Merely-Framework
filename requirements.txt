@@ -1,7 +1,6 @@
 discord.py
 asyncio
 aiohttp
-pprint
 configparser
 bs4
 psutil
