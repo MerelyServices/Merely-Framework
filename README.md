@@ -65,7 +65,7 @@ feel free to fix any bugs or add new features to a fork, and send me a pull requ
 | [emformat](emformat.py) | useful functions for formatting strings into discord embeds | 0.1.0 |
 | [fun](fun.py) | fun commands available to everyone, like `m/echo`, `m/vote` and `m/dice` | 0.1.0 |
 | [meme](meme.py) | connects to [MemeDB](https://meme.yiays.com/) and provides commands and react buttons to interact with it. *legacy: stores and shares memes in a local database* | 0.1.0 |
-| [webserver](webserver.py)<sup>1</sup> | serves [merely.yiays.com](https://merely.yiays.com/) | 0.2.0 |
+| [webserver](webserver.py)<sup>1</sup> | serves the API powering [merely.yiays.com](https://merely.yiays.com/) *Legacy: once served the entire site.* | 0.2.0 |
 | [stats](stats.py)<sup>1</sup> | statistics collection and storage, `m/stats` and [the stats page](https://merely.yiays.com/stats.html) | 0.2.0 |
 | [obsolete](obsolete.py) | stores stubs for old obsolete commands and promotes merely music when someone attempts to use musicbot commands | 0.2.3 |
 | [utils](utils.py) | provides useful general functions for programming merely | 0.7.3 |
