@@ -45,7 +45,11 @@ class Tools(commands.Cog):
 						else: msg = await ctx.channel.send("if you would like a custom name for the url, say it now. ie. l.yiays.com/*merely* (type 0 if you would like a random url)")
 						def check(m):
 							return m.channel == ctx.channel and m.author == ctx.message.author
-						msg = await self.bot.wait_for('message', check=check)
+						try:
+							msg = await self.bot.wait_for('message', check=check, timeout=30)
+						except asyncio.TimeoutError:
+							await ctx.channel.send("cancelled.")
+							return
 						short = str.replace(str.replace(urllib.parse.quote(msg.content, safe = ''), '%20', '+'), '%2F', '+')
 					if short == '0' or rand:
 						rand = True
