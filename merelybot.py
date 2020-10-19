@@ -29,6 +29,9 @@ print('starting bot...')
 
 #start commands system
 bot=commands.Bot(command_prefix=commands.when_mentioned_or('merely ','m/ ','m/'), help_attrs={'enabled':False}, case_insensitive=True)
+
+bot.intents.members = True
+
 bot.remove_command('help')
 
 globals.bot=bot

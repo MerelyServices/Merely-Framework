@@ -124,3 +124,5 @@ With this release, we are launching [MemeDB](https://meme.yiays.com) - an online
  - Removal of a few features related to counting members for the Discord API reform.
  - Improved error handling when merely isn't given enough permissions.
  - Moved website hosting to apache2 instead of in python.
+#### 0.9.4
+ - Added back some member tracking functionality (for m/welcome, m/farewell, and owner update messages)
