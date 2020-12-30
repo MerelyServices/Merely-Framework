@@ -173,51 +173,62 @@ class Meme(commands.Cog):
 		if urls:
 			memes=[]
 			for url in urls:
+				# fix for weird mime type in youtube shortlinks
+				if '://youtu.be/' in url:
+					url = url.replace('://youtu.be/', '://www.youtube.com/watch?v=')
 				trusted = 0
-				try:
-					for block in globals.memesites['blocked']:
-						if block in url:
-							trusted = -1
-							return
-					for trust in globals.memesites['trusted']:
-						if trust in url:
-							trusted = 1
-					if trusted == -1: return
-					if trusted == 0:
-						if globals.modchannel:
+				for block in globals.memesites['blocked']:
+					if block in url:
+						if globals.verbose: print(f"[meme] URL explicitly blocked. (matched {block} with {url})")
+						trusted = -1
+						return
+				for trust in globals.memesites['trusted']:
+					if trust in url:
+						if globals.verbose: print(f"[meme] URL matched with a trusted subURL. (matched {trust} with {url})")
+						trusted = 1
+				if trusted == -1: return
+				if trusted == 0:
+					if globals.verbose: print(f"[meme] URL didn't match with any subURLs in the trust or blocklists! ({url}) Asking moderators...")
+					if globals.modchannel:
+						try:
 							modchannel = self.bot.get_channel(globals.modchannel)
-							await modchannel.send("a new memeurl pattern has been found!\n"+url+"\nshould it be trusted? (yes/no) *note, this regards the domain name as a whole, not the individual meme.*")
-							try:
-								msg = await self.bot.wait_for('message', check = lambda m: m.channel == modchannel and m.content in ['yes','no'], timeout=3600.0)
-							except asyncio.TimeoutError:
-								await modchannel.send('no response detected, ignoring memeurl and moving on...')
-								return
-							form = 'trusted' if msg.content=='yes' else 'blocked'
-							
-							await modchannel.send('alright, '+msg.author.mention+' please reply with the most significant part of the url that should be '+form+'; *(for example, `youtube.com/watch?`), type cancel to cancel.*')
-							try:
-								msg = await self.bot.wait_for('message', check = lambda m: m.channel == modchannel and m.author == msg.author, timeout=300)
-							except asyncio.TimeoutError:
-								await modchannel.send('no response detected, ignoring memeurl and moving on...')
-								return
-							if msg.content == 'cancel':
-								return
-							globals.memesites[form].append(msg.content)
-							globals.save()
-							await modchannel.send('done! `'+msg.content+'` is now a '+form+' url format!')
-								
-						else:
-							print("[WARN] skipped unknown memeurl because modchannel isn't set!")
+						except:
+							print("[meme] [WARN] Failed to fetch the modchannel specified in config!")
 							return
-					async with self.session.head(url) as clientresponse:
-						if 'content-type' in clientresponse.headers:
-							type = clientresponse.headers['content-type'].split(' ')[0]
-							if typeconverter(type):
-								memes.append([url,typeconverter(type)])
-				except:
-					continue
+						await modchannel.send("a new memeurl pattern has been found!\n"+url+"\nshould it be trusted? (yes/no) *note, this regards the domain name as a whole, not the individual meme.*")
+						try:
+							msg = await self.bot.wait_for('message', check = lambda m: m.channel == modchannel and m.content in ['yes','no'], timeout=3600.0)
+						except asyncio.TimeoutError:
+							await modchannel.send('no response detected, ignoring memeurl and moving on...')
+							return
+						form = 'trusted' if msg.content=='yes' else 'blocked'
+						
+						await modchannel.send('alright, '+msg.author.mention+' please reply with the most significant part of the url that should be '+form+'; *(for example, `youtube.com/watch?`), type cancel to cancel.*')
+						try:
+							msg = await self.bot.wait_for('message', check = lambda m: m.channel == modchannel and m.author == msg.author, timeout=300)
+						except asyncio.TimeoutError:
+							await modchannel.send('no response detected, ignoring memeurl and moving on...')
+							return
+						if msg.content == 'cancel':
+							return
+						globals.memesites[form].append(msg.content)
+						globals.save()
+						await modchannel.send('done! `'+msg.content+'` is now a '+form+' url format!')
+							
+					else:
+						print("[meme] [WARN] skipped unknown memeurl because modchannel isn't set!")
+						return
+				async with self.session.head(url) as clientresponse:
+					if 'content-type' in clientresponse.headers:
+						type = typeconverter(clientresponse.headers['content-type'].split(' ')[0])
+						if type:
+							memes.append([url, type])
+						else:
+							if globals.verbose: print("[meme] Failed to recognise type of url! "+url+' ('+clientresponse.headers['content-type'].split(' ')[0]+')')
 			return memes
-		else: return None
+		else:
+			if globals.verbose: print("[meme] Didn't find any URLs!")
+			return None
 
 	async def OnMemePosted(self,message):
 		result = await self.GetMessageUrls(message)
