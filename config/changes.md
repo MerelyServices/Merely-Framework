@@ -115,8 +115,18 @@ With this release, we are launching [MemeDB](https://meme.yiays.com) - an online
 ### 0.9.0
  - The codebase has been restructured to improve stability and maintainability.
  - Some unit tests have been added to help catch bugs early
+#### 0.9.1
+ - Countless bugfixes while continuing work on the 1.0.0 release
+#### 0.9.2
+ - Tightening up security and professioinalism. Removed several commands that shouldn't be available to the public.
+ - More error handling when minimal permissions are given.
+#### 0.9.3
+ - Removal of a few features related to counting members for the Discord API reform.
+ - Improved error handling when merely isn't given enough permissions.
+ - Moved website hosting to apache2 instead of in python.
+#### 0.9.4
+ - Added back some member tracking functionality (for m/welcome, m/farewell, and owner update messages)
 ## 1.0.0
- - Overhauled merelybot; bot can be renamed and the prefixes can be changed, modules can be dynamically enabled and disabled.
  - Overhauled meme; search, subscribe to search results, submit memes with presets for metadata or manually assign your own, and upvote or downvote memes in any context.
- - Cleaned up old code, improved documentation.
- - Merely is now feature-frozen, pending a rewrite...
+ - Rewritten from the ground up to be modular, stable, and extensible.
+ - Improved config - hardcoding removed and the config file is drastically improved, allowing for custom prefixes, bot names, etc.

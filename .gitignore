@@ -1,13 +1,7 @@
 /__pycache__/
 /0.0.1/
-/merely_data/logs*
-/merely_data/alive*
-/merely_data/blacklist*
-/merely_data/config*
-/merely_data/imgscrape*
-/merely_data/owneroptout*
-/merely_data/playing*
-/merely_data/uptime*
-/merely_data/whitelist*
+/config/logs*
+/config/config_history*
+/config/config.ini
 .vscode/
 .pytest_cache/
