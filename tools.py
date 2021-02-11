@@ -37,7 +37,7 @@ class Tools(commands.Cog):
 				rand = False
 				taken = False
 				done = False
-				mydb = mysql.connector.connect(host='192.168.1.120',user='meme',password=self.dbpassword,database='linkshortener')
+				mydb = mysql.connector.connect(host='127.0.0.1',user='meme',password=self.dbpassword,database='linkshortener')
 				short = str.replace(str.replace(urllib.parse.quote(short, safe = ''), '%20', '+'), '%2F', '+')
 				while not done:
 					if short == '' or taken:
