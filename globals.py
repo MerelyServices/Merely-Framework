@@ -1,4 +1,5 @@
-import os
+import os, time
+from shutil import copy
 import configparser
 
 # objects waiting to be shared between modules
@@ -147,10 +148,16 @@ def reload():
 	assuresection('memesites',{'trusted':'','blocked':''})
 	memesites={trust:[url for url in config.get('memesites',trust,fallback='').split(',')] for trust in config['memesites']}
 	
-	#regenerate missing files
 	assuresection('janitor',{'strict':'','relaxed':''})
+
+	# make a backup of the config file before saving
+	if not os.path.exists(store+'config_history/'+time.strftime("%m-%y")):
+		os.makedirs(store+'config_history/'+time.strftime("%m-%y"))
+	copy('config.ini', 'config_history/'+time.strftime("%m-%y")+'/config-'+time.strftime("%H:%M.%S-%d-%m-%y")+'.ini')
 	with open(store+'config.ini','w', encoding='utf-8') as f:
 		config.write(f)
+	
+	#regenerate missing files
 	assurepath(store+'blacklist.txt')
 	assurepath(store+'whitelist.txt')
 	assurepath(store+'uptime.txt')
