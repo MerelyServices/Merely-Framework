@@ -1,6 +1,6 @@
 /__pycache__/
 /0.0.1/
-/config/logs*
+/logs*
 /config/config_history*
 /config/config.ini
 .vscode/
