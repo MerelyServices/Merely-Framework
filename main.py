@@ -63,7 +63,7 @@ class merelybot(commands.Bot):
 						except Exception as e:
 							print(f"Failed to load extension '{ext[:-3]}':\n{e}")
 					else:
-						if self.config.getboolean('main','verbose'): print(f"Extension {ext[:-3]} is disabled, skipping.")
+						if self.config.getboolean('main','verbose'): print(f"{ext[:-3]} is disabled, skipping.")
 				else:
 					self.config['extensions'][ext[:-3]] = 'False'
 		self.config.save()
