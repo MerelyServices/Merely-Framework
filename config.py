@@ -1,7 +1,7 @@
 from configparser import ConfigParser
 from shutil import copy
 from os import path,makedirs
-import time, pprint
+import time
 
 
 """ Loads the config file automatically """

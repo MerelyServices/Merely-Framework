@@ -59,6 +59,7 @@ class merelybot(commands.Bot):
 					if self.config.getboolean('extensions', ext[:-3]):
 						try:
 							self.load_extension('extensions.'+ext[:-3])
+							print(f"{ext[:-3]} loaded.")
 						except Exception as e:
 							print(f"Failed to load extension '{ext[:-3]}':\n{e}")
 					else:
