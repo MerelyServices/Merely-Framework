@@ -15,10 +15,12 @@ class Admin(commands.cog.Cog):
     await self.bot.logout()
   @die.error
   async def dieerror(self, ctx, error):
-    if isinstance(error.origninal, AuthError):
-      await ctx.send(str(error.original))
-    else:
-      raise error
+    if isinstance(error, commands.errors.CommandInvokeError):
+      if isinstance(error.original, AuthError):
+        return await ctx.send(str(error.original))
+    elif isinstance(error, commands.errors.CommandOnCooldown):
+      return
+    raise error
 
 
 def setup(bot):

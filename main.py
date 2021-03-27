@@ -7,24 +7,24 @@ class merelybot(commands.Bot):
 	config = Config()
 
 	intents = discord.Intents.none()
-	intents.guilds = True
-	intents.members = False
-	intents.bans = False
-	intents.emojis = False
-	intents.integrations = False
-	intents.webhooks = False
-	intents.invites = False
-	intents.voice_states = False
-	intents.presences = False
-	intents.messages = True
-	# intents.guild_messages
-	# intents.dm_messages
-	intents.reactions = True
-	# intents.guild_reactions
-	# intents.dm_reactions
-	intents.typing = False
-	# intents.guild_typing
-	# intents.dm_typing
+	intents.guilds = config.getboolean('intents', 'guilds')
+	intents.members = config.getboolean('intents', 'members')
+	intents.bans = config.getboolean('intents', 'bans')
+	intents.emojis = config.getboolean('intents', 'emojis')
+	intents.integrations = config.getboolean('intents', 'integrations')
+	intents.webhooks = config.getboolean('intents', 'webhooks')
+	intents.invites = config.getboolean('intents', 'invites')
+	intents.voice_states = config.getboolean('intents', 'voice_states')
+	intents.presences = config.getboolean('intents', 'presences')
+	intents.messages = config.getboolean('intents', 'messages')
+	intents.guild_messages = config.getboolean('intents', 'guild_messages')
+	intents.dm_messages = config.getboolean('intents', 'dm_messages')
+	intents.reactions = config.getboolean('intents', 'reactions')
+	intents.guild_reactions = config.getboolean('intents', 'guild_reactions')
+	intents.dm_reactions = config.getboolean('intents', 'dm_reactions')
+	intents.typing = config.getboolean('intents', 'typing')
+	intents.guild_typing = config.getboolean('intents', 'guild_typing')
+	intents.dm_typing = config.getboolean('intents', 'dm_typing')
 
 	case_insensitive = True
 
