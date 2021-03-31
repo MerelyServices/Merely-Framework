@@ -1,10 +1,12 @@
 import discord, asyncio
 from discord.ext import commands
-from .middleware.auth import Auth,AuthError
+from .auth import Auth
 
 class Admin(commands.cog.Cog):
   def __init__(self, bot : commands.Bot):
     self.bot = bot
+    if not bot.config.getboolean('extensions', 'auth', fallback=False):
+      raise Exception("'auth' must be enabled to use 'admin'")
     self.auth = Auth(bot)
     # ensure config file has required data
     if not bot.config.has_section('admin'):
@@ -42,10 +44,7 @@ class Admin(commands.cog.Cog):
     await self.bot.logout()
   @die.error
   async def dieerror(self, ctx, error):
-    if isinstance(error, commands.errors.CommandInvokeError):
-      if isinstance(error.original, AuthError):
-        return await ctx.send(str(error.original))
-    elif isinstance(error, commands.errors.CommandOnCooldown):
+    if isinstance(error, commands.errors.CommandOnCooldown):
       return
     raise error
 

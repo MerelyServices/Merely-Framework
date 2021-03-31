@@ -1,8 +1,7 @@
-class AuthError(Exception):
-  """Errors to be sent to a user that failed an auth test"""
-  pass
+import discord
+from discord.ext import commands
 
-class Auth:
+class Auth(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
     # ensure config file has required data
@@ -13,6 +12,13 @@ class Auth:
     if 'authusers' not in bot.config['auth']:
       bot.config['auth']['authusers'] = ''
   
+  @commands.Cog.listener()
+  async def on_command_error(self, ctx, error):
+    if isinstance(error, commands.errors.CommandInvokeError):
+      if isinstance(error.original, AuthError):
+        return await ctx.send(str(error.original))
+    raise error
+
   def owners(self, ctx):
       if ctx.message.author == ctx.message.guild.owner or\
          str(str(ctx.message.author.id)) in self.bot.config['auth']['superusers']:
@@ -50,3 +56,10 @@ class Auth:
         return True
       else:
         raise AuthError("you must be an authuser of this bot to use this command!")
+
+class AuthError(Exception):
+  """Errors to be sent to a user that failed an auth test"""
+  pass
+
+def setup(bot):
+  bot.add_cog(Auth(bot))
