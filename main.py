@@ -30,8 +30,8 @@ class merelybot(commands.Bot):
 
 	def __init__(self):
 		print(f"""
-		merelybot{' beta' if self.config['main']['beta'] else ''} v{self.config['main']['ver']}
-		{"(currently named "+self.config['main']['botname']+" by config)" if self.config['main']['botname'] != 'merelybot' else ''}
+		merely framework{' beta' if self.config['main']['beta'] else ''} v{self.config['main']['ver']}
+		currently named {self.config['main']['botname']} by config, uses {self.config['main']['prefix_short']}
 		created by Yiays#5930. https://github.com/yiays/merelybot
 		""")
 
@@ -63,9 +63,10 @@ class merelybot(commands.Bot):
 						except Exception as e:
 							print(f"Failed to load extension '{ext[:-3]}':\n{e}")
 					else:
-						if self.config.getboolean('main','verbose'): print(f"{ext[:-3]} is disabled, skipping.")
+						if set(['-v','--verbose']) & set(sys.argv): print(f"{ext[:-3]} is disabled, skipping.")
 				else:
 					self.config['extensions'][ext[:-3]] = 'False'
+					print(f"discovered {ext[:-3]}, disabled by default, you can enable it in the config.")
 		self.config.save()
 
 class Logger(object):
@@ -80,10 +81,17 @@ class Logger(object):
 		return self
 
 if __name__ == '__main__':
-	bot = merelybot()
-	try:
-		bot.run(os.environ.get('Merely') if not bot.config.getboolean('main','beta') else os.environ.get('MerelyBeta'))
-	except discord.LoginFailure:
-		raise Exception("failed to login! make sure you provided the correct token using the correct key.")
+	if set(['-h','--help']) & set(sys.argv):
+		print("""
+		merelybot commands
+		-h,--help		shows this help screen
+		-v,--verbose		enables verbose logging
+		""")
+	else:
+		bot = merelybot()
+		try:
+			bot.run(os.environ.get('Merely') if not bot.config.getboolean('main','beta') else os.environ.get('MerelyBeta'))
+		except discord.LoginFailure:
+			raise Exception("failed to login! make sure you provided the correct token using the correct key.")
 	
 	print("exited.")

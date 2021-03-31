@@ -2,8 +2,27 @@ import discord
 from discord.ext import commands
 
 class Help(commands.cog.Cog):
-  def __init__(self, bot):
+  def __init__(self, bot : commands.Bot):
     self.bot = bot
+    # ensure config file has required data
+    if not bot.config.has_section('help'):
+      bot.config.add_section('help')
+    if 'helpurl' not in bot.config['help']:
+      bot.config['help']['helpurl'] = ''
+    if 'helpurlvideoexamples' not in bot.config['help']:
+      bot.config['help']['helpurlvideoexamples'] = ''
+    if 'serverinv' not in bot.config['help']:
+      bot.config['help']['serverinv'] = ''
+    if 'feedbackchannel' not in bot.config['help']:
+      bot.config['help']['feedbackchannel'] = ''
+    if 'highlight_sections' not in bot.config['help']:
+      bot.config['help']['highlight_sections'] = '💡 learn'
+    if 'learn_highlights' not in bot.config['help']:
+      bot.config['help']['learn_highlights'] = 'help'
+    if 'future_commands' not in bot.config['help']:
+      bot.config['help']['future_commands'] = ''
+    if 'obsolete_commands' not in bot.config['help']:
+      bot.config['help']['obsolete_commands'] = ''
   
   @commands.command(aliases=['?','??'])
   async def help(self, ctx, command=None):

@@ -5,6 +5,13 @@ class AuthError(Exception):
 class Auth:
   def __init__(self, bot):
     self.bot = bot
+    # ensure config file has required data
+    if not bot.config.has_section('auth'):
+      bot.config.add_section('auth')
+    if 'superusers' not in bot.config['auth']:
+      bot.config['auth']['superusers'] = ''
+    if 'authusers' not in bot.config['auth']:
+      bot.config['auth']['authusers'] = ''
   
   def owners(self, ctx):
       if ctx.message.author == ctx.message.guild.owner or\
