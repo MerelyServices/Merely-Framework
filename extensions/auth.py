@@ -15,9 +15,9 @@ class Auth(commands.Cog):
   @commands.Cog.listener()
   async def on_command_error(self, ctx, error):
     if isinstance(error, commands.errors.CommandInvokeError):
-      if isinstance(error.original, AuthError):
+      if type(error.original).__name__ == 'AuthError': # workaround for different imports of the same class causing them to not match
         return await ctx.send(str(error.original))
-    raise error
+    print(error)
 
   def owners(self, ctx):
       if ctx.message.author == ctx.message.guild.owner or\
@@ -50,7 +50,7 @@ class Auth(commands.Cog):
       else:
         raise AuthError("you must be a superuser of this bot to use this command!")
 
-  def superusers(self, ctx):
+  def authusers(self, ctx):
       if str(ctx.message.author.id) in self.bot.config['auth']['superusers'] or\
          str(ctx.message.author.id) in self.bot.config['auth']['authusers']:
         return True

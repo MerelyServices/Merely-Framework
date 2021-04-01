@@ -28,12 +28,15 @@ class Greeter(commands.cog.Cog):
     if f"{member.guild.id}_farewell" in self.bot.config['greeter']:
       data = self.bot.config['greeter'][f"{member.guild.id}_farewell"].split(', ')
       channel = member.guild.get_channel(int(data[0]))
-      await channel.send(', '.join(data[1:]).format(member.mention, member.guild.name))
+      await channel.send(', '.join(data[1:]).format(f"{member.name}#{member.discriminator}", member.guild.name))
   
-  @commands.group(no_pm=True)
+  # TODO: add error handling module with support for commands.errors.NoPrivateMessage
+  @commands.group()
+  @commands.guild_only()
   async def welcome(self, ctx):
     """welcome (get|set|clear)
-    control the welcome message for your server, use `set` to get instructions on how to set a new welcome message"""
+    control the welcome message for your server
+    use `set` to get instructions on how to set a new welcome message"""
     if ctx.invoked_subcommand is None and 'Help' in self.bot.cogs:
       await self.bot.cogs['Help'].help(ctx, 'welcome')
   @welcome.command(name='get')
@@ -65,9 +68,11 @@ class Greeter(commands.cog.Cog):
       await ctx.send("you don't currently have a welcome message set!")
     
   @commands.group(no_pm=True)
+  @commands.guild_only()
   async def farewell(self, ctx):
     """farewell (get|set|clear)
-    control the farewell message for your server, use `set` to get instructions on how to set a new farewell message"""
+    control the farewell message for your server
+    use `set` to get instructions on how to set a new farewell message"""
     if ctx.invoked_subcommand is None and 'Help' in self.bot.cogs:
       await self.bot.cogs['Help'].help(ctx, 'farewell')
   @farewell.command(name='get')

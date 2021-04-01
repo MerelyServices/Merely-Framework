@@ -89,9 +89,11 @@ if __name__ == '__main__':
 		""")
 	else:
 		bot = merelybot()
-		try:
-			bot.run(os.environ.get('Merely') if not bot.config.getboolean('main','beta') else os.environ.get('MerelyBeta'))
-		except discord.LoginFailure:
-			raise Exception("failed to login! make sure you provided the correct token using the correct key.")
+		tokenlabel = 'Merely' if not bot.config.getboolean('main','beta') else 'MerelyBeta'
+		token = os.environ.get(tokenlabel)
+		if token is not None:
+			bot.run(token)
+		else:
+			raise Exception("failed to login! make sure you provided the correct token using the correct key ({}).".format(tokenlabel))
 	
 	print("exited.")
