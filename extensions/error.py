@@ -6,8 +6,8 @@ class Error(commands.cog.Cog):
   def __init__(self, bot : commands.Bot):
     self.bot = bot
   
-  @commands.Cog.listener()
-  async def on_command_error(self, ctx : commands.Context, error):
+  @commands.Cog.listener("on_command_error")
+  async def handle_error(self, ctx : commands.Context, error):
     if isinstance(error, commands.CommandOnCooldown):
       print("cooldown")
       return

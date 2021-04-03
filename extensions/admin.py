@@ -15,8 +15,8 @@ class Admin(commands.cog.Cog):
     if 'owneroptout' not in bot.config['admin']:
       bot.config['admin']['owneroptout'] = ''
 
-  @commands.Cog.listener()
-  async def on_message(self, message):
+  @commands.Cog.listener("on_message")
+  async def janitor_autodelete(self, message):
     """janitor service, deletes messages after a time"""
     if f"{message.channel.id}_janitor" in self.bot.config['admin']:
       # 0 is relaxed, 1 is strict.

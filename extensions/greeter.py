@@ -13,16 +13,16 @@ class Greeter(commands.cog.Cog):
     if not bot.config.has_section('greeter'):
       bot.config.add_section('greeter')
 
-  @commands.Cog.listener()
-  async def on_member_join(self, member):
+  @commands.Cog.listener("on_member_join")
+  async def on_welcome(self, member):
     """welcome service, shows a custom welcome message to new users"""
     if f"{member.guild.id}_welcome" in self.bot.config['greeter']:
       data = self.bot.config['greeter'][f"{member.guild.id}_welcome"].split(', ')
       channel = member.guild.get_channel(int(data[0]))
       await channel.send(', '.join(data[1:]).format(member.mention, member.guild.name))
 
-  @commands.Cog.listener()
-  async def on_member_leave(self, member):
+  @commands.Cog.listener("on_member_leave")
+  async def on_farewell(self, member):
     """farewell service, shows a custom farewell message whenever someone leaves"""
     if f"{member.guild.id}_farewell" in self.bot.config['greeter']:
       data = self.bot.config['greeter'][f"{member.guild.id}_farewell"].split(', ')
