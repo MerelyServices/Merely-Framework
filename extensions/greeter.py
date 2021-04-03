@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-from .auth import Auth
 
 class Greeter(commands.cog.Cog):
   def __init__(self, bot : commands.Bot):
@@ -9,7 +8,7 @@ class Greeter(commands.cog.Cog):
       raise Exception("'auth' must be enabled to use 'greeter'")
     if not bot.config.getboolean('extensions', 'help', fallback=False):
       print(Warning("'help' is a recommended extension for 'greeter'"))
-    self.auth = Auth(bot)
+    self.auth = bot.cogs['Auth']
     # ensure config file has required data
     if not bot.config.has_section('greeter'):
       bot.config.add_section('greeter')
@@ -47,7 +46,7 @@ class Greeter(commands.cog.Cog):
     else:
       await self.welcome_set(ctx)
   @welcome.command(name='set')
-  async def welcome_set(self, ctx, *, message=None):
+  async def welcome_set(self, ctx : commands.Context, *, message=None):
     self.auth.admins(ctx)
     if not message:
       await ctx.send("to set a welcome message, use\n"+\
@@ -83,7 +82,7 @@ class Greeter(commands.cog.Cog):
     else:
       await self.farewell_set(ctx)
   @farewell.command(name='set')
-  async def farewell_set(self, ctx, *, message=None):
+  async def farewell_set(self, ctx : commands.Context, *, message=None):
     self.auth.admins(ctx)
     if not message:
       await ctx.send("to set a farewell message, use\n"+\

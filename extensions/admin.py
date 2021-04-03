@@ -1,13 +1,12 @@
 import discord, asyncio
 from discord.ext import commands
-from .auth import Auth
 
 class Admin(commands.cog.Cog):
   def __init__(self, bot : commands.Bot):
     self.bot = bot
     if not bot.config.getboolean('extensions', 'auth', fallback=False):
       raise Exception("'auth' must be enabled to use 'admin'")
-    self.auth = Auth(bot)
+    self.auth = bot.cogs['Auth']
     # ensure config file has required data
     if not bot.config.has_section('admin'):
       bot.config.add_section('admin')
@@ -34,7 +33,7 @@ class Admin(commands.cog.Cog):
 
   @commands.command()
   @commands.cooldown(1, 1)
-  async def die(self, ctx, saveconfig=False):
+  async def die(self, ctx : commands.Context, saveconfig=False):
     """die [saveconfig]
     shuts down the bot cleanly, saves the config file if you provide a value"""
     self.auth.superusers(ctx)
@@ -42,11 +41,6 @@ class Admin(commands.cog.Cog):
     if saveconfig:
       self.bot.config.save()
     await self.bot.logout()
-  @die.error
-  async def dieerror(self, ctx, error):
-    if isinstance(error, commands.errors.CommandOnCooldown):
-      return
-    raise error
 
 
 def setup(bot):

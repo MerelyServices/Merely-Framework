@@ -25,7 +25,7 @@ class Help(commands.cog.Cog):
       bot.config['help']['obsolete_commands'] = ''
   
   @commands.command(aliases=['?','??'])
-  async def help(self, ctx, command=None):
+  async def help(self, ctx : commands.Context, command=None):
     """help [command]
     highlights some useful commands and explains how to use the prefixes.
     when [command] is provided, specific instructions for a command are provided."""

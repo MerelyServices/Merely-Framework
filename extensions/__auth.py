@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 
 class Auth(commands.Cog):
+  """custom auth rules for merely framework"""
   def __init__(self, bot):
     self.bot = bot
     # ensure config file has required data
@@ -13,11 +14,10 @@ class Auth(commands.Cog):
       bot.config['auth']['authusers'] = ''
   
   @commands.Cog.listener()
-  async def on_command_error(self, ctx, error):
+  async def on_command_error(self, ctx : commands.Context, error):
     if isinstance(error, commands.errors.CommandInvokeError):
-      if type(error.original).__name__ == 'AuthError': # workaround for different imports of the same class causing them to not match
+      if error.original is AuthError:
         return await ctx.send(str(error.original))
-    print(error)
 
   def owners(self, ctx):
       if ctx.message.author == ctx.message.guild.owner or\

@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands 
 from config import Config
 import sys, time, os
+from itertools import groupby
 
 class merelybot(commands.Bot):
 	config = Config()
@@ -53,20 +54,24 @@ class merelybot(commands.Bot):
 		self.autoload_extensions()
 
 	def autoload_extensions(self):
-		for ext in os.listdir('extensions'):
+		# a natural sort is used to make it possible to prioritize extensions by filename
+		# add underscores to extension filenames to increase their priority
+		for ext in sorted(os.listdir('extensions'), key=lambda s:[int(''.join(g)) if k else ''.join(g) for k, g in groupby('\0'+s, str.isdigit)]):
 			if ext[-3:] == '.py':
-				if ext[:-3] in self.config['extensions'].keys():
-					if self.config.getboolean('extensions', ext[:-3]):
+				extfile = ext[:-3]
+				extname = extfile.strip('_')
+				if extname in self.config['extensions'].keys():
+					if self.config.getboolean('extensions', extname):
 						try:
-							self.load_extension('extensions.'+ext[:-3])
-							print(f"{ext[:-3]} loaded.")
+							self.load_extension('extensions.'+extfile)
+							print(f"{extname} loaded.")
 						except Exception as e:
 							print(f"Failed to load extension '{ext[:-3]}':\n{e}")
 					else:
-						if set(['-v','--verbose']) & set(sys.argv): print(f"{ext[:-3]} is disabled, skipping.")
+						if set(['-v','--verbose']) & set(sys.argv): print(f"{extname} is disabled, skipping.")
 				else:
-					self.config['extensions'][ext[:-3]] = 'False'
-					print(f"discovered {ext[:-3]}, disabled by default, you can enable it in the config.")
+					self.config['extensions'][extname] = 'False'
+					print(f"discovered {extname}, disabled by default, you can enable it in the config.")
 		self.config.save()
 
 class Logger(object):
