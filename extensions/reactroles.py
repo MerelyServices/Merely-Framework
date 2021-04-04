@@ -15,6 +15,9 @@ class ReactRoles(commands.cog.Cog):
       bot.config.add_section('reactroles')
     msglist = 'list[discord.abc.Messageable]'
     self.watching : msglist = []
+  
+  #TODO: make it possible for admins to add more reaction roles or delete them later
+  #TODO: notice if the rr prompt is deleted during setup
 
   @commands.Cog.listener("on_ready")
   async def fetch_tracking_messages(self):
@@ -37,39 +40,38 @@ class ReactRoles(commands.cog.Cog):
       [self.bot.config.remove_option('reactroles',k) for k in matches]
       #TODO: (low priority) maybe remove deleted message from self.watching?
 
-  @commands.Cog.listener("on_reaction_add")
-  async def reactrole_add(self, reaction, member):
-    print('add')
-    if isinstance(member, discord.Member):
-      emojiid = reaction.emoji if isinstance(reaction.emoji, str) else str(reaction.emoji.id)
-      if f"{reaction.message.channel.id}_{reaction.message.id}_{emojiid}_roles" in self.bot.config['reactroles']:
-        roleids = [int(r) for r in self.bot.config['reactroles'][f"{reaction.message.channel.id}_{reaction.message.id}_{emojiid}_roles"].split(' ')]
+  @commands.Cog.listener("on_raw_reaction_add")
+  async def reactrole_add(self, data : discord.RawReactionActionEvent):
+    if isinstance(data.member, discord.Member):
+      emojiid = data.emoji if data.emoji.is_unicode_emoji() else data.emoji.id
+      if f"{data.channel_id}_{data.message_id}_{emojiid}_roles" in self.bot.config['reactroles']:
+        channel = await self.bot.fetch_channel(data.channel_id)
+        roleids = [int(r) for r in self.bot.config['reactroles'][f"{data.channel_id}_{data.message_id}_{emojiid}_roles"].split(' ')]
         roles = []
         for roleid in roleids:
           try:
-            roles.append(member.guild.get_role(roleid))
+            roles.append(channel.guild.get_role(roleid))
           except Exception as e:
             print("failed to get role for reactrole: "+str(e))
-        await member.add_roles(*roles, reason='reactroles')
-      else:
-        print('config miss')
+        await data.member.send(f"{data.member.mention} given you the role(s) {', '.join([role.name for role in roles])}")
+        await data.member.add_roles(*roles, reason='reactroles')
 
-  @commands.Cog.listener("on_reaction_remove")
-  async def reactrole_remove(self, reaction, member):
-    print('remove')
-    if isinstance(member, discord.Member):
-      emojiid = reaction.emoji if isinstance(reaction.emoji, str) else str(reaction.emoji.id)
-      if f"{reaction.message.channel.id}_{reaction.message.id}_{emojiid}_roles" in self.bot.config['reactroles']:
-        roleids = [int(r) for r in self.bot.config['reactroles'][f"{reaction.message.channel.id}_{reaction.message.id}_{emojiid}_roles"].split(' ')]
+  @commands.Cog.listener("on_raw_reaction_remove")
+  async def reactrole_remove(self, data : discord.RawReactionActionEvent):
+    if data.guild_id:
+      member = self.bot.get_guild(data.guild_id).get_member(data.user_id)
+      emojiid = data.emoji if data.emoji.is_unicode_emoji() else data.emoji.id
+      if f"{data.channel_id}_{data.message_id}_{emojiid}_roles" in self.bot.config['reactroles']:
+        channel = await self.bot.fetch_channel(data.channel_id)
+        roleids = [int(r) for r in self.bot.config['reactroles'][f"{data.channel_id}_{data.message_id}_{emojiid}_roles"].split(' ')]
         roles = []
         for roleid in roleids:
           try:
-            roles.append(member.guild.get_role(roleid))
+            roles.append(channel.guild.get_role(roleid))
           except Exception as e:
             print("failed to get role for reactrole: "+str(e))
+        await member.send(f"{member.mention} taken the role(s) {', '.join([role.name for role in roles])}")
         await member.remove_roles(*roles, reason='reactroles')
-      else:
-        print('config miss')
   
   async def catchup(self):
     #TODO: give and take roles as needed to catch up to reality
@@ -130,8 +132,10 @@ class ReactRoles(commands.cog.Cog):
         except:
           pass
         await ctx.send("reactionroles setup complete! delete the prompt at any time to undo.")
+        self.watching.append(target)
     else:
       await ctx.send("reactionroles setup complete! delete the prompt at any time to undo.")
+      self.watching.append(target)
     self.bot.config.save()
 
 
