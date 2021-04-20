@@ -40,7 +40,7 @@ class Admin(commands.cog.Cog):
     await ctx.send("shutting down...")
     if saveconfig:
       self.bot.config.save()
-    await self.bot.logout()
+    await self.bot.close()
 
 
 def setup(bot):

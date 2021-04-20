@@ -28,8 +28,7 @@ class ReactRoles(commands.cog.Cog):
         msg = await ch.fetch_message(msgid)
         self.watching.append(msg)
       except Exception as e:
-        print(f"failed to get reactionrole message {msgid} from channel {chid}, deleting config. {e}")
-        [self.bot.config.remove_option('reactroles', k) for k in search]
+        print(f"failed to get reactionrole message {msgid} from channel {chid}. {e}")
     self.bot.config.save()
     await self.catchup()
 

@@ -117,6 +117,31 @@ class Help(commands.cog.Cog):
 
     await ctx.send(f"go to {self.bot.config['help']['helpurl']} to learn more!" if self.bot.config['help']['helpurl'] else "", embed=embed)
 
+  @commands.command(alisases=['changelog','change'])
+  async def changes(self, ctx, ver=None):
+    changes = self.bot.config['help']['changelog'].splitlines()
+    fchanges = ["**"+i.replace('> ','')+"**" if i.startswith('> ') else i for i in changes]
+    versions = {v.replace('> ',''):i for i,v in enumerate(changes) if v.startswith('> ')}
+    versionlist = list(versions.keys())
+    if ver == None or ver.replace('v','') not in versionlist: ver = self.bot.config['main']['ver']
+    if ver not in versionlist: ver = versionlist[-1]
+
+    start = versions[ver]
+    end = start + 15
+    changelog = '\n'.join(fchanges[start:end])
+    if end < len(fchanges): changelog += "\n..."
+
+    logurl = self.bot.config['help']['helpurl']+"changes.html#"+ver.replace('.','') if self.bot.config['help']['helpurl'] else None
+
+    embed = discord.Embed(title = f"changelog for {self.bot.config['main']['botname']}",
+                          description = f"list of changes from v{ver}:\n\n{changelog}",
+                          color = int(self.bot.config['main']['themecolor'], 16),
+                          url = logurl)
+    embed.set_footer(text = f"{self.bot.config['main']['botname']} v{self.bot.config['main']['ver']} created by {self.bot.config['main']['creator']}",
+                     icon_url = self.bot.user.avatar_url)
+    
+    await ctx.send(f"view the full changelog online: ({logurl})" if logurl else None, embed=embed)
+
 
 def setup(bot):
   bot.add_cog(Help(bot))
