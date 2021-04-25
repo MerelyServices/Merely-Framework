@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 
 class Help(commands.cog.Cog):
-  def __init__(self, bot : commands.Bot):
+  def __init__(self, bot:commands.Bot):
     self.bot = bot
     # ensure config file has required data
     if not bot.config.has_section('help'):
@@ -23,9 +23,11 @@ class Help(commands.cog.Cog):
       bot.config['help']['future_commands'] = ''
     if 'obsolete_commands' not in bot.config['help']:
       bot.config['help']['obsolete_commands'] = ''
+    if 'changelog' not in bot.config['help']:
+      bot.config['help']['changes'] = '> '+bot.config['main']['ver']+'\n- No changes yet!'
   
   @commands.command(aliases=['?','??'])
-  async def help(self, ctx : commands.Context, command=None):
+  async def help(self, ctx:commands.Context, command=None):
     """help [command]
     highlights some useful commands and explains how to use the prefixes.
     when [command] is provided, specific instructions for a command are provided."""
@@ -85,7 +87,7 @@ class Help(commands.cog.Cog):
       await ctx.send(f"go to {self.bot.config['help']['helpurl']} to learn more!" if self.bot.config['help']['helpurl'] else "", embed=embed)
 
   @commands.command(aliases=['info','invite'])
-  async def about(self, ctx):
+  async def about(self, ctx:commands.Context):
     """about
     information about this bot, including an invite link"""
 
@@ -117,8 +119,11 @@ class Help(commands.cog.Cog):
 
     await ctx.send(f"go to {self.bot.config['help']['helpurl']} to learn more!" if self.bot.config['help']['helpurl'] else "", embed=embed)
 
-  @commands.command(alisases=['changelog','change'])
-  async def changes(self, ctx, ver=None):
+  @commands.command(aliases=['changelog','change'])
+  async def changes(self, ctx:commands.Context, ver=None):
+    """changes [version]
+    list of changes made to this bot since the most recent update (or a version you specify)
+    [version] defaults to the latest version if the version you specify isn't found"""
     changes = self.bot.config['help']['changelog'].splitlines()
     fchanges = ["**"+i.replace('> ','')+"**" if i.startswith('> ') else i for i in changes]
     versions = {v.replace('> ',''):i for i,v in enumerate(changes) if v.startswith('> ')}
@@ -142,6 +147,28 @@ class Help(commands.cog.Cog):
     
     await ctx.send(f"view the full changelog online: ({logurl})" if logurl else None, embed=embed)
 
+  @commands.command()
+  async def feedback(self, ctx:commands.Context, feedback=None):
+    """feedback (your feedback)
+    send feedback directly to the developer(s)"""
+    if self.bot.config['help']['feedbackchannel']:
+      feedbackchannel = await self.bot.fetch_channel(self.bot.config['help']['feedbackchannel'])
+      if feedbackchannel:
+        if feedback is None:
+          await self.help(ctx, 'feedback')
+          return
+        embed = discord.Embed(title = f"feedback from {ctx.author.name}#{ctx.author.discriminator} in {ctx.guild.name}",
+                              description = feedback,
+                              color = int(self.bot.config['main']['themecolor'], 16))
+        await feedbackchannel.send(embed=embed)
+        await ctx.send("your feedback was sent successfully! you may be reached out to in DMs for further information."+\
+                        f"\n*you can always join the support server ({self.bot.config['help']['serverinv']}) to get help or give feedback more directly.*" if self.bot.config['help']['serverinv'] else '')
+      else:
+        await ctx.send("feedback doesn't appear to currently be working, please try again later."+\
+                       f"\n*you can always join the support server ({self.bot.config['help']['serverinv']}) to get help or give feedback more directly.*" if self.bot.config['help']['serverinv'] else '')
+    else:
+      await ctx.send(f"please join the support server ({self.bot.config['help']['serverinv']}) to get help or give feedback more directly." if self.bot.config['help']['serverinv']\
+                     else f"{self.bot.config['main']['botname']} doesn't currently have a method for recieving feedback or providing support, please check back later.")
 
 def setup(bot):
   bot.add_cog(Help(bot))

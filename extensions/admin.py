@@ -2,7 +2,7 @@ import discord, asyncio
 from discord.ext import commands
 
 class Admin(commands.cog.Cog):
-  def __init__(self, bot : commands.Bot):
+  def __init__(self, bot:commands.Bot):
     self.bot = bot
     if not bot.config.getboolean('extensions', 'auth', fallback=False):
       raise Exception("'auth' must be enabled to use 'admin'")
@@ -33,7 +33,7 @@ class Admin(commands.cog.Cog):
 
   @commands.command()
   @commands.cooldown(1, 1)
-  async def die(self, ctx : commands.Context, saveconfig=False):
+  async def die(self, ctx:commands.Context, saveconfig=False):
     """die [saveconfig]
     shuts down the bot cleanly, saves the config file if you provide a value"""
     self.auth.superusers(ctx)

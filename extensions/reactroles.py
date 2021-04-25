@@ -3,7 +3,7 @@ from discord.ext import commands
 
 class ReactRoles(commands.cog.Cog):
   """allows admins to set up messages where reacting grants users roles"""
-  def __init__(self, bot : commands.Bot):
+  def __init__(self, bot:commands.Bot):
     self.bot = bot
     if not bot.config.getboolean('extensions', 'auth', fallback=False):
       raise Exception("'auth' must be enabled to use 'reactroles'")
@@ -14,7 +14,7 @@ class ReactRoles(commands.cog.Cog):
     if not bot.config.has_section('reactroles'):
       bot.config.add_section('reactroles')
     msglist = 'list[discord.abc.Messageable]'
-    self.watching : msglist = []
+    self.watching:msglist = []
   
   #TODO: make it possible for admins to add more reaction roles or delete them later
   #TODO: notice if the rr prompt is deleted during setup
@@ -40,7 +40,7 @@ class ReactRoles(commands.cog.Cog):
       #TODO: (low priority) maybe remove deleted message from self.watching?
 
   @commands.Cog.listener("on_raw_reaction_add")
-  async def reactrole_add(self, data : discord.RawReactionActionEvent):
+  async def reactrole_add(self, data:discord.RawReactionActionEvent):
     if isinstance(data.member, discord.Member):
       emojiid = data.emoji if data.emoji.is_unicode_emoji() else data.emoji.id
       if f"{data.channel_id}_{data.message_id}_{emojiid}_roles" in self.bot.config['reactroles']:
@@ -56,7 +56,7 @@ class ReactRoles(commands.cog.Cog):
         await data.member.add_roles(*roles, reason='reactroles')
 
   @commands.Cog.listener("on_raw_reaction_remove")
-  async def reactrole_remove(self, data : discord.RawReactionActionEvent):
+  async def reactrole_remove(self, data:discord.RawReactionActionEvent):
     if data.guild_id:
       member = self.bot.get_guild(data.guild_id).get_member(data.user_id)
       emojiid = data.emoji if data.emoji.is_unicode_emoji() else data.emoji.id
@@ -78,7 +78,7 @@ class ReactRoles(commands.cog.Cog):
 
   @commands.command(aliases=['reactionrole', 'rr', 'reactroles', 'reactionroles'])
   @commands.guild_only()
-  async def reactrole(self, ctx : commands.Context, *, prompt):
+  async def reactrole(self, ctx:commands.Context, *, prompt):
     """reactrole (prompt)
     creates a message with your given prompt for reactions. each react can be associated with roles.
     roles will be given to any users that react with a given reaction."""

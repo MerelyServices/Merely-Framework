@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 
 class Greeter(commands.cog.Cog):
-  def __init__(self, bot : commands.Bot):
+  def __init__(self, bot:commands.Bot):
     self.bot = bot
     if not bot.config.getboolean('extensions', 'auth', fallback=False):
       raise Exception("'auth' must be enabled to use 'greeter'")
@@ -32,21 +32,21 @@ class Greeter(commands.cog.Cog):
   # TODO: add error handling module with support for commands.errors.NoPrivateMessage
   @commands.group()
   @commands.guild_only()
-  async def welcome(self, ctx):
+  async def welcome(self, ctx:commands.Context):
     """welcome (get|set|clear)
     control the welcome message for your server
     use `set` to get instructions on how to set a new welcome message"""
     if ctx.invoked_subcommand is None and 'Help' in self.bot.cogs:
       await self.bot.cogs['Help'].help(ctx, 'welcome')
   @welcome.command(name='get')
-  async def welcome_get(self, ctx):
+  async def welcome_get(self, ctx:commands.Context):
     if f'{ctx.guild.id}_welcome' in self.bot.config['greeter']:
       data = self.bot.config['greeter'][f"{ctx.guild.id}_welcome"].split(', ')
       await ctx.send("in "+ctx.guild.get_channel(int(data[0])).mention+": "+', '.join(data[1:]).format('@USER', ctx.guild.name))
     else:
       await self.welcome_set(ctx)
   @welcome.command(name='set')
-  async def welcome_set(self, ctx : commands.Context, *, message=None):
+  async def welcome_set(self, ctx:commands.Context, *, message=None):
     self.auth.admins(ctx)
     if not message:
       await ctx.send("to set a welcome message, use\n"+\
@@ -57,7 +57,7 @@ class Greeter(commands.cog.Cog):
       self.bot.config.save()
       await ctx.send("successfully set the welcome message!")
   @welcome.command(name='clear')
-  async def welcome_clear(self, ctx):
+  async def welcome_clear(self, ctx:commands.Context):
     self.auth.admins(ctx)
     if f'{ctx.guild.id}_welcome' in self.bot.config['greeter']:
       self.bot.config.remove_option('greeter', f'{ctx.guild.id}_welcome')
@@ -68,21 +68,21 @@ class Greeter(commands.cog.Cog):
     
   @commands.group(no_pm=True)
   @commands.guild_only()
-  async def farewell(self, ctx):
+  async def farewell(self, ctx:commands.Context):
     """farewell (get|set|clear)
     control the farewell message for your server
     use `set` to get instructions on how to set a new farewell message"""
     if ctx.invoked_subcommand is None and 'Help' in self.bot.cogs:
       await self.bot.cogs['Help'].help(ctx, 'farewell')
   @farewell.command(name='get')
-  async def farewell_get(self, ctx):
+  async def farewell_get(self, ctx:commands.Context):
     if f'{ctx.guild.id}_farewell' in self.bot.config['greeter']:
       data = self.bot.config['greeter'][f"{ctx.guild.id}_farewell"].split(', ')
       await ctx.send("in "+ctx.guild.get_channel(int(data[0])).mention+": "+', '.join(data[1:]).format('USER#1234', ctx.guild.name))
     else:
       await self.farewell_set(ctx)
   @farewell.command(name='set')
-  async def farewell_set(self, ctx : commands.Context, *, message=None):
+  async def farewell_set(self, ctx:commands.Context, *, message=None):
     self.auth.admins(ctx)
     if not message:
       await ctx.send("to set a farewell message, use\n"+\
@@ -93,7 +93,7 @@ class Greeter(commands.cog.Cog):
       self.bot.config.save()
       await ctx.send("successfully set the farewell message!")
   @farewell.command(name='clear')
-  async def farewell_clear(self, ctx):
+  async def farewell_clear(self, ctx:commands.Context):
     self.auth.admins(ctx)
     if f'{ctx.guild.id}_farewell' in self.bot.config['greeter']:
       self.bot.config.remove_option('greeter', f'{ctx.guild.id}_farewell')
