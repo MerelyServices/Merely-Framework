@@ -218,13 +218,16 @@ class Meme(commands.Cog):
 					else:
 						print("[meme] [WARN] skipped unknown memeurl because modchannel isn't set!")
 						return
-				async with self.session.head(url) as clientresponse:
-					if 'content-type' in clientresponse.headers:
-						type = typeconverter(clientresponse.headers['content-type'].split(' ')[0])
-						if type:
-							memes.append([url, type])
-						else:
-							if globals.verbose: print("[meme] Failed to recognise type of url! "+url+' ('+clientresponse.headers['content-type'].split(' ')[0]+')')
+				try:
+					async with self.session.head(url) as clientresponse:
+						if 'content-type' in clientresponse.headers:
+							type = typeconverter(clientresponse.headers['content-type'].split(' ')[0])
+							if type:
+								memes.append([url, type])
+							else:
+								if globals.verbose: print("[meme] Failed to recognise type of url! "+url+' ('+clientresponse.headers['content-type'].split(' ')[0]+')')
+				except Exception as e:
+					if globals.verbose: print(f"[meme] Failed to fetch \"{url}\": {e}")
 			return memes
 		else:
 			if globals.verbose: print("[meme] Didn't find any URLs!")
