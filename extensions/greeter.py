@@ -66,7 +66,7 @@ class Greeter(commands.cog.Cog):
     else:
       await ctx.send("you don't currently have a welcome message set!")
     
-  @commands.group(no_pm=True)
+  @commands.group()
   @commands.guild_only()
   async def farewell(self, ctx:commands.Context):
     """farewell (get|set|clear)
