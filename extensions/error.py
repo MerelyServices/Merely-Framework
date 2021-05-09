@@ -12,18 +12,18 @@ class Error(commands.cog.Cog):
       print("cooldown")
       return
     elif isinstance(error, commands.CommandNotFound):
-      ctx.send(f"unable to find a matching command, use `{self.bot.config['main']['prefix_short']}help` to get started.")
+      await ctx.send(f"unable to find a matching command, use `{self.bot.config['main']['prefix_short']}help` to get started.")
     elif isinstance(error, commands.BadArgument) or isinstance(error, commands.MissingRequiredArgument):
       if 'Help' in self.bot.cogs:
         await self.bot.cogs['Help'].help(ctx, ctx.command.name)
       else:
-        ctx.send("a required parameter for this command is missing.")
+        await ctx.send("a required parameter for this command is missing.")
     elif isinstance(error, commands.NoPrivateMessage):
-      ctx.send("this command *can't* be used in private messages.")
+      await ctx.send("this command *can't* be used in private messages.")
     elif isinstance(error, commands.PrivateMessageOnly):
-      ctx.send("this command can **only** be used in private messages.")
+      await ctx.send("this command can **only** be used in private messages.")
     elif isinstance(error, commands.CommandInvokeError):
-      ctx.send("an error occured while trying to run the command, please try again later.")
+      await ctx.send("an error occured while trying to run the command, please try again later.")
     raise error
 
 def setup(bot):
