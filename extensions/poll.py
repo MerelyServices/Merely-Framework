@@ -2,7 +2,7 @@ import asyncio
 import discord
 from discord.ext import tasks, commands
 from time import time
-from discord.message import Message
+import re
 
 from discord.raw_models import RawReactionActionEvent, RawReactionClearEvent
 
@@ -63,13 +63,13 @@ class Poll(commands.cog.Cog):
         expiry = int(value)
       except:
         continue
-      if expiry < time():
+      if expiry < time() and expiry > time() - 86400:
         keysplit = key.split('_')
         if len(keysplit) == 4:
           channel_id,message_id,_,_ = keysplit
           channel = await self.bot.fetch_channel(channel_id)
           votemsg = await channel.fetch_message(message_id)
-          await self.redraw_poll(votemsg, expiry)
+          await self.redraw_poll(votemsg, expiry, expired=True)
   @tasks.loop(hours=24)
   async def ancient_poll_timer(self):
     for key,value in self.bot.config['poll'].items():
@@ -77,14 +77,14 @@ class Poll(commands.cog.Cog):
         expiry = int(value)
       except:
         continue
-      if expiry < time() + 86400:
+      if expiry < time() - 86400:
         keysplit = key.split('_')
         if len(keysplit) == 4:
           channel_id,message_id,_,_ = keysplit
           channel = await self.bot.fetch_channel(channel_id)
           votemsg = await channel.fetch_message(message_id)
-          await self.redraw_poll(votemsg, expiry)
-          if expiry < time() + 604800:
+          await self.redraw_poll(votemsg, expiry, expired=True)
+          if expiry < time() - 604800:
             self.bot.config.remove_option('poll', key)
             self.bot.config.save()
 
@@ -92,8 +92,8 @@ class Poll(commands.cog.Cog):
     if i == 0: return ' '.join([beforeprefix, 'now.'])
     out = []
     ii = abs(i)
-    multipliers = [ 4492800, 2592000, 604800, 86400, 3600,   60,       1        ]
-    timenames   = [ 'year',  'month', 'week', 'day', 'hour', 'minute', 'second' ]
+    multipliers = [ 31449600, 2419200, 604800, 86400, 3600,   60,       1        ]
+    timenames   = [ 'year',   'month', 'week', 'day', 'hour', 'minute', 'second' ]
     precision = len(multipliers) - precisionlimit
     pluralizer  = 's'
 
@@ -117,7 +117,7 @@ class Poll(commands.cog.Cog):
     embed = discord.Embed(title=title)
     if counter>0: embed.description = f"{'⏳' if counter>60 else '⌛'} {self.inttotime(counter, 1, beforeprefix='closing')}"
     elif counter < -604800: embed.description = "⌛ expired a long time ago"
-    else: embed.description = f"⌛ {self.inttotime(counter, 2 if counter < -86400 else 3, afterprefix='closed')}"
+    else: embed.description = f"⌛ {self.inttotime(counter, 2 if counter > -86400 else 3, afterprefix='closed')}"
     if len(answers) > 0:
       votemax = max(max(votes),1)
       index = 0
@@ -127,22 +127,24 @@ class Poll(commands.cog.Cog):
     embed.set_footer(text="react to vote | this poll is multichoice")
     return embed
 
-  async def redraw_poll(self, msg:discord.Message, expiry:int):
+  async def redraw_poll(self, msg:discord.Message, expiry:int, expired:bool=False):
     """redraws the poll using real data"""
     title = msg.embeds[0].title
     counter = expiry - round(time())
     answers = [f.name[4:-1] for f in msg.embeds[0].fields]
-    votes = [0 for _ in answers]
-    for react in msg.reactions:
-      if str(react.emoji) in self.emojis:
-        votes[self.emojis.index(str(react.emoji))] = react.count-1
+    if expired: votes = [int(re.match(r'.*\((\d+)\)', f.value).group(1)) for f in msg.embeds[0].fields]
+    else:
+      votes = [0 for _ in answers]
+      for react in msg.reactions:
+        if str(react.emoji) in self.emojis:
+          votes[self.emojis.index(str(react.emoji))] = react.count-1
     embed = self.generate_poll_embed(title, counter, answers, votes)
     await msg.edit(embed=embed)
     return title, answers, votes # just returning these for the one situation where they need to be reused
   
   async def expire_poll(self, msg:discord.Message, expiry:int):
     """announces the winner of the poll"""
-    title, answers, votes = await self.redraw_poll(msg, expiry)
+    title, answers, votes = await self.redraw_poll(msg, expiry, expired=True)
     winners = []
     votemax = max(max(votes),1)
     if votemax > 0:
