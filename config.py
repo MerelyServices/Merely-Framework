@@ -1,5 +1,4 @@
 from configparser import ConfigParser
-from re import template
 from shutil import copy
 from os import path,makedirs,remove
 import time
@@ -91,6 +90,10 @@ class Config(ConfigParser):
       self['intents']['dm_typing'] = 'False'
     if 'extensions' not in self.sections():
       self.add_section('extensions')
+    if 'langauge' not in self.sections():
+      self.add_section('language')
+    if 'default' not in self['language']:
+      self['language']['default'] = 'en'
     self.save()
 
   def save(self):

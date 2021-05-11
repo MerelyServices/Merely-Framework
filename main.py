@@ -1,11 +1,13 @@
 import discord
 from discord.ext import commands 
 from config import Config
+from babel import Babel
 import sys, time, os
 from itertools import groupby
 
-class merelybot(commands.Bot):
+class merelybot(commands.AutoShardedBot):
 	config = Config()
+	babel = Babel(config)
 
 	intents = discord.Intents.none()
 	intents.guilds = config.getboolean('intents', 'guilds')
