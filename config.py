@@ -16,6 +16,9 @@ class Config(ConfigParser):
     will always return a valid config object, even if the filesystem is broken
     """
     ConfigParser.__init__(self)
+    self.load()
+  
+  def load(self):
     if path.isfile(self.path):
       remove(self.path)
     if not path.exists(self.path):
@@ -94,6 +97,7 @@ class Config(ConfigParser):
       self.add_section('language')
     if 'default' not in self['language']:
       self['language']['default'] = 'en'
+      self['language']['contribute_url'] = ''
     self.save()
 
   def save(self):

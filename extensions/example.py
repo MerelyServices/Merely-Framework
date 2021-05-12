@@ -12,7 +12,11 @@ class Example(commands.cog.Cog):
   async def on_member_join(self, member):
     print(f"{member.name} has joined!")
   
-
+  @commands.command()
+  async def example(self, ctx:commands.Context, *, echo:str):
+    """example (echo)
+    repeats whatever you say back to you"""
+    await ctx.send(echo)
 
 def setup(bot):
   bot.add_cog(Example(bot))

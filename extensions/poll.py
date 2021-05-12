@@ -168,25 +168,31 @@ class Poll(commands.cog.Cog):
 
   @commands.command(aliases=['vote'])
   @commands.guild_only()
-  async def poll(self, ctx:commands.Context, *, title:str=''):
+  async def poll(self, ctx:commands.Context, *, title:str):
     """poll (title)
     creates a poll, you'll be asked to provide answers and when the poll will expire after providing a title"""
-    if title == '':
-      if 'Help' in self.bot.cogs:
-        await self.bot.cogs['Help'].help(ctx, 'poll')
-    else:
-      counter = 300
-      answers = []
-      votes = []
-      embed = self.generate_poll_embed(title, counter, answers, votes)
-      pollmsg = await ctx.send("poll preview:", embed=embed)
+    counter = 300
+    answers = []
+    votes = []
+    embed = self.generate_poll_embed(title, counter, answers, votes)
+    pollmsg = await ctx.send("poll preview:", embed=embed)
 
-      done = False
-      while not done and len(answers)<10:
-        qmsg = await ctx.send("*reply with an answer to add one.* (reply with '[stop]' at any time to stop adding questions)")
-        try:
-          reply = await self.bot.wait_for('message', check=lambda m: m.author==ctx.author and m.channel==ctx.channel, timeout=30)
-        except asyncio.TimeoutError:
+    done = False
+    while not done and len(answers)<10:
+      qmsg = await ctx.send("*reply with an answer to add one.* (reply with '[stop]' at any time to stop adding questions)")
+      try:
+        reply = await self.bot.wait_for('message', check=lambda m: m.author==ctx.author and m.channel==ctx.channel, timeout=30)
+      except asyncio.TimeoutError:
+        if len(answers) == 0:
+          await pollmsg.delete()
+          await qmsg.delete()
+          await ctx.send("poll cancelled.")
+          return
+        else:
+          await qmsg.delete()
+          done=True
+      else:
+        if reply.content == '[stop]':
           if len(answers) == 0:
             await pollmsg.delete()
             await qmsg.delete()
@@ -194,51 +200,41 @@ class Poll(commands.cog.Cog):
             return
           else:
             await qmsg.delete()
+            await reply.delete()
             done=True
         else:
-          if reply.content == '[stop]':
-            if len(answers) == 0:
-              await pollmsg.delete()
-              await qmsg.delete()
-              await ctx.send("poll cancelled.")
-              return
-            else:
-              await qmsg.delete()
-              await reply.delete()
-              done=True
-          else:
-            answers.append(reply.content)
-            votes.append(0)
-            embed = self.generate_poll_embed(title, counter, answers, votes)
-            await pollmsg.edit(embed=embed)
-            await pollmsg.add_reaction(self.emojis[len(answers)-1])
-            await qmsg.delete()
-            await reply.delete()
-        
-      qmsg = await ctx.send("*reply with a number of minutes to set the countdown.*")
-      reply = None
-      try:
-        reply = await self.bot.wait_for('message', check=lambda m: m.author==ctx.author and m.channel==ctx.channel, timeout=30)
-      except asyncio.TimeoutError:
-        pass
-      else:
-        try:
-          counter = int(reply.content)*60
-        except:
-          pass
-      await qmsg.delete()
-      if reply: await reply.delete()
-      if counter == 300:
-        await ctx.send("using the default countdown.")
+          answers.append(reply.content)
+          votes.append(0)
+          embed = self.generate_poll_embed(title, counter, answers, votes)
+          await pollmsg.edit(embed=embed)
+          await pollmsg.add_reaction(self.emojis[len(answers)-1])
+          await qmsg.delete()
+          await reply.delete()
       
-      await pollmsg.delete()
-      embed = self.generate_poll_embed(title, counter, answers, votes)
-      pollmsg = await ctx.send(f"{ctx.author.mention} has started a poll.", embed=embed)
-      for emoji in self.emojis[:len(answers)]:
-        await pollmsg.add_reaction(emoji)
+    qmsg = await ctx.send("*reply with a number of minutes to set the countdown.*")
+    reply = None
+    try:
+      reply = await self.bot.wait_for('message', check=lambda m: m.author==ctx.author and m.channel==ctx.channel, timeout=30)
+    except asyncio.TimeoutError:
+      pass
+    else:
+      try:
+        counter = int(reply.content)*60
+      except:
+        pass
+    await qmsg.delete()
+    if reply: await reply.delete()
+    if counter == 300:
+      await ctx.send("using the default countdown.")
+    
+    await pollmsg.delete()
+    embed = self.generate_poll_embed(title, counter, answers, votes)
+    pollmsg = await ctx.send(f"{ctx.author.mention} has started a poll.", embed=embed)
+    for emoji in self.emojis[:len(answers)]:
+      await pollmsg.add_reaction(emoji)
 
-      self.bot.config['poll'][f'{ctx.channel.id}_{pollmsg.id}_expiry'] = str(round(time())+counter)
-      self.bot.config.save()
+    self.bot.config['poll'][f'{ctx.channel.id}_{pollmsg.id}_expiry'] = str(round(time())+counter)
+    self.bot.config.save()
 
 def setup(bot):
   bot.add_cog(Poll(bot))

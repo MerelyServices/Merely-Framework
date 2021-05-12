@@ -77,7 +77,7 @@ class ReactRoles(commands.cog.Cog):
 
   @commands.command(aliases=['reactionrole', 'rr', 'reactroles', 'reactionroles'])
   @commands.guild_only()
-  async def reactrole(self, ctx:commands.Context, *, prompt):
+  async def reactrole(self, ctx:commands.Context, *, prompt:str):
     """reactrole (prompt)
     creates a message with your given prompt for reactions. each react can be associated with roles.
     roles will be given to any users that react with a given reaction."""

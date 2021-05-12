@@ -42,8 +42,7 @@ class Admin(commands.cog.Cog):
     if you provide the strict flag, janitor will delete all messages, not just messages to and from this bot."""
 
     if ctx.invoked_subcommand is None:
-      if 'Help' in self.bot.cogs:
-        await self.bot.cogs['Help'].help(ctx, 'janitor')
+      raise commands.MissingRequiredArgument
     else:
       self.auth.admins(ctx)
   @janitor.command(name='join')
@@ -65,10 +64,7 @@ class Admin(commands.cog.Cog):
     if you instead provide two message ids seperated by a dash, clean will run on this range instead of scanning upwards from the current message."""
 
     if n_or_id is None:
-      if 'Help' in self.bot.cogs:
-        await self.bot.cogs['Help'].help(ctx, 'clean')
-      else:
-        raise commands.BadArgument
+      raise commands.MissingRequiredArgument
     elif n_or_id.isdigit():
       n = int(n_or_id)
       self.auth.mods(ctx)
@@ -89,7 +85,7 @@ class Admin(commands.cog.Cog):
   @commands.cooldown(1, 1)
   async def die(self, ctx:commands.Context, saveconfig=False):
     """die [saveconfig]
-    shuts down the bot cleanly, saves the config file if you provide a value"""
+    shuts down the bot safely, saves the config file if you provide a value"""
     self.auth.superusers(ctx)
     await ctx.send("shutting down...")
     if saveconfig:

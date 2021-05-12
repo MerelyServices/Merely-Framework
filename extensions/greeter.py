@@ -36,8 +36,8 @@ class Greeter(commands.cog.Cog):
     """welcome (get|set|clear)
     control the welcome message for your server
     use `set` to get instructions on how to set a new welcome message"""
-    if ctx.invoked_subcommand is None and 'Help' in self.bot.cogs:
-      await self.bot.cogs['Help'].help(ctx, 'welcome')
+    if ctx.invoked_subcommand is None:
+      raise commands.MissingRequiredArgument
   @welcome.command(name='get')
   async def welcome_get(self, ctx:commands.Context):
     if f'{ctx.guild.id}_welcome' in self.bot.config['greeter']:
@@ -46,7 +46,7 @@ class Greeter(commands.cog.Cog):
     else:
       await self.welcome_set(ctx)
   @welcome.command(name='set')
-  async def welcome_set(self, ctx:commands.Context, *, message=None):
+  async def welcome_set(self, ctx:commands.Context, *, message:str):
     self.auth.admins(ctx)
     if not message:
       await ctx.send("to set a welcome message, use\n"+\
@@ -72,8 +72,8 @@ class Greeter(commands.cog.Cog):
     """farewell (get|set|clear)
     control the farewell message for your server
     use `set` to get instructions on how to set a new farewell message"""
-    if ctx.invoked_subcommand is None and 'Help' in self.bot.cogs:
-      await self.bot.cogs['Help'].help(ctx, 'farewell')
+    if ctx.invoked_subcommand is None:
+      raise commands.MissingRequiredArgument
   @farewell.command(name='get')
   async def farewell_get(self, ctx:commands.Context):
     if f'{ctx.guild.id}_farewell' in self.bot.config['greeter']:
@@ -82,7 +82,7 @@ class Greeter(commands.cog.Cog):
     else:
       await self.farewell_set(ctx)
   @farewell.command(name='set')
-  async def farewell_set(self, ctx:commands.Context, *, message=None):
+  async def farewell_set(self, ctx:commands.Context, *, message:str):
     self.auth.admins(ctx)
     if not message:
       await ctx.send("to set a farewell message, use\n"+\

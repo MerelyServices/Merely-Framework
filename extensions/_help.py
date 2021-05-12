@@ -148,15 +148,12 @@ class Help(commands.cog.Cog):
     await ctx.send(f"view the full changelog online: ({logurl})" if logurl else None, embed=embed)
 
   @commands.command()
-  async def feedback(self, ctx:commands.Context, feedback=None):
+  async def feedback(self, ctx:commands.Context, feedback:str):
     """feedback (your feedback)
     send feedback directly to the developer(s)"""
     if self.bot.config['help']['feedbackchannel']:
       feedbackchannel = await self.bot.fetch_channel(self.bot.config['help']['feedbackchannel'])
       if feedbackchannel:
-        if feedback is None:
-          await self.help(ctx, 'feedback')
-          return
         embed = discord.Embed(title = f"feedback from {ctx.author.name}#{ctx.author.discriminator} in {ctx.guild.name}",
                               description = feedback,
                               color = int(self.bot.config['main']['themecolor'], 16))
