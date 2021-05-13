@@ -14,8 +14,6 @@ class Example(commands.cog.Cog):
   
   @commands.command()
   async def example(self, ctx:commands.Context, *, echo:str):
-    """example (echo)
-    repeats whatever you say back to you"""
     await ctx.send(echo)
 
 def setup(bot):

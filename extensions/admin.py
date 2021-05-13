@@ -37,9 +37,7 @@ class Admin(commands.cog.Cog):
   @commands.group()
   @commands.guild_only()
   async def janitor(self, ctx:commands.Context):
-    """janitor (join [strict]|leave)
-    janitor will auto-delete messages after 30 seconds, resulting in a cleaner channel.
-    if you provide the strict flag, janitor will delete all messages, not just messages to and from this bot."""
+    """setter / getter for the janitor service"""
 
     if ctx.invoked_subcommand is None:
       raise commands.MissingRequiredArgument
@@ -49,19 +47,17 @@ class Admin(commands.cog.Cog):
   async def janitor_join(self, ctx:commands.Context, strict=''):
     self.bot.config['admin'][f'{ctx.channel.id}_janitor'] = '1' if strict else '0'
     self.bot.config.save()
-    await ctx.send("successfully added or updated the janitor for this channel.")
+    await ctx.send(self.bot.babel(ctx, 'admin', 'janitor_set_success'))
   @janitor.command(name='leave')
   async def janitor_leave(self, ctx:commands.Context):
     self.bot.config.remove_option('admin', f'{ctx.channel.id}_janitor')
     self.bot.config.save()
-    await ctx.send("successfully removed the janitor for this channel.")
+    await ctx.send(self.bot.babel(ctx, 'admin', 'janitor_unset_success'))
 
   @commands.command()
   @commands.guild_only()
   async def clean(self, ctx:commands.Context, n_or_id:str=None, strict:str=None):
-    """clean (n|start_id-end_id) [strict]
-    mass-deletes messages from a channel, n specifies how many messages back to look, 'strict' deletes all messages, not just messages to and from this bot.
-    if you instead provide two message ids seperated by a dash, clean will run on this range instead of scanning upwards from the current message."""
+    """instant gratification janitor"""
 
     if n_or_id is None:
       raise commands.MissingRequiredArgument
@@ -69,7 +65,7 @@ class Admin(commands.cog.Cog):
       n = int(n_or_id)
       self.auth.mods(ctx)
       deleted = await ctx.channel.purge(limit=n, check=lambda m:self.check_delete(m, strict))
-      await ctx.send(f"deleted {len(deleted)} messages successfully.")
+      await ctx.send(self.bot.babel(ctx, 'admin', 'clean_success', n=len(deleted)))
     elif '-' in n_or_id:
       start,end = n_or_id.split('-')
       start,end = int(start),int(end)
@@ -79,15 +75,13 @@ class Admin(commands.cog.Cog):
                                         check=lambda m: m.id>start and m.id<end and self.check_delete(m, strict),
                                         before=discord.Object(end),
                                         after=discord.Object(start))
-      await ctx.send(f"deleted {len(deleted)} messages successfully.")
+      await ctx.send(self.bot.babel(ctx, 'admin', 'clean_success', n=len(deleted)))
 
   @commands.command()
   @commands.cooldown(1, 1)
   async def die(self, ctx:commands.Context, saveconfig=False):
-    """die [saveconfig]
-    shuts down the bot safely, saves the config file if you provide a value"""
     self.auth.superusers(ctx)
-    await ctx.send("shutting down...")
+    await ctx.send(self.bot.babel(ctx, 'admin', 'die_success'))
     if saveconfig:
       self.bot.config.save()
     await self.bot.close()

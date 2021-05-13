@@ -11,9 +11,7 @@ class Language(commands.cog.Cog):
   
   @commands.group()
   async def language(self, ctx:commands.Context):
-    """language (get|set (langcode)|list)
-    changes the language that will be used when speaking to you or your guild. use `language list` to find translations and then set one.
-    only admins can change the guild language."""
+    """user-facing setter/getter for guild/user language options"""
     if ctx.invoked_subcommand is None:
       await self.language_list(ctx)
   @language.command(name='list')

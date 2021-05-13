@@ -82,7 +82,7 @@ class Babel():
       match = match.replace('{'+k+'}', str(v))
     
     # Fill in conditionals
-    conditionalqueries = re.findall(r'{([a-z]*)\?(.*):(.*)}', match)
+    conditionalqueries = re.findall(r'{([a-z]*)\?(.*)\|(.*)}', match)
     for conditionalquery in conditionalqueries:
       if conditionalquery[0] in values:
         if values[conditionalquery[0]]:
