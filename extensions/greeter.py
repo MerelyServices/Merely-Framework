@@ -33,74 +33,66 @@ class Greeter(commands.cog.Cog):
   @commands.group()
   @commands.guild_only()
   async def welcome(self, ctx:commands.Context):
-    """welcome (get|set|clear)
-    control the welcome message for your server
-    use `set` to get instructions on how to set a new welcome message"""
+    """welcome setter / getter"""
     if ctx.invoked_subcommand is None:
-      raise commands.MissingRequiredArgument
+      raise commands.MissingRequiredArgument('get|set|clear')
   @welcome.command(name='get')
   async def welcome_get(self, ctx:commands.Context):
     if f'{ctx.guild.id}_welcome' in self.bot.config['greeter']:
       data = self.bot.config['greeter'][f"{ctx.guild.id}_welcome"].split(', ')
-      await ctx.send("in "+ctx.guild.get_channel(int(data[0])).mention+": "+', '.join(data[1:]).format('@USER', ctx.guild.name))
+      await ctx.send(self.bot.babel(ctx, 'greeter', 'greeting_preview', channel=ctx.guild.get_channel(int(data[0])).mention, message=', '.join(data[1:]).format('@USER', ctx.guild.name)))
     else:
       await self.welcome_set(ctx)
   @welcome.command(name='set')
-  async def welcome_set(self, ctx:commands.Context, *, message:str):
+  async def welcome_set(self, ctx:commands.Context, *, message:str=''):
     self.auth.admins(ctx)
     if not message:
-      await ctx.send("to set a welcome message, use\n"+\
-                     f"`{self.bot.config['main']['prefix_short']}welcome set Welcome, {{}} to the {{}} server!` (as an example)\n"+\
-                     "*the first {} will become a mention of the new user, and the second {} will be the current server name.*")
+      await ctx.send(self.bot.greeter(ctx, 'greeter', 'welcome_set_instructions'))
     else:
       self.bot.config['greeter'][f'{ctx.guild.id}_welcome'] = f"{ctx.channel.id}, {message}"
       self.bot.config.save()
-      await ctx.send("successfully set the welcome message!")
+      await ctx.send(self.bot.greeter(ctx, 'greeter', 'welcome_set_success'))
   @welcome.command(name='clear')
   async def welcome_clear(self, ctx:commands.Context):
     self.auth.admins(ctx)
     if f'{ctx.guild.id}_welcome' in self.bot.config['greeter']:
       self.bot.config.remove_option('greeter', f'{ctx.guild.id}_welcome')
       self.bot.config.save()
-      await ctx.send("removed and disabled the welcome message.")
+      await ctx.send(self.bot.greeter(ctx, 'greeter', 'welcome_clear_success'))
     else:
-      await ctx.send("you don't currently have a welcome message set!")
+      await ctx.send(self.bot.greeter(ctx, 'greeter', 'welcome_clear_failed'))
     
   @commands.group()
   @commands.guild_only()
   async def farewell(self, ctx:commands.Context):
-    """farewell (get|set|clear)
-    control the farewell message for your server
-    use `set` to get instructions on how to set a new farewell message"""
+    """getter / setter for farewell"""
     if ctx.invoked_subcommand is None:
-      raise commands.MissingRequiredArgument
+      raise commands.MissingRequiredArgument('get|set|clear')
   @farewell.command(name='get')
   async def farewell_get(self, ctx:commands.Context):
     if f'{ctx.guild.id}_farewell' in self.bot.config['greeter']:
       data = self.bot.config['greeter'][f"{ctx.guild.id}_farewell"].split(', ')
-      await ctx.send("in "+ctx.guild.get_channel(int(data[0])).mention+": "+', '.join(data[1:]).format('USER#1234', ctx.guild.name))
+      await ctx.send(self.bot.babel(ctx, 'greeter', 'greeting_preview', channel=ctx.guild.get_channel(int(data[0])).mention, message=', '.join(data[1:]).format('USER#1234', ctx.guild.name)))
     else:
       await self.farewell_set(ctx)
   @farewell.command(name='set')
-  async def farewell_set(self, ctx:commands.Context, *, message:str):
+  async def farewell_set(self, ctx:commands.Context, *, message:str=''):
     self.auth.admins(ctx)
     if not message:
-      await ctx.send("to set a farewell message, use\n"+\
-                     f"`{self.bot.config['main']['prefix_short']}farewell set {{}} has left the {{}} server` (as an example)\n"+\
-                     "*the first {} will become the username of the leaving user, and the second {} will be the current server name.*")
+      await ctx.send(self.bot.greeter(ctx, 'greeter', 'farewell_set_instructions'))
     else:
       self.bot.config['greeter'][f'{ctx.guild.id}_farewell'] = f"{ctx.channel.id}, {message}"
       self.bot.config.save()
-      await ctx.send("successfully set the farewell message!")
+      await ctx.send(self.bot.greeter(ctx, 'greeter', 'farewell_set_success'))
   @farewell.command(name='clear')
   async def farewell_clear(self, ctx:commands.Context):
     self.auth.admins(ctx)
     if f'{ctx.guild.id}_farewell' in self.bot.config['greeter']:
       self.bot.config.remove_option('greeter', f'{ctx.guild.id}_farewell')
       self.bot.config.save()
-      await ctx.send("removed and disabled the farewell message.")
+      await ctx.send(self.bot.greeter(ctx, 'greeter', 'farewell_clear_success'))
     else:
-      await ctx.send("you don't currently have a farewell message set!")
+      await ctx.send(self.bot.greeter(ctx, 'greeter', 'farewell_clear_failure'))
   
 
 def setup(bot):

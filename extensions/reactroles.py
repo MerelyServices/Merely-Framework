@@ -51,7 +51,7 @@ class ReactRoles(commands.cog.Cog):
             roles.append(channel.guild.get_role(roleid))
           except Exception as e:
             print("failed to get role for reactrole: "+str(e))
-        await data.member.send(f"{data.member.mention} given you the role(s) {', '.join([role.name for role in roles])}")
+        await data.member.send(self.bot.babel((data.member.id, data.guild_id), 'reactroles', 'role_granted', roles=', '.join([role.name for role in roles])))
         await data.member.add_roles(*roles, reason='reactroles')
 
   @commands.Cog.listener("on_raw_reaction_remove")
@@ -68,7 +68,7 @@ class ReactRoles(commands.cog.Cog):
             roles.append(channel.guild.get_role(roleid))
           except Exception as e:
             print("failed to get role for reactrole: "+str(e))
-        await member.send(f"{member.mention} taken the role(s) {', '.join([role.name for role in roles])}")
+        await data.member.send(self.bot.babel((data.member.id, data.guild_id), 'reactroles', 'role_taken', roles=', '.join([role.name for role in roles])))
         await member.remove_roles(*roles, reason='reactroles')
   
   async def catchup(self):
@@ -78,17 +78,16 @@ class ReactRoles(commands.cog.Cog):
   @commands.command(aliases=['reactionrole', 'rr', 'reactroles', 'reactionroles'])
   @commands.guild_only()
   async def reactrole(self, ctx:commands.Context, *, prompt:str):
-    """reactrole (prompt)
-    creates a message with your given prompt for reactions. each react can be associated with roles.
-    roles will be given to any users that react with a given reaction."""
+    """react role setup interface"""
     self.auth.admins(ctx)
 
     target = await ctx.send(prompt)
+    tmp = None
 
     emojis = []
     try:
       while len(emojis) < 10:
-        tmp = await ctx.send("react to the prompt to add a reactionrole." + (" *don't react to finish.*" if len(emojis) > 0 else ''))
+        tmp = await ctx.send(self.bot.babel(ctx, 'reactroles', 'setup1', canstop=len(emojis) > 0))
         reaction, _ = await self.bot.wait_for('reaction_add', check=lambda r, u: u==ctx.author and r.message == target, timeout=30)
 
         if reaction.emoji not in emojis:
@@ -99,7 +98,7 @@ class ReactRoles(commands.cog.Cog):
             pass
           await tmp.delete()
 
-          tmp = await ctx.send("mention role(s) to add them to "+str(reaction.emoji))
+          tmp = await ctx.send(self.bot.babel(ctx, 'reactroles', 'setup2', emoji=str(reaction.emoji)))
           msg = await self.bot.wait_for('message', check=lambda m: m.channel == ctx.channel and m.author == ctx.author and len(m.role_mentions) > 0, timeout=30)
           emojiid = reaction.emoji if isinstance(reaction.emoji, str) else str(reaction.emoji.id)
           self.bot.config['reactroles'][f"{ctx.channel.id}_{target.id}_{emojiid}_roles"] = ' '.join([str(r.id) for r in msg.role_mentions])
@@ -113,7 +112,7 @@ class ReactRoles(commands.cog.Cog):
           except:
             pass
           await tmp.delete()
-          tmp = await ctx.send("**this emoji has already been given roles.**")
+          tmp = await ctx.send(self.bot.babel(ctx, 'reactroles', 'setup2_repeat'))
           await asyncio.sleep(5)
           await tmp.delete()
 
@@ -121,18 +120,19 @@ class ReactRoles(commands.cog.Cog):
       if len(emojis) == 0:
         try:
           await target.delete()
+          if tmp is not None: await tmp.delete()
         except:
           pass
-        await ctx.send("canceled reactionroles setup *(timeout after each instruction is 30 seconds)*")
+        await ctx.send(self.bot.babel(ctx, 'reactroles', 'setup_cancel'))
       else:
         try:
           await tmp.delete()
         except:
           pass
-        await ctx.send("reactionroles setup complete! delete the prompt at any time to undo.")
+        await ctx.send(self.bot.babel(ctx, 'reactroles', 'setup_success'))
         self.watching.append(target)
     else:
-      await ctx.send("reactionroles setup complete! delete the prompt at any time to undo.")
+      await ctx.send(self.bot.babel(ctx, 'reactroles', 'setup_success'))
       self.watching.append(target)
     self.bot.config.save()
 

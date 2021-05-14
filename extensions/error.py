@@ -18,6 +18,7 @@ class Error(commands.cog.Cog):
         await self.bot.cogs['Help'].help(ctx, ctx.command.name)
       else:
         await ctx.send(self.bot.babel(ctx, 'error', 'missingrequiredargument'))
+      return
     elif isinstance(error, commands.NoPrivateMessage):
       await ctx.send(self.bot.babel(ctx, 'error', 'noprivatemessage'))
     elif isinstance(error, commands.PrivateMessageOnly):

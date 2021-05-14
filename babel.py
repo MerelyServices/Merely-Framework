@@ -1,4 +1,5 @@
 from configparser import ConfigParser
+from typing import Union
 import discord
 from discord.ext import commands
 import os, re
@@ -28,12 +29,18 @@ class Babel():
         with open(self.path+langfile, 'w', encoding='utf-8') as f:
           self.langs[langname].write(f)
 
-  def resolve_lang(self, ctx:commands.Context, debug=False):
+  def resolve_lang(self, ctx:Union[commands.Context, tuple], debug=False):
     langs = []
     dbg_origins = []
+    if isinstance(ctx, commands.Context):
+      authorid = ctx.author.id
+      guildid = ctx.guild.id if isinstance(ctx.channel, discord.abc.GuildChannel) else None
+    else:
+      authorid = ctx[0]
+      guildid = ctx[1] if len(ctx)>1 else None
     
-    if str(ctx.author.id) in self.config['language']:
-      nl = self.config.get('language', str(ctx.author.id))
+    if str(authorid) in self.config['language']:
+      nl = self.config.get('language', str(authorid))
       if nl in self.langs:
         langs.append(nl)
         if debug: dbg_origins.append('author')
@@ -42,8 +49,8 @@ class Babel():
           langs.append(nl)
           if debug: dbg_origins.append('inherit author')
           nl = self.langs[langs[-1]].get('meta', 'inherit', fallback=None)
-    if isinstance(ctx.channel, discord.abc.GuildChannel) and str(ctx.guild.id) in self.config['language']:
-      nl = self.config.get('language', str(ctx.guild.id))
+    if guildid and str(guildid) in self.config['language']:
+      nl = self.config.get('language', str(guildid))
       if nl not in langs and nl in self.langs:
         langs.append(nl)
         if debug: dbg_origins.append('guild')
@@ -89,7 +96,7 @@ class Babel():
           replace = conditionalquery[1]
         else:
           replace = conditionalquery[2]
-        match=match.replace('{'+conditionalquery[0]+'?'+conditionalquery[1]+':'+conditionalquery[2]+'}', replace)
+        match=match.replace('{'+conditionalquery[0]+'?'+conditionalquery[1]+'|'+conditionalquery[2]+'}', replace)
 
     # Fill in config queries
     configqueries = re.findall(r'{c\:([a-z_]*)\/([a-z_]*)}', match)

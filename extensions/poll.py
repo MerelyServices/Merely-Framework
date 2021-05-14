@@ -89,6 +89,7 @@ class Poll(commands.cog.Cog):
             self.bot.config.save()
 
   def inttotime(self, i:int, precisionlimit:int=0, beforeprefix:str='', afterprefix:str='happened'):
+    #TODO: add babel support
     if i == 0: return ' '.join([beforeprefix, 'now.'])
     out = []
     ii = abs(i)
@@ -153,14 +154,14 @@ class Poll(commands.cog.Cog):
           winners.append(answer)
     
     if len(winners) == 0:
-      await msg.channel.send(f"the poll *\"{title}\"* expired with no votes.")
+      await msg.channel.send(self.bot.babel((0, msg.guild.id), 'poll', 'no_winner', title=title))
     elif len(winners) == 1:
-      await msg.channel.send(f"the winner of the *\"{title}\"* poll is **\"{winners[0]}\"**!")
+      await msg.channel.send(self.bot.babel((0, msg.guild.id), 'poll', 'one_winner', title=title, winner=winners[0]))
     else:
       if len(winners) > 2:
         winners.insert(len(winners)-1, 'and')
       winnerstring = '", "'.join(winners).replace(', and,', ' and')
-      await msg.channel.send(f"the {len(winners)} winners of the *\"{title}\"* poll are **\"{winnerstring}\"**!")
+      await msg.channel.send(self.bot.babel((0, msg.guild.id), 'poll', 'multiple_winner', title=title, num=len(winners), winners=winnerstring))
     
     self.bot.config.remove_option('poll', f'{msg.channel.id}_{msg.id}_expiry')
     self.bot.config['poll'][f'{msg.channel.id}_{msg.id}_expiry_expired'] = str(expiry)
@@ -169,24 +170,23 @@ class Poll(commands.cog.Cog):
   @commands.command(aliases=['vote'])
   @commands.guild_only()
   async def poll(self, ctx:commands.Context, *, title:str):
-    """poll (title)
-    creates a poll, you'll be asked to provide answers and when the poll will expire after providing a title"""
+    """poll creation wizard"""
     counter = 300
     answers = []
     votes = []
     embed = self.generate_poll_embed(title, counter, answers, votes)
-    pollmsg = await ctx.send("poll preview:", embed=embed)
+    pollmsg = await ctx.send(self.bot.babel(ctx, 'poll', 'poll_preview'), embed=embed)
 
     done = False
     while not done and len(answers)<10:
-      qmsg = await ctx.send("*reply with an answer to add one.* (reply with '[stop]' at any time to stop adding questions)")
+      qmsg = await ctx.send(self.bot.babel(ctx, 'poll', 'setup1'))
       try:
         reply = await self.bot.wait_for('message', check=lambda m: m.author==ctx.author and m.channel==ctx.channel, timeout=30)
       except asyncio.TimeoutError:
         if len(answers) == 0:
           await pollmsg.delete()
           await qmsg.delete()
-          await ctx.send("poll cancelled.")
+          await ctx.send(self.bot.babel(ctx, 'poll', 'setup_cancelled'))
           return
         else:
           await qmsg.delete()
@@ -196,7 +196,7 @@ class Poll(commands.cog.Cog):
           if len(answers) == 0:
             await pollmsg.delete()
             await qmsg.delete()
-            await ctx.send("poll cancelled.")
+            await ctx.send(self.bot.babel(ctx, 'poll', 'setup_cancelled'))
             return
           else:
             await qmsg.delete()
@@ -211,7 +211,7 @@ class Poll(commands.cog.Cog):
           await qmsg.delete()
           await reply.delete()
       
-    qmsg = await ctx.send("*reply with a number of minutes to set the countdown.*")
+    qmsg = await ctx.send(self.bot.babel(ctx, 'poll', 'setup2'))
     reply = None
     try:
       reply = await self.bot.wait_for('message', check=lambda m: m.author==ctx.author and m.channel==ctx.channel, timeout=30)
@@ -225,11 +225,11 @@ class Poll(commands.cog.Cog):
     await qmsg.delete()
     if reply: await reply.delete()
     if counter == 300:
-      await ctx.send("using the default countdown.")
+      await ctx.send(self.bot.babel(ctx, 'poll', 'setup2_failed'))
     
     await pollmsg.delete()
     embed = self.generate_poll_embed(title, counter, answers, votes)
-    pollmsg = await ctx.send(f"{ctx.author.mention} has started a poll.", embed=embed)
+    pollmsg = await ctx.send(self.bot.babel(ctx, 'poll', 'poll_created', author=ctx.author.mention), embed=embed)
     for emoji in self.emojis[:len(answers)]:
       await pollmsg.add_reaction(emoji)
 

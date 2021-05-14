@@ -40,7 +40,7 @@ class Help(commands.cog.Cog):
         currentlang = self.bot.babel.langs[self.bot.babel.resolve_lang(ctx)[0]]
         for key in currentlang.keys():
           if f'command_{command}_help' in currentlang[key]:
-            docsrc = currentlang[key][f'command_{command}_help']
+            docsrc = self.bot.babel(ctx, key, f'command_{command}_help').splitlines()
             docs = '**'+docsrc[0]+'**'
             if len(docsrc) > 1:
               docs += '\n'+docsrc[1]
@@ -111,19 +111,17 @@ class Help(commands.cog.Cog):
                     value = self.bot.babel(ctx, 'help', 'about_field4_value'),
                     inline = False)
     embed.add_field(name = self.bot.babel(ctx, 'help', 'about_field5_title'),
-                    value = self.bot.babel(ctx, 'help', 'about_field5_value', invite='https://discord.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot&permissions=0'),
+                    value = self.bot.babel(ctx, 'help', 'about_field5_value', invite=f'https://discord.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot&permissions=0'),
                     inline = False)
     
     embed.set_footer(text = self.bot.babel(ctx, 'help', 'creator_footer'),
-                       icon_url = self.bot.user.avatar_url)
+                     icon_url = self.bot.user.avatar_url)
 
     await ctx.send(self.bot.babel(ctx, 'help', 'helpurl_cta') if self.bot.config['help']['helpurl'] else "", embed=embed)
 
   @commands.command(aliases=['changelog','change'])
   async def changes(self, ctx:commands.Context, ver=None):
-    """changes [version]
-    list of changes made to this bot since the most recent update (or a version you specify)
-    [version] defaults to the latest version if the version you specify isn't found"""
+    """lists 15 changelog entries from [ver]"""
     changes = self.bot.config['help']['changelog'].splitlines()
     fchanges = ["**"+i.replace('> ','')+"**" if i.startswith('> ') else i for i in changes]
     versions = {v.replace('> ',''):i for i,v in enumerate(changes) if v.startswith('> ')}
@@ -138,34 +136,33 @@ class Help(commands.cog.Cog):
 
     logurl = self.bot.config['help']['helpurl']+"changes.html#"+ver.replace('.','') if self.bot.config['help']['helpurl'] else None
 
-    embed = discord.Embed(title = f"changelog for {self.bot.config['main']['botname']}",
-                          description = f"list of changes from v{ver}:\n\n{changelog}",
+    embed = discord.Embed(title = self.bot.babel(ctx, 'help', 'changelog_title'),
+                          description = self.bot.babel(ctx, 'help', 'changelog_description', ver=ver) +\
+                                        '\n\n' + changelog,
                           color = int(self.bot.config['main']['themecolor'], 16),
                           url = logurl)
-    embed.set_footer(text = f"{self.bot.config['main']['botname']} v{self.bot.config['main']['ver']} created by {self.bot.config['main']['creator']}",
+    embed.set_footer(text = self.bot.babel(ctx, 'help', 'creator_footer'),
                      icon_url = self.bot.user.avatar_url)
     
-    await ctx.send(f"view the full changelog online: ({logurl})" if logurl else None, embed=embed)
+    await ctx.send(self.bot.babel(ctx, 'help', 'changelog_cta', logurl=logurl) if logurl else None, embed=embed)
 
   @commands.command()
   async def feedback(self, ctx:commands.Context, feedback:str):
-    """feedback (your feedback)
-    send feedback directly to the developer(s)"""
+    #TODO: add image support for screenshots
     if self.bot.config['help']['feedbackchannel']:
       feedbackchannel = await self.bot.fetch_channel(self.bot.config['help']['feedbackchannel'])
       if feedbackchannel:
-        embed = discord.Embed(title = f"feedback from {ctx.author.name}#{ctx.author.discriminator} in {ctx.guild.name}",
+        embed = discord.Embed(title = self.bot.babel(ctx, 'help', 'feedback_title', author=f'{ctx.author.name}#{ctx.author.discriminator}', guild=ctx.guild.name if ctx.guild else ''),
                               description = feedback,
                               color = int(self.bot.config['main']['themecolor'], 16))
         await feedbackchannel.send(embed=embed)
-        await ctx.send("your feedback was sent successfully! you may be reached out to in DMs for further information."+\
-                        f"\n*you can always join the support server ({self.bot.config['help']['serverinv']}) to get help or give feedback more directly.*" if self.bot.config['help']['serverinv'] else '')
+        await ctx.send(self.bot.babel(ctx, 'help', 'feedback_success')+\
+                       ('\n' + self.bot.babel(ctx, 'help', 'feedback_cta')) if self.bot.config['help']['serverinv'] else '')
       else:
-        await ctx.send("feedback doesn't appear to currently be working, please try again later."+\
-                       f"\n*you can always join the support server ({self.bot.config['help']['serverinv']}) to get help or give feedback more directly.*" if self.bot.config['help']['serverinv'] else '')
+        await ctx.send(self.bot.babel(ctx, 'help', 'feedback_failed')+\
+                       ('\n' + self.bot.babel(ctx, 'help', 'feedback_cta')) if self.bot.config['help']['serverinv'] else '')
     else:
-      await ctx.send(f"please join the support server ({self.bot.config['help']['serverinv']}) to get help or give feedback more directly." if self.bot.config['help']['serverinv']\
-                     else f"{self.bot.config['main']['botname']} doesn't currently have a method for recieving feedback or providing support, please check back later.")
+      await ctx.send(self.bot.babel(ctx, 'help', 'feedback_not_implemented', serverinv = self.bot.config['help']['serverinv']))
 
 def setup(bot):
   bot.add_cog(Help(bot))

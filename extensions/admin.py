@@ -30,7 +30,7 @@ class Admin(commands.cog.Cog):
     """janitor service, deletes messages after a time"""
     if f"{message.channel.id}_janitor" in self.bot.config['admin']:
       strict = self.bot.config.getint('admin', f"{message.channel.id}_janitor")
-      if self.check_delete(strict):
+      if self.check_delete(message, strict):
         await asyncio.sleep(30)
         await message.delete()
 

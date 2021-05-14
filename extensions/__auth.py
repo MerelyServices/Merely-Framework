@@ -24,7 +24,7 @@ class Auth(commands.Cog):
          str(str(ctx.message.author.id)) in self.bot.config['auth']['superusers']:
         return True
       else:
-        raise AuthError("you must be a server owner to use this command!")
+        raise AuthError(self.bot.babel(ctx, 'auth', 'unauthorized'))
 
   def admins(self, ctx:commands.Context):
       if ctx.message.author == ctx.message.guild.owner or\
@@ -32,7 +32,7 @@ class Auth(commands.Cog):
          str(ctx.message.author.id) in self.bot.config['auth']['superusers']:
         return True
       else:
-        raise AuthError("you must be an admin to use this command!")
+        raise AuthError(self.bot.babel(ctx, 'auth', 'not_admin'))
 
   def mods(self, ctx:commands.Context):
       if ctx.message.author == ctx.message.guild.owner or\
@@ -42,20 +42,20 @@ class Auth(commands.Cog):
          str(ctx.message.author.id) in self.bot.config['auth']['authusers']:
         return True
       else:
-        raise AuthError("you must be a moderator to use this command!")
+        raise AuthError(self.bot.babel(ctx, 'auth', 'not_mod'))
 
   def superusers(self, ctx:commands.Context):
       if str(ctx.message.author.id) in self.bot.config['auth']['superusers']:
         return True
       else:
-        raise AuthError("you must be a superuser of this bot to use this command!")
+        raise AuthError(self.bot.babel(ctx, 'auth', 'not_superuser'))
 
   def authusers(self, ctx:commands.Context):
       if str(ctx.message.author.id) in self.bot.config['auth']['superusers'] or\
          str(ctx.message.author.id) in self.bot.config['auth']['authusers']:
         return True
       else:
-        raise AuthError("you must be an authuser of this bot to use this command!")
+        raise AuthError(self.bot.babel(ctx, 'auth', 'not_authuser'))
 
 class AuthError(Exception):
   """Errors to be sent to a user that failed an auth test"""
