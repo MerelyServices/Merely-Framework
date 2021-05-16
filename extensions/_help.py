@@ -27,20 +27,25 @@ class Help(commands.cog.Cog):
     if 'changelog' not in bot.config['help']:
       bot.config['help']['changes'] = '> '+bot.config['main']['ver']+'\n- No changes yet!'
   
+  def find_command(self, command:str):
+    for cmd in self.bot.commands:
+      if command == cmd.name or command in cmd.aliases:
+        return cmd
+    return None
+
   @commands.command(aliases=['?','??'])
   async def help(self, ctx:commands.Context, command=None):
     """finds usage information in babel and sends them
     highlights some commands if command is None"""
     
-    ecommands = {c.name for c in self.bot.commands}
-
     if command:
+      matchedcommand = self.find_command(command)
       # return usage information for a specific command
-      if command in ecommands:
+      if matchedcommand:
         currentlang = self.bot.babel.langs[self.bot.babel.resolve_lang(ctx)[0]]
         for key in currentlang.keys():
-          if f'command_{command}_help' in currentlang[key]:
-            docsrc = self.bot.babel(ctx, key, f'command_{command}_help').splitlines()
+          if f'command_{matchedcommand.name}_help' in currentlang[key]:
+            docsrc = self.bot.babel(ctx, key, f'command_{matchedcommand.name}_help', cmd=command).splitlines()
             docs = '**'+docsrc[0]+'**'
             if len(docsrc) > 1:
               docs += '\n'+docsrc[1]
@@ -78,7 +83,7 @@ class Help(commands.cog.Cog):
       for section in sections:
         hcmds = []
         for hcmd in self.bot.config['help'][section.split()[1]+'_highlights'].split(', '):
-          if [l for l in ecommands if hcmd in l]:
+          if self.find_command(hcmd):
             hcmds.append(hcmd)
           else:
             hcmds.append(hcmd+'❌')
