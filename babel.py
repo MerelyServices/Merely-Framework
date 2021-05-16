@@ -69,7 +69,7 @@ class Babel():
     else:
       return langs, dbg_origins
 
-  def __call__(self, ctx:commands.Context, scope:str, key:str, **values):
+  def __call__(self, ctx:Union[commands.Context, tuple], scope:str, key:str, **values):
     reqlangs = self.resolve_lang(ctx)
 
     match = None

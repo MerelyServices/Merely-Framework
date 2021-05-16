@@ -47,20 +47,20 @@ class Greeter(commands.cog.Cog):
   async def welcome_set(self, ctx:commands.Context, *, message:str=''):
     self.auth.admins(ctx)
     if not message:
-      await ctx.send(self.bot.greeter(ctx, 'greeter', 'welcome_set_instructions'))
+      await ctx.send(self.bot.babel(ctx, 'greeter', 'welcome_set_instructions'))
     else:
       self.bot.config['greeter'][f'{ctx.guild.id}_welcome'] = f"{ctx.channel.id}, {message}"
       self.bot.config.save()
-      await ctx.send(self.bot.greeter(ctx, 'greeter', 'welcome_set_success'))
+      await ctx.send(self.bot.babel(ctx, 'greeter', 'welcome_set_success'))
   @welcome.command(name='clear')
   async def welcome_clear(self, ctx:commands.Context):
     self.auth.admins(ctx)
     if f'{ctx.guild.id}_welcome' in self.bot.config['greeter']:
       self.bot.config.remove_option('greeter', f'{ctx.guild.id}_welcome')
       self.bot.config.save()
-      await ctx.send(self.bot.greeter(ctx, 'greeter', 'welcome_clear_success'))
+      await ctx.send(self.bot.babel(ctx, 'greeter', 'welcome_clear_success'))
     else:
-      await ctx.send(self.bot.greeter(ctx, 'greeter', 'welcome_clear_failed'))
+      await ctx.send(self.bot.babel(ctx, 'greeter', 'welcome_clear_failed'))
     
   @commands.group()
   @commands.guild_only()
@@ -79,20 +79,20 @@ class Greeter(commands.cog.Cog):
   async def farewell_set(self, ctx:commands.Context, *, message:str=''):
     self.auth.admins(ctx)
     if not message:
-      await ctx.send(self.bot.greeter(ctx, 'greeter', 'farewell_set_instructions'))
+      await ctx.send(self.bot.babel(ctx, 'greeter', 'farewell_set_instructions'))
     else:
       self.bot.config['greeter'][f'{ctx.guild.id}_farewell'] = f"{ctx.channel.id}, {message}"
       self.bot.config.save()
-      await ctx.send(self.bot.greeter(ctx, 'greeter', 'farewell_set_success'))
+      await ctx.send(self.bot.babel(ctx, 'greeter', 'farewell_set_success'))
   @farewell.command(name='clear')
   async def farewell_clear(self, ctx:commands.Context):
     self.auth.admins(ctx)
     if f'{ctx.guild.id}_farewell' in self.bot.config['greeter']:
       self.bot.config.remove_option('greeter', f'{ctx.guild.id}_farewell')
       self.bot.config.save()
-      await ctx.send(self.bot.greeter(ctx, 'greeter', 'farewell_clear_success'))
+      await ctx.send(self.bot.babel(ctx, 'greeter', 'farewell_clear_success'))
     else:
-      await ctx.send(self.bot.greeter(ctx, 'greeter', 'farewell_clear_failure'))
+      await ctx.send(self.bot.babel(ctx, 'greeter', 'farewell_clear_failure'))
   
 
 def setup(bot):

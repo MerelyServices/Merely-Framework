@@ -161,7 +161,7 @@ class Poll(commands.cog.Cog):
       if len(winners) > 2:
         winners.insert(len(winners)-1, 'and')
       winnerstring = '", "'.join(winners).replace(', and,', ' and')
-      await msg.channel.send(self.bot.babel((0, msg.guild.id), 'poll', 'multiple_winner', title=title, num=len(winners), winners=winnerstring))
+      await msg.channel.send(self.bot.babel((0, msg.guild.id), 'poll', 'multiple_winners', title=title, num=len(winners), winners=winnerstring))
     
     self.bot.config.remove_option('poll', f'{msg.channel.id}_{msg.id}_expiry')
     self.bot.config['poll'][f'{msg.channel.id}_{msg.id}_expiry_expired'] = str(expiry)
