@@ -2,6 +2,7 @@ import discord, asyncio
 from discord.ext import commands
 
 class Admin(commands.cog.Cog):
+  """powerful commands only for administrators"""
   def __init__(self, bot:commands.Bot):
     self.bot = bot
     if not bot.config.getboolean('extensions', 'auth', fallback=False):
@@ -40,7 +41,7 @@ class Admin(commands.cog.Cog):
     """setter / getter for the janitor service"""
 
     if ctx.invoked_subcommand is None:
-      raise commands.MissingRequiredArgument
+      raise commands.BadArgument
     else:
       self.auth.admins(ctx)
   @janitor.command(name='join')
@@ -56,12 +57,10 @@ class Admin(commands.cog.Cog):
 
   @commands.command()
   @commands.guild_only()
-  async def clean(self, ctx:commands.Context, n_or_id:str=None, strict:str=None):
+  async def clean(self, ctx:commands.Context, n_or_id:str, strict:str=None):
     """instant gratification janitor"""
 
-    if n_or_id is None:
-      raise commands.MissingRequiredArgument
-    elif n_or_id.isdigit():
+    if n_or_id.isdigit():
       n = int(n_or_id)
       self.auth.mods(ctx)
       deleted = await ctx.channel.purge(limit=n, check=lambda m:self.check_delete(m, strict))

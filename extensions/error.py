@@ -11,11 +11,11 @@ class Error(commands.cog.Cog):
     if isinstance(error, commands.CommandOnCooldown):
       print("cooldown")
       return
-    elif isinstance(error, commands.CommandNotFound):
-      await ctx.send(self.bot.babel(ctx, 'error', 'commandnotfound'))
-    elif isinstance(error, commands.BadArgument) or isinstance(error, commands.MissingRequiredArgument):
+    elif isinstance(error, commands.CommandNotFound) or\
+         isinstance(error, commands.BadArgument) or\
+         isinstance(error, commands.MissingRequiredArgument):
       if 'Help' in self.bot.cogs:
-        await self.bot.cogs['Help'].help(ctx, ctx.command.name)
+        await self.bot.cogs['Help'].help(ctx, ctx.invoked_with)
       else:
         await ctx.send(self.bot.babel(ctx, 'error', 'missingrequiredargument'))
       return

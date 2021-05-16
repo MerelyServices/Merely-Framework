@@ -5,6 +5,8 @@ from discord.ext import commands
 import os, re
 
 class Babel():
+  """babel is a translation system for discord bots
+  babel gets strings from language files in the babel folder. to create a new language, follow the format."""
   path = 'babel/'
   langs = {}
 

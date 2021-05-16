@@ -3,6 +3,7 @@ from discord.ext import commands
 import re
 
 class Help(commands.cog.Cog):
+  """the user-friendly documentation core"""
   def __init__(self, bot:commands.Bot):
     self.bot = bot
     # ensure config file has required data

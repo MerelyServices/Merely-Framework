@@ -6,6 +6,7 @@ import sys, time, os
 from itertools import groupby
 
 class merelybot(commands.AutoShardedBot):
+	"""this is the core of the merely framework."""
 	config = Config()
 	babel = Babel(config)
 

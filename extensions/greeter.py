@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 
 class Greeter(commands.cog.Cog):
+  """setup custom messages to send on an event"""
   def __init__(self, bot:commands.Bot):
     self.bot = bot
     if not bot.config.getboolean('extensions', 'auth', fallback=False):
@@ -35,7 +36,7 @@ class Greeter(commands.cog.Cog):
   async def welcome(self, ctx:commands.Context):
     """welcome setter / getter"""
     if ctx.invoked_subcommand is None:
-      raise commands.MissingRequiredArgument('get|set|clear')
+      raise commands.BadArgument
   @welcome.command(name='get')
   async def welcome_get(self, ctx:commands.Context):
     if f'{ctx.guild.id}_welcome' in self.bot.config['greeter']:
@@ -67,7 +68,7 @@ class Greeter(commands.cog.Cog):
   async def farewell(self, ctx:commands.Context):
     """getter / setter for farewell"""
     if ctx.invoked_subcommand is None:
-      raise commands.MissingRequiredArgument('get|set|clear')
+      raise commands.BadArgument
   @farewell.command(name='get')
   async def farewell_get(self, ctx:commands.Context):
     if f'{ctx.guild.id}_farewell' in self.bot.config['greeter']:

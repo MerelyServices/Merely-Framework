@@ -3,9 +3,8 @@ from shutil import copy
 from os import path,makedirs,remove
 import time
 
-
-""" Loads the config file automatically """
 class Config(ConfigParser):
+  """loads the config file automatically and ensures it's in valid shape"""
   path = "config/"
   file = "config/config.ini"
   template = "config/config.factory.ini"
@@ -43,8 +42,6 @@ class Config(ConfigParser):
       self['main']['botname'] = 'merely framework bot'
     if 'themecolor' not in self['main']:
       self['main']['themecolor'] = '0x0'
-    if 'description' not in self['main']:
-      self['main']['description'] = ''
     if 'voteurl' not in self['main']:
       self['main']['voteurl'] = ''
     if 'beta' not in self['main']:
