@@ -97,6 +97,36 @@ if __name__ == '__main__':
 		""")
 	else:
 		bot = merelybot()
+
+		@bot.command()
+		async def reload(ctx:commands.Context, module:str=None):
+			if ctx.bot.config.getboolean('extensions', 'allow_reloading'):
+				if 'Auth' in ctx.bot.cogs:
+					ctx.bot.cogs['Auth'].superusers(ctx)
+					extensions = [e.replace('extensions.','').strip('_') for e in ctx.bot.extensions.keys()] + ['config', 'babel']
+					if module is None:
+						await ctx.send(ctx.bot.babel(ctx, 'main', 'extensions_list', list='\n'.join(extensions)))
+						return
+					module = module.lower()
+					if module in extensions:
+						extcandidate = [ext for ext in ctx.bot.extensions.keys() if ext.replace('extensions.','').strip('_') == module]
+						if extcandidate:
+							ext = extcandidate[0]
+							ctx.bot.reload_extension(ext)
+							await ctx.send(ctx.bot.babel(ctx, 'main', 'extension_reload_success', extension=module))
+						elif module=='config':
+							ctx.bot.config.reload()
+							await ctx.send(ctx.bot.babel(ctx, 'main', 'extension_reload_success', extension=module))
+						elif module=='babel':
+							ctx.bot.babel.reload()
+							await ctx.send(ctx.bot.babel(ctx, 'main', 'extension_reload_success', extension=module))
+						else:
+							await ctx.send(ctx.bot.babel(ctx, 'main', 'extension_file_missing'))
+					else:
+						await ctx.send(ctx.bot.babel(ctx, 'main', 'extension_not_found'))
+				else:
+					raise Exception("'Auth' is a required extension in order to use reload.")
+
 		tokenlabel = 'Merely' if not bot.config.getboolean('main','beta') else 'MerelyBeta'
 		token = os.environ.get(tokenlabel)
 		if token is not None:

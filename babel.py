@@ -12,7 +12,10 @@ class Babel():
 
   def __init__(self, config:ConfigParser):
     self.config = config
-    self.baselang = config.get('language', 'default', fallback='en')
+    self.load()
+  
+  def load(self):
+    self.baselang = self.config.get('language', 'default', fallback='en')
 
     if os.path.isfile(self.path):
       os.remove(self.path)
@@ -30,6 +33,10 @@ class Babel():
         self.langs[langname].set('meta', 'language', langname)
         with open(self.path+langfile, 'w', encoding='utf-8') as f:
           self.langs[langname].write(f)
+  
+  def reload(self):
+    self.langs = {}
+    self.load()
 
   def resolve_lang(self, ctx:Union[commands.Context, tuple], debug=False):
     langs = []

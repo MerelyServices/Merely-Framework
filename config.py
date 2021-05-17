@@ -90,6 +90,8 @@ class Config(ConfigParser):
       self['intents']['dm_typing'] = 'False'
     if 'extensions' not in self.sections():
       self.add_section('extensions')
+    if 'allow_reloading' not in self['extensions']:
+      self['extensions']['allow_reloading'] = 'True'
     if 'language' not in self.sections():
       self.add_section('language')
     if 'default' not in self['language']:
@@ -105,3 +107,8 @@ class Config(ConfigParser):
       copy(self.file, self.path+'config_history/'+time.strftime("%m-%y")+'/config-'+time.strftime("%H:%M.%S-%d-%m-%y")+'.ini')
     with open(self.file, 'w', encoding='utf-8') as f:
       ConfigParser.write(self, f)
+  
+  def reload(self):
+    for section in self.sections():
+      self.remove_section(section)
+    self.load()
