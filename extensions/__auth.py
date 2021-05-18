@@ -17,7 +17,7 @@ class Auth(commands.Cog):
   async def check_autherror(self, ctx:commands.Context, error):
     if isinstance(error, commands.errors.CommandInvokeError):
       if error.original is AuthError:
-        await ctx.send(str(error.original))
+        await ctx.reply(str(error.original))
 
   def owners(self, ctx:commands.Context):
       if ctx.message.author == ctx.message.guild.owner or\

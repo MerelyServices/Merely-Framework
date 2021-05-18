@@ -81,13 +81,13 @@ class ReactRoles(commands.cog.Cog):
     """react role setup interface"""
     self.auth.admins(ctx)
 
-    target = await ctx.send(prompt)
+    target = await ctx.reply(prompt)
     tmp = None
 
     emojis = []
     try:
       while len(emojis) < 10:
-        tmp = await ctx.send(self.bot.babel(ctx, 'reactroles', 'setup1', canstop=len(emojis) > 0))
+        tmp = await ctx.reply(self.bot.babel(ctx, 'reactroles', 'setup1', canstop=len(emojis) > 0))
         reaction, _ = await self.bot.wait_for('reaction_add', check=lambda r, u: u==ctx.author and r.message == target, timeout=30)
 
         if reaction.emoji not in emojis:
@@ -98,7 +98,7 @@ class ReactRoles(commands.cog.Cog):
             pass
           await tmp.delete()
 
-          tmp = await ctx.send(self.bot.babel(ctx, 'reactroles', 'setup2', emoji=str(reaction.emoji)))
+          tmp = await ctx.reply(self.bot.babel(ctx, 'reactroles', 'setup2', emoji=str(reaction.emoji)))
           msg = await self.bot.wait_for('message', check=lambda m: m.channel == ctx.channel and m.author == ctx.author and len(m.role_mentions) > 0, timeout=30)
           emojiid = reaction.emoji if isinstance(reaction.emoji, str) else str(reaction.emoji.id)
           self.bot.config['reactroles'][f"{ctx.channel.id}_{target.id}_{emojiid}_roles"] = ' '.join([str(r.id) for r in msg.role_mentions])
@@ -112,7 +112,7 @@ class ReactRoles(commands.cog.Cog):
           except:
             pass
           await tmp.delete()
-          tmp = await ctx.send(self.bot.babel(ctx, 'reactroles', 'setup2_repeat'))
+          tmp = await ctx.reply(self.bot.babel(ctx, 'reactroles', 'setup2_repeat'))
           await asyncio.sleep(5)
           await tmp.delete()
 
@@ -123,16 +123,16 @@ class ReactRoles(commands.cog.Cog):
           if tmp is not None: await tmp.delete()
         except:
           pass
-        await ctx.send(self.bot.babel(ctx, 'reactroles', 'setup_cancel'))
+        await ctx.reply(self.bot.babel(ctx, 'reactroles', 'setup_cancel'))
       else:
         try:
           await tmp.delete()
         except:
           pass
-        await ctx.send(self.bot.babel(ctx, 'reactroles', 'setup_success'))
+        await ctx.reply(self.bot.babel(ctx, 'reactroles', 'setup_success'))
         self.watching.append(target)
     else:
-      await ctx.send(self.bot.babel(ctx, 'reactroles', 'setup_success'))
+      await ctx.reply(self.bot.babel(ctx, 'reactroles', 'setup_success'))
       self.watching.append(target)
     self.bot.config.save()
 

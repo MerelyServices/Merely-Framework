@@ -9,12 +9,12 @@ class Example(commands.cog.Cog):
       bot.config.add_section('example')
   
   @commands.Cog.listener()
-  async def on_member_join(self, member):
+  async def on_member_join(self, member:discord.Member):
     print(f"{member.name} has joined!")
   
   @commands.command()
   async def example(self, ctx:commands.Context, *, echo:str):
-    await ctx.send(echo)
+    await ctx.reply(echo)
 
 def setup(bot):
   bot.add_cog(Example(bot))

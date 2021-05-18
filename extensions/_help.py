@@ -53,22 +53,22 @@ class Help(commands.cog.Cog):
             if len(docsrc) > 2:
               for line in docsrc[2:]:
                 docs += '\n*'+line+'*'
-            await ctx.send(docs)
+            await ctx.reply(docs)
             break
         else:
-          await ctx.send(self.bot.babel(ctx, 'help', 'no_docs'))
+          await ctx.reply(self.bot.babel(ctx, 'help', 'no_docs'))
       else:
         if command in self.bot.config['help']['future_commands'].split(', '):
-          await ctx.send(self.bot.babel(ctx, 'help', 'future_command'))
+          await ctx.reply(self.bot.babel(ctx, 'help', 'future_command'))
         elif command in self.bot.config['help']['obsolete_commands'].split(', '):
-          await ctx.send(self.bot.babel(ctx, 'help', 'obsolete_command'))
+          await ctx.reply(self.bot.babel(ctx, 'help', 'obsolete_command'))
         elif command in re.split(r', |>', self.bot.config['help']['moved_commands']):
           moves = re.split(r', |>', self.bot.config['help']['moved_commands'])
           target = moves.index(command)
           if target % 2 == 0:
-            await ctx.send(self.bot.babel(ctx, 'help', 'moved_command', cmd=moves[target + 1]))
+            await ctx.reply(self.bot.babel(ctx, 'help', 'moved_command', cmd=moves[target + 1]))
         else:
-          await ctx.send(self.bot.babel(ctx, 'help', 'no_command'))
+          await ctx.reply(self.bot.babel(ctx, 'help', 'no_command'))
 
     else:
       # show the generic help embed with a variety of featured commands
@@ -93,7 +93,7 @@ class Help(commands.cog.Cog):
       embed.set_footer(text = self.bot.babel(ctx, 'help', 'creator_footer'),
                        icon_url = self.bot.user.avatar_url)
       
-      await ctx.send(self.bot.babel(ctx, 'help', 'helpurl_cta') if self.bot.config['help']['helpurl'] else "", embed=embed)
+      await ctx.reply(self.bot.babel(ctx, 'help', 'helpurl_cta') if self.bot.config['help']['helpurl'] else "", embed=embed)
 
   @commands.command(aliases=['info','invite'])
   async def about(self, ctx:commands.Context):
@@ -123,7 +123,7 @@ class Help(commands.cog.Cog):
     embed.set_footer(text = self.bot.babel(ctx, 'help', 'creator_footer'),
                      icon_url = self.bot.user.avatar_url)
 
-    await ctx.send(self.bot.babel(ctx, 'help', 'helpurl_cta') if self.bot.config['help']['helpurl'] else "", embed=embed)
+    await ctx.reply(self.bot.babel(ctx, 'help', 'helpurl_cta') if self.bot.config['help']['helpurl'] else "", embed=embed)
 
   @commands.command(aliases=['changelog','change'])
   async def changes(self, ctx:commands.Context, ver=None):
@@ -150,7 +150,7 @@ class Help(commands.cog.Cog):
     embed.set_footer(text = self.bot.babel(ctx, 'help', 'creator_footer'),
                      icon_url = self.bot.user.avatar_url)
     
-    await ctx.send(self.bot.babel(ctx, 'help', 'changelog_cta', logurl=logurl) if logurl else None, embed=embed)
+    await ctx.reply(self.bot.babel(ctx, 'help', 'changelog_cta', logurl=logurl) if logurl else None, embed=embed)
 
   @commands.command()
   async def feedback(self, ctx:commands.Context, feedback:str):
@@ -162,13 +162,13 @@ class Help(commands.cog.Cog):
                               description = feedback,
                               color = int(self.bot.config['main']['themecolor'], 16))
         await feedbackchannel.send(embed=embed)
-        await ctx.send(self.bot.babel(ctx, 'help', 'feedback_success')+\
+        await ctx.reply(self.bot.babel(ctx, 'help', 'feedback_success')+\
                        ('\n' + self.bot.babel(ctx, 'help', 'feedback_cta')) if self.bot.config['help']['serverinv'] else '')
       else:
-        await ctx.send(self.bot.babel(ctx, 'help', 'feedback_failed')+\
+        await ctx.reply(self.bot.babel(ctx, 'help', 'feedback_failed')+\
                        ('\n' + self.bot.babel(ctx, 'help', 'feedback_cta')) if self.bot.config['help']['serverinv'] else '')
     else:
-      await ctx.send(self.bot.babel(ctx, 'help', 'feedback_not_implemented', serverinv = self.bot.config['help']['serverinv']))
+      await ctx.reply(self.bot.babel(ctx, 'help', 'feedback_not_implemented', serverinv = self.bot.config['help']['serverinv']))
 
 def setup(bot):
   bot.add_cog(Help(bot))

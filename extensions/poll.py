@@ -175,18 +175,18 @@ class Poll(commands.cog.Cog):
     answers = []
     votes = []
     embed = self.generate_poll_embed(title, counter, answers, votes)
-    pollmsg = await ctx.send(self.bot.babel(ctx, 'poll', 'poll_preview'), embed=embed)
+    pollmsg = await ctx.reply(self.bot.babel(ctx, 'poll', 'poll_preview'), embed=embed)
 
     done = False
     while not done and len(answers)<10:
-      qmsg = await ctx.send(self.bot.babel(ctx, 'poll', 'setup1'))
+      qmsg = await ctx.reply(self.bot.babel(ctx, 'poll', 'setup1'))
       try:
         reply = await self.bot.wait_for('message', check=lambda m: m.author==ctx.author and m.channel==ctx.channel, timeout=30)
       except asyncio.TimeoutError:
         if len(answers) == 0:
           await pollmsg.delete()
           await qmsg.delete()
-          await ctx.send(self.bot.babel(ctx, 'poll', 'setup_cancelled'))
+          await ctx.reply(self.bot.babel(ctx, 'poll', 'setup_cancelled'))
           return
         else:
           await qmsg.delete()
@@ -196,7 +196,7 @@ class Poll(commands.cog.Cog):
           if len(answers) == 0:
             await pollmsg.delete()
             await qmsg.delete()
-            await ctx.send(self.bot.babel(ctx, 'poll', 'setup_cancelled'))
+            await ctx.reply(self.bot.babel(ctx, 'poll', 'setup_cancelled'))
             return
           else:
             await qmsg.delete()
@@ -211,7 +211,7 @@ class Poll(commands.cog.Cog):
           await qmsg.delete()
           await reply.delete()
       
-    qmsg = await ctx.send(self.bot.babel(ctx, 'poll', 'setup2'))
+    qmsg = await ctx.reply(self.bot.babel(ctx, 'poll', 'setup2'))
     reply = None
     try:
       reply = await self.bot.wait_for('message', check=lambda m: m.author==ctx.author and m.channel==ctx.channel, timeout=30)
@@ -225,11 +225,11 @@ class Poll(commands.cog.Cog):
     await qmsg.delete()
     if reply: await reply.delete()
     if counter == 300:
-      await ctx.send(self.bot.babel(ctx, 'poll', 'setup2_failed'))
+      await ctx.reply(self.bot.babel(ctx, 'poll', 'setup2_failed'))
     
     await pollmsg.delete()
     embed = self.generate_poll_embed(title, counter, answers, votes)
-    pollmsg = await ctx.send(self.bot.babel(ctx, 'poll', 'poll_created', author=ctx.author.mention), embed=embed)
+    pollmsg = await ctx.reply(self.bot.babel(ctx, 'poll', 'poll_created', author=ctx.author.mention), embed=embed)
     for emoji in self.emojis[:len(answers)]:
       await pollmsg.add_reaction(emoji)
 

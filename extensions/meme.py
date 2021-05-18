@@ -8,7 +8,7 @@ class Meme(commands.cog.Cog):
   
   @commands.command()
   async def meme(self, ctx:commands.Context):
-    await ctx.send(self.bot.babel(ctx, 'meme', 'moving_news'))
+    await ctx.reply(self.bot.babel(ctx, 'meme', 'moving_news'))
 
 def setup(bot):
   bot.add_cog(Meme(bot))

@@ -17,14 +17,14 @@ class Error(commands.cog.Cog):
       if 'Help' in self.bot.cogs:
         await self.bot.cogs['Help'].help(ctx, ctx.invoked_with)
       else:
-        await ctx.send(self.bot.babel(ctx, 'error', 'missingrequiredargument'))
+        await ctx.reply(self.bot.babel(ctx, 'error', 'missingrequiredargument'))
       return
     elif isinstance(error, commands.NoPrivateMessage):
-      await ctx.send(self.bot.babel(ctx, 'error', 'noprivatemessage'))
+      await ctx.reply(self.bot.babel(ctx, 'error', 'noprivatemessage'))
     elif isinstance(error, commands.PrivateMessageOnly):
-      await ctx.send(self.bot.babel(ctx, 'error', 'privatemessageonly'))
+      await ctx.reply(self.bot.babel(ctx, 'error', 'privatemessageonly'))
     elif isinstance(error, commands.CommandInvokeError):
-      await ctx.send(self.bot.babel(ctx, 'error', 'commanderror'))
+      await ctx.reply(self.bot.babel(ctx, 'error', 'commanderror'))
     raise error
 
 def setup(bot):

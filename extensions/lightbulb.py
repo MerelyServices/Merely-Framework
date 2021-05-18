@@ -98,17 +98,17 @@ class Lightbulb(commands.cog.Cog):
     if str(ctx.guild.id) not in self.bot.config.get('lightbulb', 'opt_in', fallback='').split():
       self.bot.config['lightbulb']['opt_in'] += str(ctx.guild.id) + ' '
       self.bot.config.save()
-      await ctx.send(self.bot.babel(ctx, 'lightbulb', 'enable_success'))
+      await ctx.reply(self.bot.babel(ctx, 'lightbulb', 'enable_success'))
     else:
-      await ctx.send(self.bot.babel(ctx, 'lightbulb', 'already_enabled'))
+      await ctx.reply(self.bot.babel(ctx, 'lightbulb', 'already_enabled'))
   @lightbulb.command(name='disable')
   async def lightbulb_disable(self, ctx:commands.Context):
     if str(ctx.guild.id) in self.bot.config.get('lightbulb', 'opt_in', fallback='').split():
       self.bot.config['lightbulb']['opt_in'] = self.bot.config.get('lightbulb', 'opt_in').replace(str(ctx.guild.id) + ' ', '')
       self.bot.config.save()
-      await ctx.send(self.bot.babel(ctx, 'lightbulb', 'disable_success'))
+      await ctx.reply(self.bot.babel(ctx, 'lightbulb', 'disable_success'))
     else:
-      await ctx.send(self.bot.babel(ctx, 'lightbulb', 'already_disabled'))
+      await ctx.reply(self.bot.babel(ctx, 'lightbulb', 'already_disabled'))
 
 def setup(bot):
   bot.add_cog(Lightbulb(bot))

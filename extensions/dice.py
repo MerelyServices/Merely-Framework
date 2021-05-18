@@ -7,7 +7,7 @@ class Dice(commands.cog.Cog):
   def __init__(self, bot:commands.Bot):
     self.bot = bot
 
-  @commands.command(alias='roll')
+  @commands.command(aliases=['roll'])
   async def dice(self, ctx:commands.Context, *numbers):
     """rolls one more many n-sided die"""
     if len(numbers) == 0:
@@ -19,7 +19,7 @@ class Dice(commands.cog.Cog):
       if n.isdigit():
         r = random.choice(range(1, int(n) + 1))
         rolls.append(self.bot.babel(ctx, 'dice', 'roll_result', i=i + 1, r=r))
-    await ctx.send('\n'.join(rolls))
+    await ctx.reply('\n'.join(rolls))
 
 def setup(bot):
   bot.add_cog(Dice(bot))

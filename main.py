@@ -9,6 +9,7 @@ class merelybot(commands.AutoShardedBot):
 	"""this is the core of the merely framework."""
 	config = Config()
 	babel = Babel(config)
+	verbose = False
 
 	intents = discord.Intents.none()
 	intents.guilds = config.getboolean('intents', 'guilds')
@@ -32,7 +33,7 @@ class merelybot(commands.AutoShardedBot):
 
 	case_insensitive = True
 
-	def __init__(self):
+	def __init__(self, **kwargs):
 		print(f"""
 		merely framework{' beta' if self.config['main']['beta'] else ''} v{self.config['main']['ver']}
 		currently named {self.config['main']['botname']} by config, uses {self.config['main']['prefix_short']}
@@ -44,6 +45,9 @@ class merelybot(commands.AutoShardedBot):
 
 		sys.stdout = Logger()
 		sys.stderr = Logger(err=True)
+
+		if 'verbose' in kwargs:
+			self.verbose = kwargs['verbose']
 
 		prefixes = ()
 		if self.config['main']['prefix_short']:
@@ -96,34 +100,38 @@ if __name__ == '__main__':
 		-v,--verbose		enables verbose logging
 		""")
 	else:
-		bot = merelybot()
+		bot = merelybot(verbose=bool(set(['-v','--verbose']) & set(sys.argv)))
 
 		@bot.command()
 		async def reload(ctx:commands.Context, module:str=None):
-			if ctx.bot.config.getboolean('extensions', 'allow_reloading'):
-				if 'Auth' in ctx.bot.cogs:
-					ctx.bot.cogs['Auth'].superusers(ctx)
-					extensions = [e.replace('extensions.','').strip('_') for e in ctx.bot.extensions.keys()] + ['config', 'babel']
+			if bot.config.getboolean('extensions', 'allow_reloading'):
+				if 'Auth' in bot.cogs:
+					bot.cogs['Auth'].superusers(ctx)
+					extensions = [e.replace('extensions.','').strip('_') for e in bot.extensions.keys()] + ['config', 'babel']
 					if module is None:
-						await ctx.send(ctx.bot.babel(ctx, 'main', 'extensions_list', list='\n'.join(extensions)))
+						await ctx.reply(bot.babel(ctx, 'main', 'extensions_list', list='\n'.join(extensions)))
 						return
 					module = module.lower()
 					if module in extensions:
-						extcandidate = [ext for ext in ctx.bot.extensions.keys() if ext.replace('extensions.','').strip('_') == module]
+						extcandidate = [ext for ext in bot.extensions.keys() if ext.replace('extensions.','').strip('_') == module]
 						if extcandidate:
 							ext = extcandidate[0]
-							ctx.bot.reload_extension(ext)
-							await ctx.send(ctx.bot.babel(ctx, 'main', 'extension_reload_success', extension=module))
+							bot.reload_extension(ext)
+							if module.capitalize() in bot.cogs:
+								for listener in bot.cogs[module.capitalize()].get_listeners():
+									if listener[0] == 'on_ready':
+										await listener[1]()
+							await ctx.reply(bot.babel(ctx, 'main', 'extension_reload_success', extension=module))
 						elif module=='config':
-							ctx.bot.config.reload()
-							await ctx.send(ctx.bot.babel(ctx, 'main', 'extension_reload_success', extension=module))
+							bot.config.reload()
+							await ctx.reply(bot.babel(ctx, 'main', 'extension_reload_success', extension=module))
 						elif module=='babel':
-							ctx.bot.babel.reload()
-							await ctx.send(ctx.bot.babel(ctx, 'main', 'extension_reload_success', extension=module))
+							bot.babel.reload()
+							await ctx.reply(bot.babel(ctx, 'main', 'extension_reload_success', extension=module))
 						else:
-							await ctx.send(ctx.bot.babel(ctx, 'main', 'extension_file_missing'))
+							await ctx.reply(bot.babel(ctx, 'main', 'extension_file_missing'))
 					else:
-						await ctx.send(ctx.bot.babel(ctx, 'main', 'extension_not_found'))
+						await ctx.reply(bot.babel(ctx, 'main', 'extension_not_found'))
 				else:
 					raise Exception("'Auth' is a required extension in order to use reload.")
 

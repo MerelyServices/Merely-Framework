@@ -16,9 +16,9 @@ class Emoji(commands.cog.Cog):
   async def emoji(self, ctx:commands.Context, *, emojiname:str):
     matches = [e for e in self.bot.emojis if emojiname.replace(':','') == e.name]
     if matches:
-      await ctx.send(matches[0])
+      await ctx.reply(matches[0])
     else:
-      await ctx.send(self.bot.babel(ctx, 'emoji', 'not_found'))
+      await ctx.reply(self.bot.babel(ctx, 'emoji', 'not_found'))
   
   @commands.command()
   async def emojicmd(self, ctx:commands.Context):
@@ -33,7 +33,7 @@ class Emoji(commands.cog.Cog):
         template = templates[names.index(ctx.invoked_with)]
         server = int(servers[names.index(ctx.invoked_with)])
         emojipool = [e for e in self.bot.emojis if e.guild_id == server and re.match(template, e.name) and e.is_usable()]
-        await ctx.send(random.choice(emojipool))
+        await ctx.reply(random.choice(emojipool))
 
 def setup(bot):
   bot.add_cog(Emoji(bot))

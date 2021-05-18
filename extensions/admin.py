@@ -48,12 +48,12 @@ class Admin(commands.cog.Cog):
   async def janitor_join(self, ctx:commands.Context, strict=''):
     self.bot.config['admin'][f'{ctx.channel.id}_janitor'] = '1' if strict else '0'
     self.bot.config.save()
-    await ctx.send(self.bot.babel(ctx, 'admin', 'janitor_set_success'))
+    await ctx.reply(self.bot.babel(ctx, 'admin', 'janitor_set_success'))
   @janitor.command(name='leave')
   async def janitor_leave(self, ctx:commands.Context):
     self.bot.config.remove_option('admin', f'{ctx.channel.id}_janitor')
     self.bot.config.save()
-    await ctx.send(self.bot.babel(ctx, 'admin', 'janitor_unset_success'))
+    await ctx.reply(self.bot.babel(ctx, 'admin', 'janitor_unset_success'))
 
   @commands.command()
   @commands.guild_only()
@@ -64,7 +64,7 @@ class Admin(commands.cog.Cog):
       n = int(n_or_id)
       self.auth.mods(ctx)
       deleted = await ctx.channel.purge(limit=n, check=lambda m:self.check_delete(m, strict))
-      await ctx.send(self.bot.babel(ctx, 'admin', 'clean_success', n=len(deleted)))
+      await ctx.reply(self.bot.babel(ctx, 'admin', 'clean_success', n=len(deleted)))
     elif '-' in n_or_id:
       start,end = n_or_id.split('-')
       start,end = int(start),int(end)
@@ -74,13 +74,13 @@ class Admin(commands.cog.Cog):
                                         check=lambda m: m.id>start and m.id<end and self.check_delete(m, strict),
                                         before=discord.Object(end),
                                         after=discord.Object(start))
-      await ctx.send(self.bot.babel(ctx, 'admin', 'clean_success', n=len(deleted)))
+      await ctx.reply(self.bot.babel(ctx, 'admin', 'clean_success', n=len(deleted)))
 
   @commands.command()
   @commands.cooldown(1, 1)
   async def die(self, ctx:commands.Context, saveconfig=False):
     self.auth.superusers(ctx)
-    await ctx.send(self.bot.babel(ctx, 'admin', 'die_success'))
+    await ctx.reply(self.bot.babel(ctx, 'admin', 'die_success'))
     if saveconfig:
       self.bot.config.save()
     await self.bot.close()
