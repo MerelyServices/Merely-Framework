@@ -43,6 +43,13 @@ class Log(commands.cog.Cog):
       print(logentry)
       if self.logchannel:
         await self.logchannel.send(logentry, embed=response.embeds[0] if response.embeds else None)
+  
+  @commands.Cog.listener('on_command_error')
+  async def report_error(self, ctx:commands.Context, error):
+    logentry = self.wrap(ctx.message) + '\ncaused an error:```'+str(error)+'```'
+    print(logentry)
+    if self.logchannel:
+      await self.logchannel.send(logentry)
 
 def setup(bot):
   bot.add_cog(Log(bot))
