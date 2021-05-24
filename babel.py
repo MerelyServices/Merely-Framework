@@ -12,6 +12,8 @@ class Babel():
 
   def __init__(self, config:ConfigParser):
     self.config = config
+    self.conditional = re.compile(r'{([a-z]*?)\?(.*?)\|(.*?)}')
+    self.configreference = re.compile(r'{c\:([a-z_]*?)\/([a-z_]*?)}')
     self.load()
   
   def load(self):
@@ -98,7 +100,7 @@ class Babel():
       match = match.replace('{'+k+'}', str(v))
     
     # Fill in conditionals
-    conditionalqueries = re.findall(r'{([a-z]*)\?(.*)\|(.*)}', match)
+    conditionalqueries = self.conditional.findall(match)
     for conditionalquery in conditionalqueries:
       if conditionalquery[0] in values:
         if values[conditionalquery[0]]:
@@ -108,7 +110,7 @@ class Babel():
         match=match.replace('{'+conditionalquery[0]+'?'+conditionalquery[1]+'|'+conditionalquery[2]+'}', replace)
 
     # Fill in config queries
-    configqueries = re.findall(r'{c\:([a-z_]*)\/([a-z_]*)}', match)
+    configqueries = self.configreference.findall(match)
     for configquery in configqueries:
       if configquery[0] in self.config:
         if configquery[1] in self.config[configquery[0]]:

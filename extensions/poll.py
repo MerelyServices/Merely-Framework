@@ -175,7 +175,7 @@ class Poll(commands.cog.Cog):
     answers = []
     votes = []
     embed = self.generate_poll_embed(title, counter, answers, votes)
-    pollmsg = await ctx.reply(self.bot.babel(ctx, 'poll', 'poll_preview'), embed=embed)
+    pollmsg = await ctx.send(self.bot.babel(ctx, 'poll', 'poll_preview'), embed=embed)
 
     done = False
     while not done and len(answers)<10:
