@@ -14,6 +14,7 @@ class Babel():
     self.config = config
     self.conditional = re.compile(r'{([a-z]*?)\?(.*?)\|(.*?)}')
     self.configreference = re.compile(r'{c\:([a-z_]*?)\/([a-z_]*?)}')
+    self.prefixreference = re.compile(r'{p\:(local|global)}')
     self.load()
   
   def load(self):
@@ -98,6 +99,15 @@ class Babel():
     # Fill in values in the string
     for k,v in values.items():
       match = match.replace('{'+k+'}', str(v))
+    
+    # Fill in prefixes
+    prefixqueries = self.prefixreference.findall(match)
+    for prefixquery in prefixqueries:
+      print(prefixquery)
+      if prefixquery == 'local' and isinstance(ctx.channel, discord.TextChannel):
+        match = match.replace('{p:'+prefixquery+'}', self.config.get('prefix', str(ctx.guild.id), fallback=self.config['main']['prefix_short']))
+      else:
+        match = match.replace('{p:'+prefixquery+'}', self.config['main']['prefix_short'])
     
     # Fill in conditionals
     conditionalqueries = self.conditional.findall(match)

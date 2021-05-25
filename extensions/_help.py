@@ -72,9 +72,13 @@ class Help(commands.cog.Cog):
 
     else:
       # show the generic help embed with a variety of featured commands
+      if str(ctx.channel.guild.id) in self.bot.config['prefix'] and len(self.bot.config['prefix'][str(ctx.channel.guild.id)]):
+        longprefix = None
+      else:
+        longprefix = self.bot.config['main']['prefix_long']
       embed = discord.Embed(title = f"{self.bot.config['main']['botname']} help",
                             description = self.bot.babel(ctx, 'help', 'introduction',
-                                                         longprefix = self.bot.config['main']['prefix_long'],
+                                                         longprefix = longprefix,
                                                          videoexamples = self.bot.config.getboolean('help','helpurlvideoexamples'),
                                                          serverinv = self.bot.config['help']['serverinv']),
                             color = int(self.bot.config['main']['themecolor'], 16),

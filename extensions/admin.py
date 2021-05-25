@@ -11,10 +11,6 @@ class Admin(commands.cog.Cog):
     # ensure config file has required data
     if not bot.config.has_section('admin'):
       bot.config.add_section('admin')
-    if 'logchannel' not in bot.config['admin']:
-      bot.config['admin']['logchannel'] = ''
-    if 'owneroptout' not in bot.config['admin']:
-      bot.config['admin']['owneroptout'] = ''
 
   def check_delete(self, message:discord.Message, strict:bool=False):
     return strict or\

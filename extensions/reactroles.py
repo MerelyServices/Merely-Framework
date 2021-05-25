@@ -57,7 +57,8 @@ class ReactRoles(commands.cog.Cog):
   @commands.Cog.listener("on_raw_reaction_remove")
   async def reactrole_remove(self, data:discord.RawReactionActionEvent):
     if data.guild_id:
-      member = self.bot.get_guild(data.guild_id).get_member(data.user_id)
+      guild = await self.bot.fetch_guild(data.guild_id)
+      member = guild.get_member(data.user_id)
       emojiid = data.emoji if data.emoji.is_unicode_emoji() else data.emoji.id
       if f"{data.channel_id}_{data.message_id}_{emojiid}_roles" in self.bot.config['reactroles']:
         channel = await self.bot.fetch_channel(data.channel_id)
@@ -68,7 +69,7 @@ class ReactRoles(commands.cog.Cog):
             roles.append(channel.guild.get_role(roleid))
           except Exception as e:
             print("failed to get role for reactrole: "+str(e))
-        await data.member.send(self.bot.babel((data.member.id, data.guild_id), 'reactroles', 'role_taken', roles=', '.join([role.name for role in roles])))
+        await member.send(self.bot.babel((member.id, data.guild_id), 'reactroles', 'role_taken', roles=', '.join([role.name for role in roles])))
         await member.remove_roles(*roles, reason='reactroles')
   
   async def catchup(self):
