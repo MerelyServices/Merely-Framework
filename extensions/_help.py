@@ -43,9 +43,9 @@ class Help(commands.cog.Cog):
       matchedcommand = self.find_command(command)
       # return usage information for a specific command
       if matchedcommand:
-        currentlang = self.bot.babel.langs[self.bot.babel.resolve_lang(ctx)[0]]
-        for key in currentlang.keys():
-          if f'command_{matchedcommand.name}_help' in currentlang[key]:
+        reflang = self.bot.babel.langs[self.bot.babel.baselang]
+        for key in reflang.keys():
+          if f'command_{matchedcommand.name}_help' in reflang[key]:
             docsrc = self.bot.babel(ctx, key, f'command_{matchedcommand.name}_help', cmd=command).splitlines()
             docs = '**'+docsrc[0]+'**'
             if len(docsrc) > 1:
@@ -82,7 +82,7 @@ class Help(commands.cog.Cog):
                                                          videoexamples = self.bot.config.getboolean('help','helpurlvideoexamples'),
                                                          serverinv = self.bot.config['help']['serverinv']),
                             color = int(self.bot.config['main']['themecolor'], 16),
-                            url = self.bot.config['help']['helpurl'] if self.bot.config['help']['helpurl'] else None)
+                            url = self.bot.config['help']['helpurl'] if self.bot.config['help']['helpurl'] else '')
       
       sections = self.bot.config['help']['highlight_sections'].split(', ')
       for section in sections:
@@ -106,7 +106,7 @@ class Help(commands.cog.Cog):
     embed = discord.Embed(title = self.bot.babel(ctx, 'help', 'about_title'),
                           description = self.bot.babel(ctx, 'help', 'bot_description'),
                           color = int(self.bot.config['main']['themecolor'], 16),
-                          url = self.bot.config['help']['helpurl'] if self.bot.config['help']['helpurl'] else None)
+                          url = self.bot.config['help']['helpurl'] if self.bot.config['help']['helpurl'] else '')
     
     embed.add_field(name = self.bot.babel(ctx, 'help', 'about_field1_title'),
                     value = self.bot.babel(ctx, 'help', 'about_field1_value', cmds=len(self.bot.commands), guilds=len(self.bot.guilds)),
@@ -144,7 +144,7 @@ class Help(commands.cog.Cog):
     changelog = '\n'.join(fchanges[start:end])
     if end < len(fchanges): changelog += "\n..."
 
-    logurl = self.bot.config['help']['helpurl']+"changes.html#"+ver.replace('.','') if self.bot.config['help']['helpurl'] else None
+    logurl = self.bot.config['help']['helpurl']+"changes.html#"+ver.replace('.','') if self.bot.config['help']['helpurl'] else ''
 
     embed = discord.Embed(title = self.bot.babel(ctx, 'help', 'changelog_title'),
                           description = self.bot.babel(ctx, 'help', 'changelog_description', ver=ver) +\

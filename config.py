@@ -96,6 +96,8 @@ class Config(ConfigParser):
       self.add_section('language')
     if 'default' not in self['language']:
       self['language']['default'] = 'en'
+    if 'prefix' not in self['language']:
+      self['language']['prefix'] = 'en'
     if 'contribute_url' not in self['language']:
       self['language']['contribute_url'] = ''
     self.save()

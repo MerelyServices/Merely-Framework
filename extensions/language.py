@@ -42,6 +42,7 @@ class Language(commands.cog.Cog):
     if re.match(r'[a-z]{2}(-[A-Z]{2})?$', langcode) is None:
       await ctx.reply(self.bot.babel(ctx, 'language', 'set_failed_invalid_pattern'))
     else:
+      langcode = self.bot.config.get('language', 'prefix', fallback='')+langcode
       if isinstance(ctx.channel, discord.abc.PrivateChannel) or not ctx.author.guild_permissions.administrator:
         usermode = True
         self.bot.config.set('language', str(ctx.author.id), langcode)
