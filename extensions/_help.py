@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+import asyncio
 import re
 
 class Help(commands.cog.Cog):
@@ -9,6 +10,8 @@ class Help(commands.cog.Cog):
     # ensure config file has required data
     if not bot.config.has_section('help'):
       bot.config.add_section('help')
+    if 'customstatus' not in bot.config['help']:
+      bot.config['help']['customstatus'] = ''
     if 'helpurl' not in bot.config['help']:
       bot.config['help']['helpurl'] = ''
     if 'helpurlvideoexamples' not in bot.config['help']:
@@ -27,7 +30,24 @@ class Help(commands.cog.Cog):
       bot.config['help']['obsolete_commands'] = ''
     if 'changelog' not in bot.config['help']:
       bot.config['help']['changes'] = '> '+bot.config['main']['ver']+'\n- No changes yet!'
+    
+    asyncio.ensure_future(self.set_status())
   
+  @commands.Cog.listener('on_ready')
+  async def set_status(self, status:discord.Status=None, message:str=None):
+    if self.bot.is_ready():
+      if message is None:
+        if self.bot.config['help']['customstatus']:
+          message = self.bot.config['help']['customstatus']
+        else:
+          message = self.bot.config['main']['prefix_short']+'help'
+      status = discord.Status.online if status is None else status
+      activity = discord.Game(message)
+      await self.bot.change_presence(status=status, activity=activity)
+    else:
+      # make the bot appear offline if it isn't ready to handle commands
+      await self.bot.change_presence(status=discord.Status.offline)
+
   def find_command(self, command:str):
     for cmd in self.bot.commands:
       if command == cmd.name or command in cmd.aliases:
@@ -76,7 +96,7 @@ class Help(commands.cog.Cog):
         longprefix = None
       else:
         longprefix = self.bot.config['main']['prefix_long']
-      embed = discord.Embed(title = f"{self.bot.config['main']['botname']} help",
+      embed = discord.Embed(title = self.bot.babel(ctx, 'help', 'help_title'),
                             description = self.bot.babel(ctx, 'help', 'introduction',
                                                          longprefix = longprefix,
                                                          videoexamples = self.bot.config.getboolean('help','helpurlvideoexamples'),
@@ -97,6 +117,7 @@ class Help(commands.cog.Cog):
       embed.set_footer(text = self.bot.babel(ctx, 'help', 'creator_footer'),
                        icon_url = self.bot.user.avatar_url)
       
+      #TODO: add voteurl callout from time to time
       await ctx.reply(self.bot.babel(ctx, 'help', 'helpurl_cta') if self.bot.config['help']['helpurl'] else "", embed=embed)
 
   @commands.command(aliases=['info','invite'])

@@ -44,6 +44,13 @@ class Log(commands.cog.Cog):
       if self.logchannel:
         await self.logchannel.send(logentry, embed=response.embeds[0] if response.embeds else None)
   
+  async def log_misc(self, msg:discord.Message):
+    """This version is intended to be called externally from other modules that react to more than just commands."""
+    logentry = self.wrap(msg)
+    print(logentry)
+    if self.logchannel:
+      await self.logchannel.send(logentry, embed=msg.embeds[0] if msg.embeds else None)
+
   @commands.Cog.listener('on_command_error')
   async def report_error(self, ctx:commands.Context, error):
     logentry = self.wrap(ctx.message) + '\ncaused an error:```'+str(error)+'```'
