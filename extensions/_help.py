@@ -23,8 +23,8 @@ class Help(commands.cog.Cog):
       bot.config['help']['feedbackchannel'] = ''
     if 'highlight_sections' not in bot.config['help']:
       bot.config['help']['highlight_sections'] = '💡 learn'
-    if 'learn_highlights' not in bot.config['help']:
-      bot.config['help']['learn_highlights'] = 'help'
+      if 'learn_highlights' not in bot.config['help']:
+        bot.config['help']['learn_highlights'] = 'help'
     if 'future_commands' not in bot.config['help']:
       bot.config['help']['future_commands'] = ''
     if 'obsolete_commands' not in bot.config['help']:

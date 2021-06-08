@@ -35,7 +35,7 @@ class merelybot(commands.AutoShardedBot):
 
 	def __init__(self, **kwargs):
 		print(f"""
-		merely framework{' beta' if self.config['main']['beta'] else ''} v{self.config['main']['ver']}
+		merely framework{' beta' if self.config.getboolean('main', 'beta') else ''} v{self.config['main']['ver']}
 		currently named {self.config['main']['botname']} by config, uses {self.config['main']['prefix_short']}
 		created by Yiays#5930. https://github.com/yiays/merelybot
 		""")
@@ -52,7 +52,7 @@ class merelybot(commands.AutoShardedBot):
 		prefixes = ()
 		if self.config['main']['prefix_short']:
 			prefixes += (self.config['main']['prefix_short']+' ', self.config['main']['prefix_short'])
-		if self.config['main']['prefix_long']: prefixes += (self.config['main']['prefix_long']+' ')
+		if self.config['main']['prefix_long']: prefixes += (self.config['main']['prefix_long']+' ',)
 
 		super().__init__(command_prefix = commands.when_mentioned_or(*prefixes),
 										 help_command = None,
