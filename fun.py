@@ -100,7 +100,7 @@ class Fun(commands.Cog):
 			
 			cmd = list(filter(None,[x.strip(' ') for x in msg.split(' ')]))
 			timelimit=time.time()+300 #5 minutes default
-			if cmd[-1].isdigit() and 1<=int(cmd[-1])<=180:
+			if cmd[-1].isdigit():
 				timelimit = time.time()+int(cmd[-1])*60
 				cmd=cmd[:-1]
 			

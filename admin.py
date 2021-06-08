@@ -9,7 +9,7 @@ import emformat, help
 
 class Admin(commands.Cog):
 	"""Admin related commands."""
-	def __init__(self, bot):
+	def __init__(self, bot : commands.Bot):
 		self.bot = bot
 	
 	def printlist(self,list,n,limit):
