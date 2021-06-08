@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import asyncio
 import re
+from typing import Union
 
 class Help(commands.cog.Cog):
   """the user-friendly documentation core"""
@@ -54,39 +55,54 @@ class Help(commands.cog.Cog):
         return cmd
     return None
 
-  @commands.command(aliases=['?','??'])
-  async def help(self, ctx:commands.Context, command=None):
-    """finds usage information in babel and sends them
-    highlights some commands if command is None"""
-    
-    if command:
-      matchedcommand = self.find_command(command)
-      # return usage information for a specific command
-      if matchedcommand:
-        reflang = self.bot.babel.langs[self.bot.babel.baselang]
+  def get_docs(self, ctx:Union[commands.Context,tuple], cmd:str):
+    matchedcommand = self.find_command(cmd)
+    # return usage information for a specific command
+    if matchedcommand:
+      for reflang in self.bot.babel.resolve_lang(ctx):
+        reflang = self.bot.babel.langs[reflang]
         for key in reflang.keys():
           if f'command_{matchedcommand.name}_help' in reflang[key]:
-            docsrc = self.bot.babel(ctx, key, f'command_{matchedcommand.name}_help', cmd=command).splitlines()
+            docsrc = self.bot.babel(ctx, key, f'command_{matchedcommand.name}_help', cmd=cmd).splitlines()
             docs = '**'+docsrc[0]+'**'
             if len(docsrc) > 1:
               docs += '\n'+docsrc[1]
             if len(docsrc) > 2:
               for line in docsrc[2:]:
                 docs += '\n*'+line+'*'
-            await ctx.reply(docs)
-            break
-        else:
-          await ctx.reply(self.bot.babel(ctx, 'help', 'no_docs'))
+            return docs
+    return None
+
+  @commands.command(aliases=['?','??'])
+  async def help(self, ctx:commands.Context, command:str=None):
+    """finds usage information in babel and sends them
+    highlights some commands if command is None"""
+    
+    if command:
+      docs = self.get_docs(ctx, command)
+      if docs is not None:
+        # we found the documentation
+        await ctx.reply(docs)
+      elif self.find_command(command) is not None:
+        # the command definitely exists, but there's no documentation
+        await ctx.reply(self.bot.babel(ctx, 'help', 'no_docs'))
       else:
+        # the command doesn't exist right now, figure out why.
         if command in self.bot.config['help']['future_commands'].split(', '):
+          # this command will be coming soon according to config
           await ctx.reply(self.bot.babel(ctx, 'help', 'future_command'))
         elif command in self.bot.config['help']['obsolete_commands'].split(', '):
+          # this command is obsolete according to config
           await ctx.reply(self.bot.babel(ctx, 'help', 'obsolete_command'))
         elif command in re.split(r', |>', self.bot.config['help']['moved_commands']):
+          # this command has been renamed and requires a new syntax
           moves = re.split(r', |>', self.bot.config['help']['moved_commands'])
           target = moves.index(command)
           if target % 2 == 0:
             await ctx.reply(self.bot.babel(ctx, 'help', 'moved_command', cmd=moves[target + 1]))
+          else:
+            print(f"WARNING: bad config. in help/moved_command: {moves[target-1]} is now {moves[target]} but {moves[target]} doesn't exist.")
+            await ctx.reply(self.bot.babel(ctx, 'help', 'no_command'))
         else:
           await ctx.reply(self.bot.babel(ctx, 'help', 'no_command'))
 
