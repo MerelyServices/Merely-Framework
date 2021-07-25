@@ -1,4 +1,5 @@
 import discord
+from discord.channel import TextChannel
 from discord.ext import commands
 import asyncio
 import re
@@ -108,7 +109,8 @@ class Help(commands.cog.Cog):
 
     else:
       # show the generic help embed with a variety of featured commands
-      if str(ctx.channel.guild.id) in self.bot.config['prefix'] and len(self.bot.config['prefix'][str(ctx.channel.guild.id)]):
+      if str(ctx.channel.recipient.id if isinstance(ctx.channel, discord.DMChannel) else ctx.channel.guild.id) in self.bot.config['prefix'] and\
+         len(self.bot.config['prefix'][str(ctx.channel.guild.id)]):
         longprefix = None
       else:
         longprefix = self.bot.config['main']['prefix_long']

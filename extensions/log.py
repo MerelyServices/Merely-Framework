@@ -53,7 +53,7 @@ class Log(commands.cog.Cog):
 
   @commands.Cog.listener('on_command_error')
   async def report_error(self, ctx:commands.Context, error):
-    logentry = self.wrap(ctx.message) + '\ncaused an error:```'+str(error)+'```'
+    logentry = 'caused an error:```'+str(error)+'```'
     print(logentry)
     if self.logchannel:
       await self.logchannel.send(logentry)

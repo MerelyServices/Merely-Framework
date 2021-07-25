@@ -1,5 +1,7 @@
 import discord, asyncio
 from discord.ext import commands
+from io import StringIO
+from contextlib import redirect_stdout
 
 class Admin(commands.cog.Cog):
   """powerful commands only for administrators"""
@@ -31,6 +33,7 @@ class Admin(commands.cog.Cog):
         await asyncio.sleep(30)
         await message.delete()
 
+  #TODO move janitor and clean to an automod extension
   @commands.group()
   @commands.guild_only()
   async def janitor(self, ctx:commands.Context):
@@ -71,6 +74,22 @@ class Admin(commands.cog.Cog):
                                         before=discord.Object(end),
                                         after=discord.Object(start))
       await ctx.reply(self.bot.babel(ctx, 'admin', 'clean_success', n=len(deleted)))
+
+  #TODO move exec and die to a debug extension
+  @commands.command(aliases=['eval'])
+  async def exec(self, ctx, *, code:str):
+    self.auth.superusers(ctx)
+    
+    f = StringIO()
+    with redirect_stdout(f):
+      try:
+        exec('async def __asyncfunc(self, ctx, bot):\n' + '\n'.join('  '+l for l in code.replace('```py', '').replace('```', '').splitlines()))
+        await locals()['__asyncfunc'](self, ctx, self.bot)
+      except Exception as e:
+        await ctx.reply('An error occured: ```py\n'+str(e)+'```')
+        return
+    
+    await ctx.reply('```py\n'+f.getvalue()+'```')
 
   @commands.command()
   @commands.cooldown(1, 1)

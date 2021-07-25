@@ -19,7 +19,7 @@ you can read the up-to-date changelog [here](https://merely.yiays.com/changes.ht
 
 ## usage
  - clone the project to a folder
- - install python <=3.6
+ - install python <=3.9
  - install required python packages with `python3 -m pip install -r requirements.txt`
  - create a discord bot in the [Discord Developer Portal](https://discordapp.com/developers/applications/), you will need the token to continue
  - give merelybot the token by setting it in the [main] section of the config.
