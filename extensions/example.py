@@ -1,5 +1,5 @@
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 
 class Example(commands.cog.Cog):
   def __init__(self, bot:commands.Bot):
@@ -9,7 +9,7 @@ class Example(commands.cog.Cog):
       bot.config.add_section('example')
   
   @commands.Cog.listener()
-  async def on_member_join(self, member:discord.Member):
+  async def on_member_join(self, member:nextcord.Member):
     print(f"{member.name} has joined!")
   
   @commands.command()

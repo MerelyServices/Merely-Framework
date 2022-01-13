@@ -1,3 +1,2 @@
-git+https://github.com/Rapptz/discord.py
+nextcord>=2.0.0a6
 asyncio
-

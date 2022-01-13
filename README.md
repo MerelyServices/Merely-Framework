@@ -2,7 +2,7 @@
 # merelybot
 ![Python build status](https://github.com/yiays/merely/workflows/merelybot/badge.svg?branch=master)
 
-**merely is a framework for discord bots buit atop of discord.py**, merely is incredibly modular, multilingual, and supports live-reloading of extensions, translations, and config files! get started with the code on this repo, which provides a nice template config file and some example extensions that I use to make merely a useful bot on my own [discord server](https://discord.gg/wfKx24kDUR).
+**merely is a framework for discord bots buit atop of nextcord**, merely is incredibly modular, multilingual, and supports live-reloading of extensions, translations, and config files! get started with the code on this repo, which provides a nice template config file and some example extensions that I use to make merely a useful bot on my own [discord server](https://discord.gg/wfKx24kDUR).
 
 > *the web extension provides an API powering this website;*
 > [visit the webUI >](https://merely.yiays.com/)
@@ -42,7 +42,7 @@ the best way to contribute is to create your own discord bot using this framewor
 merely is a highly customizable and extensible discord bot. through the config file, people can create their own discord bots by enabling and disabling extensions, changing the bot name and prefix. other developers can even write their own extensions.
 
 ### code structure
-extensions need to be able to be entirely independant of each other and should rarely need to communicate with each other. extensions must inherit from the [discord.py ext.commands.Cog](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#cogs) class. effort should be made to avoid clashes with existing commands, preferably by using subcommands. [extensions/example.py](extensions/example.py) should demonstrate all of this.
+extensions need to be able to be entirely independant of each other and should rarely need to communicate with each other. extensions must inherit from the [nextcord ext.commands.Cog](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#cogs) class. effort should be made to avoid clashes with existing commands, preferably by using subcommands. [extensions/example.py](extensions/example.py) should demonstrate all of this.
 
 ### file structure
 extensions are placed in the extensions folder, from there, they will be added to the config and can be enabled.

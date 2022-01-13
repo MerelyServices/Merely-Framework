@@ -1,5 +1,5 @@
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 
 class Greeter(commands.cog.Cog):
   """setup custom messages to send on an event"""
