@@ -131,7 +131,7 @@ class Help(commands.cog.Cog):
         embed.add_field(name = section, value = '```'+', '.join(hcmds)+'```', inline = False)
 
       embed.set_footer(text = self.bot.babel(ctx, 'help', 'creator_footer'),
-                       icon_url = self.bot.user.avatar_url)
+                       icon_url = self.bot.user.avatar.url)
       
       #TODO: add voteurl callout from time to time
       await ctx.reply(self.bot.babel(ctx, 'help', 'helpurl_cta') if self.bot.config['help']['helpurl'] else "", embed=embed)
@@ -158,11 +158,11 @@ class Help(commands.cog.Cog):
                     value = self.bot.babel(ctx, 'help', 'about_field4_value'),
                     inline = False)
     embed.add_field(name = self.bot.babel(ctx, 'help', 'about_field5_title'),
-                    value = self.bot.babel(ctx, 'help', 'about_field5_value', invite=f'https://nextcord.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot&permissions=0'),
+                    value = self.bot.babel(ctx, 'help', 'about_field5_value', invite=f'https://discord.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot&permissions=0'),
                     inline = False)
     
     embed.set_footer(text = self.bot.babel(ctx, 'help', 'creator_footer'),
-                     icon_url = self.bot.user.avatar_url)
+                     icon_url = self.bot.user.avatar.url)
 
     await ctx.reply(self.bot.babel(ctx, 'help', 'helpurl_cta') if self.bot.config['help']['helpurl'] else "", embed=embed)
 
@@ -189,7 +189,7 @@ class Help(commands.cog.Cog):
                           color = int(self.bot.config['main']['themecolor'], 16),
                           url = logurl)
     embed.set_footer(text = self.bot.babel(ctx, 'help', 'creator_footer'),
-                     icon_url = self.bot.user.avatar_url)
+                     icon_url = self.bot.user.avatar.url)
     
     await ctx.reply(self.bot.babel(ctx, 'help', 'changelog_cta', logurl=logurl) if logurl else None, embed=embed)
 
