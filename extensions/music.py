@@ -1,9 +1,9 @@
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 
 musicbot_commands = []
 
-class Music(commands.cog.Cog):
+class Music(commands.Cog):
   """ Promotes a musicbot whenever people try to use this bot for music (unless they already have it) """
   def __init__(self, bot:commands.Bot):
     self.bot = bot

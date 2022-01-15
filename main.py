@@ -1,5 +1,5 @@
-import discord
-from discord.ext import commands 
+import nextcord
+from nextcord.ext import commands 
 from config import Config
 from babel import Babel
 import sys, time, os
@@ -11,7 +11,7 @@ class merelybot(commands.AutoShardedBot):
 	babel = Babel(config)
 	verbose = False
 
-	intents = discord.Intents.none()
+	intents = nextcord.Intents.none()
 	intents.guilds = config.getboolean('intents', 'guilds')
 	intents.members = config.getboolean('intents', 'members')
 	intents.bans = config.getboolean('intents', 'bans')
@@ -103,39 +103,6 @@ if __name__ == '__main__':
 		""")
 	else:
 		bot = merelybot(verbose=bool(set(['-v','--verbose']) & set(sys.argv)))
-
-		@bot.command()
-		async def reload(ctx:commands.Context, module:str=None):
-			if bot.config.getboolean('extensions', 'allow_reloading'):
-				if 'Auth' in bot.cogs:
-					bot.cogs['Auth'].superusers(ctx)
-					extensions = [e.replace('extensions.','').strip('_') for e in bot.extensions.keys()] + ['config', 'babel']
-					if module is None:
-						await ctx.reply(bot.babel(ctx, 'main', 'extensions_list', list='\n'.join(extensions)))
-						return
-					module = module.lower()
-					if module in extensions:
-						extcandidate = [ext for ext in bot.extensions.keys() if ext.replace('extensions.','').strip('_') == module]
-						if extcandidate:
-							ext = extcandidate[0]
-							bot.reload_extension(ext)
-							if module.capitalize() in bot.cogs:
-								for listener in bot.cogs[module.capitalize()].get_listeners():
-									if listener[0] == 'on_ready':
-										await listener[1]()
-							await ctx.reply(bot.babel(ctx, 'main', 'extension_reload_success', extension=module))
-						elif module=='config':
-							bot.config.reload()
-							await ctx.reply(bot.babel(ctx, 'main', 'extension_reload_success', extension=module))
-						elif module=='babel':
-							bot.babel.reload()
-							await ctx.reply(bot.babel(ctx, 'main', 'extension_reload_success', extension=module))
-						else:
-							await ctx.reply(bot.babel(ctx, 'main', 'extension_file_missing'))
-					else:
-						await ctx.reply(bot.babel(ctx, 'main', 'extension_not_found'))
-				else:
-					raise Exception("'Auth' is a required extension in order to use reload.")
 
 		token = bot.config.get('main', 'token', fallback=None)
 		if token is not None:

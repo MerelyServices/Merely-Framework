@@ -1,11 +1,10 @@
-import discord
-from discord.channel import TextChannel
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 import asyncio
 import re
 from typing import Union
 
-class Help(commands.cog.Cog):
+class Help(commands.Cog):
   """the user-friendly documentation core"""
   def __init__(self, bot:commands.Bot):
     self.bot = bot
@@ -24,8 +23,8 @@ class Help(commands.cog.Cog):
       bot.config['help']['feedbackchannel'] = ''
     if 'highlight_sections' not in bot.config['help']:
       bot.config['help']['highlight_sections'] = '💡 learn'
-      if 'learn_highlights' not in bot.config['help']:
-        bot.config['help']['learn_highlights'] = 'help'
+    if 'learn_highlights' not in bot.config['help']:
+      bot.config['help']['learn_highlights'] = 'help'
     if 'future_commands' not in bot.config['help']:
       bot.config['help']['future_commands'] = ''
     if 'obsolete_commands' not in bot.config['help']:
@@ -34,21 +33,21 @@ class Help(commands.cog.Cog):
       bot.config['help']['changes'] = '> '+bot.config['main']['ver']+'\n- No changes yet!'
     
     asyncio.ensure_future(self.set_status())
-  
+    
   @commands.Cog.listener('on_ready')
-  async def set_status(self, status:discord.Status=None, message:str=None):
+  async def set_status(self, status:nextcord.Status=None, message:str=None):
     if self.bot.is_ready():
       if message is None:
         if self.bot.config['help']['customstatus']:
           message = self.bot.config['help']['customstatus']
         else:
           message = self.bot.config['main']['prefix_short']+'help'
-      status = discord.Status.online if status is None else status
-      activity = discord.Game(message)
+      status = nextcord.Status.online if status is None else status
+      activity = nextcord.Game(message)
       await self.bot.change_presence(status=status, activity=activity)
     else:
       # make the bot appear offline if it isn't ready to handle commands
-      await self.bot.change_presence(status=discord.Status.offline)
+      await self.bot.change_presence(status=nextcord.Status.offline)
 
   def find_command(self, command:str):
     for cmd in self.bot.commands:
@@ -109,12 +108,12 @@ class Help(commands.cog.Cog):
 
     else:
       # show the generic help embed with a variety of featured commands
-      if str(ctx.channel.recipient.id if isinstance(ctx.channel, discord.DMChannel) else ctx.channel.guild.id) in self.bot.config['prefix'] and\
+      if str(ctx.author.id if isinstance(ctx.channel, nextcord.DMChannel) else ctx.channel.guild.id) in self.bot.config['prefix'] and\
          len(self.bot.config['prefix'][str(ctx.channel.guild.id)]):
         longprefix = None
       else:
         longprefix = self.bot.config['main']['prefix_long']
-      embed = discord.Embed(title = self.bot.babel(ctx, 'help', 'help_title'),
+      embed = nextcord.Embed(title = f"{self.bot.config['main']['botname']} help",
                             description = self.bot.babel(ctx, 'help', 'introduction',
                                                          longprefix = longprefix,
                                                          videoexamples = self.bot.config.getboolean('help','helpurlvideoexamples'),
@@ -133,16 +132,15 @@ class Help(commands.cog.Cog):
         embed.add_field(name = section, value = '```'+', '.join(hcmds)+'```', inline = False)
 
       embed.set_footer(text = self.bot.babel(ctx, 'help', 'creator_footer'),
-                       icon_url = self.bot.user.avatar_url)
+                       icon_url = self.bot.user.avatar.url)
       
-      #TODO: add voteurl callout from time to time
       await ctx.reply(self.bot.babel(ctx, 'help', 'helpurl_cta') if self.bot.config['help']['helpurl'] else "", embed=embed)
 
   @commands.command(aliases=['info','invite'])
   async def about(self, ctx:commands.Context):
     """information about this bot, including an invite link"""
 
-    embed = discord.Embed(title = self.bot.babel(ctx, 'help', 'about_title'),
+    embed = nextcord.Embed(title = self.bot.babel(ctx, 'help', 'about_title'),
                           description = self.bot.babel(ctx, 'help', 'bot_description'),
                           color = int(self.bot.config['main']['themecolor'], 16),
                           url = self.bot.config['help']['helpurl'] if self.bot.config['help']['helpurl'] else '')
@@ -164,7 +162,7 @@ class Help(commands.cog.Cog):
                     inline = False)
     
     embed.set_footer(text = self.bot.babel(ctx, 'help', 'creator_footer'),
-                     icon_url = self.bot.user.avatar_url)
+                     icon_url = self.bot.user.avatar.url)
 
     await ctx.reply(self.bot.babel(ctx, 'help', 'helpurl_cta') if self.bot.config['help']['helpurl'] else "", embed=embed)
 
@@ -185,13 +183,13 @@ class Help(commands.cog.Cog):
 
     logurl = self.bot.config['help']['helpurl']+"changes.html#"+ver.replace('.','') if self.bot.config['help']['helpurl'] else ''
 
-    embed = discord.Embed(title = self.bot.babel(ctx, 'help', 'changelog_title'),
+    embed = nextcord.Embed(title = self.bot.babel(ctx, 'help', 'changelog_title'),
                           description = self.bot.babel(ctx, 'help', 'changelog_description', ver=ver) +\
                                         '\n\n' + changelog,
                           color = int(self.bot.config['main']['themecolor'], 16),
                           url = logurl)
     embed.set_footer(text = self.bot.babel(ctx, 'help', 'creator_footer'),
-                     icon_url = self.bot.user.avatar_url)
+                     icon_url = self.bot.user.avatar.url)
     
     await ctx.reply(self.bot.babel(ctx, 'help', 'changelog_cta', logurl=logurl) if logurl else None, embed=embed)
 
@@ -201,7 +199,7 @@ class Help(commands.cog.Cog):
     if self.bot.config['help']['feedbackchannel']:
       feedbackchannel = await self.bot.fetch_channel(self.bot.config['help']['feedbackchannel'])
       if feedbackchannel:
-        embed = discord.Embed(title = self.bot.babel(ctx, 'help', 'feedback_title', author=f'{ctx.author.name}#{ctx.author.discriminator}', guild=ctx.guild.name if ctx.guild else ''),
+        embed = nextcord.Embed(title = self.bot.babel(ctx, 'help', 'feedback_title', author=f'{ctx.author.name}#{ctx.author.discriminator}', guild=ctx.guild.name if ctx.guild else ''),
                               description = feedback,
                               color = int(self.bot.config['main']['themecolor'], 16))
         await feedbackchannel.send(embed=embed)

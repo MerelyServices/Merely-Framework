@@ -1,25 +1,22 @@
-import discord, asyncio
-from discord.ext import commands
-from io import StringIO
-from contextlib import redirect_stdout
+import nextcord, asyncio
+from nextcord.ext import commands
 
-class Admin(commands.cog.Cog):
+class Admin(commands.Cog):
   """powerful commands only for administrators"""
   def __init__(self, bot:commands.Bot):
     self.bot = bot
     if not bot.config.getboolean('extensions', 'auth', fallback=False):
       raise Exception("'auth' must be enabled to use 'admin'")
-    self.auth = bot.cogs['Auth']
     # ensure config file has required data
     if not bot.config.has_section('admin'):
       bot.config.add_section('admin')
 
-  def check_delete(self, message:discord.Message, strict:bool=False):
+  def check_delete(self, message:nextcord.Message, strict:bool=False):
     return strict or\
       (message.author==self.bot.user or\
       message.content.lower().startswith(self.bot.config['main']['prefix_short']) or\
       message.content.startswith('<@'+str(self.bot.user.id)+'>') or\
-      message.type == discord.MessageType.pins_add or\
+      message.type == nextcord.MessageType.pins_add or\
       (self.bot.config['main']['prefix_long'] and\
       message.content.lower().startswith(self.bot.config['main']['prefix_long']))
       )
@@ -33,7 +30,6 @@ class Admin(commands.cog.Cog):
         await asyncio.sleep(30)
         await message.delete()
 
-  #TODO move janitor and clean to an automod extension
   @commands.group()
   @commands.guild_only()
   async def janitor(self, ctx:commands.Context):
@@ -42,7 +38,7 @@ class Admin(commands.cog.Cog):
     if ctx.invoked_subcommand is None:
       raise commands.BadArgument
     else:
-      self.auth.admins(ctx)
+      self.bot.cogs['Auth'].admins(ctx)
   @janitor.command(name='join')
   async def janitor_join(self, ctx:commands.Context, strict=''):
     self.bot.config['admin'][f'{ctx.channel.id}_janitor'] = '1' if strict else '0'
@@ -61,44 +57,19 @@ class Admin(commands.cog.Cog):
 
     if n_or_id.isdigit():
       n = int(n_or_id)
-      self.auth.mods(ctx)
+      self.bot.cogs['Auth'].mods(ctx)
       deleted = await ctx.channel.purge(limit=n, check=lambda m:self.check_delete(m, strict))
       await ctx.reply(self.bot.babel(ctx, 'admin', 'clean_success', n=len(deleted)))
     elif '-' in n_or_id:
       start,end = n_or_id.split('-')
       start,end = int(start),int(end)
-      self.auth.mods(ctx)
+      self.bot.cogs['Auth'].mods(ctx)
       if start>end: start,end = end,start
       deleted = await ctx.channel.purge(limit=1000,
                                         check=lambda m: m.id>start and m.id<end and self.check_delete(m, strict),
-                                        before=discord.Object(end),
-                                        after=discord.Object(start))
+                                        before=nextcord.Object(end),
+                                        after=nextcord.Object(start))
       await ctx.reply(self.bot.babel(ctx, 'admin', 'clean_success', n=len(deleted)))
-
-  #TODO move exec and die to a debug extension
-  @commands.command(aliases=['eval'])
-  async def exec(self, ctx, *, code:str):
-    self.auth.superusers(ctx)
-    
-    f = StringIO()
-    with redirect_stdout(f):
-      try:
-        exec('async def __asyncfunc(self, ctx, bot):\n' + '\n'.join('  '+l for l in code.replace('```py', '').replace('```', '').splitlines()))
-        await locals()['__asyncfunc'](self, ctx, self.bot)
-      except Exception as e:
-        await ctx.reply('An error occured: ```py\n'+str(e)+'```')
-        return
-    
-    await ctx.reply('```py\n'+f.getvalue()+'```')
-
-  @commands.command()
-  @commands.cooldown(1, 1)
-  async def die(self, ctx:commands.Context, saveconfig=False):
-    self.auth.superusers(ctx)
-    await ctx.reply(self.bot.babel(ctx, 'admin', 'die_success'))
-    if saveconfig:
-      self.bot.config.save()
-    await self.bot.close()
 
 
 def setup(bot):

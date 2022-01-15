@@ -1,8 +1,8 @@
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 import asyncio
 
-class Premium(commands.cog.Cog):
+class Premium(commands.Cog):
   def __init__(self, bot:commands.Bot):
     self.bot = bot
     # ensure config file has required data
@@ -22,21 +22,21 @@ class Premium(commands.cog.Cog):
        not bot.config['premium']['premium_roles']:
       bot.config['premium']['premium_role_guild'] = ''
       bot.config['premium']['premium_roles'] = ''
-      raise Exception("You must provide a reference to a guild and role in order for premium to work!")
+      raise Exception("You must provide a reference to a guild and at least one role in order for premium to work!")
     if not bot.config.get('help', 'serverinv', fallback=''):
       raise Exception("You must have an invite to the support server with the supporter role in config[help][serverinv]!")
     bot.add_check(self.check_premium_command)
 
   #TODO: fetch the premium guild on ready
 
-  def check_premium(self, user:discord.User):
+  def check_premium(self, user:nextcord.User):
     premiumguild = self.bot.get_guild(self.bot.config.getint('premium', 'premium_role_guild'))
     premiumroles = [premiumguild.get_role(int(i)) for i in self.bot.config.get('premium', 'premium_roles').split(' ')]
     if not premiumroles:
       raise Exception("The designated premium role was not found!")
     
     member = premiumguild.get_member(user.id)
-    if isinstance(member, discord.Member):
+    if isinstance(member, nextcord.Member):
       return list(set(premiumroles) & set(member.roles))
     else:
       return False
@@ -46,7 +46,7 @@ class Premium(commands.cog.Cog):
       if self.check_premium(ctx.author):
         return True # user is premium
       else:
-        embed = discord.Embed(title=self.bot.babel(ctx, 'premium', 'required_title'),
+        embed = nextcord.Embed(title=self.bot.babel(ctx, 'premium', 'required_title'),
                               description=self.bot.babel(ctx, 'premium', 'required_error'))
         embed.url = self.bot.config['premium']['patreon'] if self.bot.config['premium']['patreon'] else self.bot.config['premium']['other']
         embed.set_thumbnail(url=self.bot.config['premium']['icon'])
@@ -57,7 +57,7 @@ class Premium(commands.cog.Cog):
   
   @commands.command(aliases=['support'])
   async def premium(self, ctx:commands.Context):
-    embed = discord.Embed(title=self.bot.babel(ctx, 'premium', 'name'),
+    embed = nextcord.Embed(title=self.bot.babel(ctx, 'premium', 'name'),
                           description=self.bot.babel(ctx, 'premium', 'desc'))
     
     embed.url = self.bot.config['premium']['patreon'] if self.bot.config['premium']['patreon'] else self.bot.config['premium']['other']

@@ -1,5 +1,5 @@
-import discord
-from discord.ext import commands
+import nextcord
+from nextcord.ext import commands
 
 class Auth(commands.Cog):
   """custom auth rules for merely framework"""
@@ -13,6 +13,7 @@ class Auth(commands.Cog):
     if 'authusers' not in bot.config['auth']:
       bot.config['auth']['authusers'] = ''
   
+  #TODO: figure out why this isn't working
   @commands.Cog.listener("on_command_error")
   async def check_autherror(self, ctx:commands.Context, error):
     if isinstance(error, commands.errors.CommandInvokeError):
@@ -28,7 +29,7 @@ class Auth(commands.Cog):
 
   def admins(self, ctx:commands.Context):
       if ctx.message.author == ctx.message.guild.owner or\
-         ctx.message.author.permissions_in(ctx.channel).administrator or\
+         ctx.channel.permissions_for(ctx.message.author).administrator or\
          str(ctx.message.author.id) in self.bot.config['auth']['superusers']:
         return True
       else:
@@ -36,8 +37,8 @@ class Auth(commands.Cog):
 
   def mods(self, ctx:commands.Context):
       if ctx.message.author == ctx.message.guild.owner or\
-         ctx.message.author.permissions_in(ctx.channel).administrator or\
-         ctx.message.author.permissions_in(ctx.channel).ban_members or\
+         ctx.channel.permissions_for(ctx.message.author).administrator or\
+         ctx.channel.permissions_for(ctx.message.author).ban_members or\
          str(ctx.message.author.id) in self.bot.config['auth']['superusers'] or\
          str(ctx.message.author.id) in self.bot.config['auth']['authusers']:
         return True
