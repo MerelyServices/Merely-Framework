@@ -64,7 +64,8 @@ class Lightbulb(commands.cog.Cog):
 
   @commands.Cog.listener('on_message')
   async def check_message(self, message:nextcord.Message):
-    if isinstance(message.channel, nextcord.channel.TextChannel) and\
+    if not message.author.bot and\
+       isinstance(message.channel, nextcord.channel.TextChannel) and\
        str(message.guild.id) in self.bot.config.get('lightbulb', 'opt_in', fallback='').split():
       match, driver = self.scan_message(message)
       if match:
