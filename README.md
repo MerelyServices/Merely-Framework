@@ -2,7 +2,7 @@
 # merelybot
 ![Python build status](https://github.com/yiays/merely/workflows/merelybot/badge.svg?branch=master)
 
-**merely is a framework for discord bots buit atop of discord.py**, merely is incredibly modular, multilingual, and supports live-reloading of extensions, translations, and config files! get started with the code on this repo, which provides a nice template config file and some example extensions that I use to make merely a useful bot on my own [discord server](https://discord.gg/wfKx24kDUR).
+**merely is a framework for discord bots buit atop of nextcord**, merely is incredibly modular, multilingual, and supports live-reloading of extensions, translations, and config files! get started with the code on this repo, which provides a nice template config file and some example extensions that I use to make merely a useful bot on my own [discord server](https://discord.gg/wfKx24kDUR).
 
 > *the web extension provides an API powering this website;*
 > [visit the webUI >](https://merely.yiays.com/)
@@ -11,6 +11,9 @@
 > [add merely to your server >](https://discordapp.com/oauth2/authorize?client_id=309270899909984267&scope=bot&permissions=0)
 
 ## news
+translation tooling for my projects (including merely) has launched! contribute translations with the help of this tooling and see your language become available in all sorts of places!
+> [try it now >](https://translate.yiays.com)
+
 merely v1.0.0 has launched! with this update comes a wave of potential for 3rd party extensions and custom discord bots. it is also full of breaking changes. upgrading requires manual migration of your config.
 > [see the roadmap for future updates >](https://github.com/yesiateyoursheep/merely/projects/1)
 
