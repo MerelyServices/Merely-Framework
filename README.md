@@ -1,11 +1,10 @@
 ![merely logo](profile.png)
 # merelybot
-![Python build status](https://github.com/yiays/merely/workflows/merelybot/badge.svg?branch=master)
+[![Python build status](https://github.com/MerelyServices/Merely-Framework/actions/workflows/pythonapp.yml/badge.svg)](https://github.com/MerelyServices/Merely-Framework/actions/workflows/pythonapp.yml)
 
-**merely is a framework for discord bots buit atop of nextcord**, merely is incredibly modular, multilingual, and supports live-reloading of extensions, translations, and config files! get started with the code on this repo, which provides a nice template config file and some example extensions that I use to make merely a useful bot on my own [discord server](https://discord.gg/wfKx24kDUR).
+**merely is a framework for discord bots buit atop of disnake**, merely is incredibly modular, multilingual, and supports live-reloading of extensions, translations, and config files! get started with the code on this repo, which provides a nice template config file and some example extensions.
 
-> *the web extension provides an API powering this website;*
-> [visit the webUI >](https://merely.yiays.com/)
+> demo an implementation of merelybot, merely, on my [discord server](https://discord.gg/wfKx24kDUR)
 
 > *try out the flagship merelybot for yourself;*
 > [add merely to your server >](https://discordapp.com/oauth2/authorize?client_id=309270899909984267&scope=bot&permissions=0)
@@ -15,10 +14,7 @@ translation tooling for my projects (including merely) has launched! contribute 
 > [try it now >](https://translate.yiays.com)
 
 merely v1.0.0 has launched! with this update comes a wave of potential for 3rd party extensions and custom discord bots. it is also full of breaking changes. upgrading requires manual migration of your config.
-> [see the roadmap for future updates >](https://github.com/yesiateyoursheep/merely/projects/1)
-
-## changelog
-you can read the up-to-date changelog [here](https://merely.yiays.com/changes.html).
+> [see the roadmap for future updates >](https://github.com/MerelyServices/Merely-Framework/projects/1)
 
 ## usage
  - clone the project to a folder
@@ -26,9 +22,10 @@ you can read the up-to-date changelog [here](https://merely.yiays.com/changes.ht
  - install required python packages with `python3 -m pip install -r requirements.txt`
  - create a discord bot in the [Discord Developer Portal](https://discordapp.com/developers/applications/), you will need the token to continue
  - give merelybot the token by setting it in the [main] section of the config.
+ - Add your user ID to the superusers section of the [auth] section of the config.
  - run it with `python3 main.py`
  - add your merelybot to your server.
- - enable any extensions you want in the config and restart the bot to start using them.
+ - enable and disable extensions as you please using `m/module`.
 
 `m/help` will list some featured commands, if they have a ❌ symbol, they require an extension to be enabled.
 
@@ -39,7 +36,7 @@ the best way to contribute is to create your own discord bot using this framewor
 merely is a highly customizable and extensible discord bot. through the config file, people can create their own discord bots by enabling and disabling extensions, changing the bot name and prefix. other developers can even write their own extensions.
 
 ### code structure
-extensions need to be able to be entirely independant of each other and should rarely need to communicate with each other. extensions must inherit from the [discord.py ext.commands.Cog](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#cogs) class. effort should be made to avoid clashes with existing commands, preferably by using subcommands. [extensions/example.py](extensions/example.py) should demonstrate all of this.
+extensions need to be able to be entirely independant of each other and should rarely need to communicate with each other. extensions must inherit from the [disnake.ext.commands.Cog](https://docs.disnake.dev/en/latest/ext/commands/api.html#cog) class. effort should be made to avoid clashes with existing commands, preferably by using subcommands. [extensions/example.py](extensions/example.py) should demonstrate all of this.
 
 ### file structure
 extensions are placed in the extensions folder. from there, they will be added to the config and can be enabled.
