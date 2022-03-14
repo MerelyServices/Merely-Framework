@@ -1,13 +1,13 @@
 from configparser import ConfigParser
 from typing import Optional, Union
-from attr import has
 from disnake import Guild, Message, Interaction, User, Member
 from disnake.ext.commands import Context
 import os, re
 
 class Babel():
   """babel is a translation system for discord bots
-  babel gets strings from language files in the babel folder. to create a new language, follow the format."""
+  babel gets strings from language files in the babel folder.
+  to create a new language, follow the format."""
   path = 'babel/'
   langs = {}
 
