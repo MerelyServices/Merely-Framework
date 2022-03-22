@@ -7,7 +7,7 @@
 > demo an implementation of merelybot, merely, on my [discord server](https://discord.gg/wfKx24kDUR)
 
 > *try out the flagship merelybot for yourself;*
-> [add merely to your server >](https://discordapp.com/oauth2/authorize?client_id=309270899909984267&scope=bot&permissions=0)
+> [add merely to your server >](https://discord.com/oauth2/authorize?client_id=309270899909984267&permissions=0&scope=bot%20applications.commands)
 
 ## news
 translation tooling for my projects (including merely) has launched! contribute translations with the help of this tooling and see your language become available in all sorts of places!
