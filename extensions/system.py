@@ -26,7 +26,7 @@ class System(commands.Cog):
       raise Exception("'auth' must be enabled to use 'admin'")
 
     guilds = bot.config['auth']['botadmin_guilds']
-    botadmin_guilds = [int(guild) for guild in guilds.split(' ')]
+    botadmin_guilds = [int(guild) for guild in guilds.split(' ') if guild]
     self.module.guild_ids = botadmin_guilds
     self.die.guild_ids = botadmin_guilds
 
