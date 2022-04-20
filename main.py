@@ -1,5 +1,5 @@
-import nextcord
-from nextcord.ext import commands 
+import disnake
+from disnake.ext import commands
 from config import Config
 from babel import Babel
 import sys, time, os
@@ -11,7 +11,7 @@ class merelybot(commands.AutoShardedBot):
 	babel = Babel(config)
 	verbose = False
 
-	intents = nextcord.Intents.none()
+	intents = disnake.Intents.none()
 	intents.guilds = config.getboolean('intents', 'guilds')
 	intents.members = config.getboolean('intents', 'members')
 	intents.bans = config.getboolean('intents', 'bans')
@@ -31,8 +31,6 @@ class merelybot(commands.AutoShardedBot):
 	intents.guild_typing = config.getboolean('intents', 'guild_typing')
 	intents.dm_typing = config.getboolean('intents', 'dm_typing')
 
-	case_insensitive = True
-
 	def __init__(self, **kwargs):
 		print(f"""
 		merely framework{' beta' if self.config.getboolean('main', 'beta') else ''} v{self.config['main']['ver']}
@@ -49,16 +47,19 @@ class merelybot(commands.AutoShardedBot):
 		if 'verbose' in kwargs:
 			self.verbose = kwargs['verbose']
 
-		prefixes = ()
-		if self.config['main']['prefix_short']:
-			prefixes += (self.config['main']['prefix_short']+' ', self.config['main']['prefix_short'])
-		if self.config['main']['prefix_long']: prefixes += (self.config['main']['prefix_long']+' ',)
-
-		super().__init__(command_prefix = commands.when_mentioned_or(*prefixes),
+		super().__init__(command_prefix = self.check_prefix,
 										 help_command = None,
-										 intents = self.intents)
+										 intents = self.intents,
+										 case_insensitive = True)
 
 		self.autoload_extensions()
+	
+	def check_prefix(self, bot, msg:disnake.Message):
+		if bot.config['main']['prefix_short'] and msg.content.lower().startswith(bot.config['main']['prefix_short'].lower()):
+			return [msg.content[0:len(bot.config['main']['prefix_short'])], msg.content[0 : len(bot.config['main']['prefix_short'])] + ' ']
+		if bot.config['main']['prefix_long'] and msg.content.lower().startswith(bot.config['main']['prefix_long'].lower()):
+			return msg.content[0:len(bot.config['main']['prefix_long'])] + ' '
+		return commands.when_mentioned(bot, msg)
 
 	def autoload_extensions(self):
 		# a natural sort is used to make it possible to prioritize extensions by filename
@@ -104,43 +105,10 @@ if __name__ == '__main__':
 	else:
 		bot = merelybot(verbose=bool(set(['-v','--verbose']) & set(sys.argv)))
 
-		@bot.command()
-		async def reload(ctx:commands.Context, module:str=None):
-			if bot.config.getboolean('extensions', 'allow_reloading'):
-				if 'Auth' in bot.cogs:
-					bot.cogs['Auth'].superusers(ctx)
-					extensions = [e.replace('extensions.','').strip('_') for e in bot.extensions.keys()] + ['config', 'babel']
-					if module is None:
-						await ctx.reply(bot.babel(ctx, 'main', 'extensions_list', list='\n'.join(extensions)))
-						return
-					module = module.lower()
-					if module in extensions:
-						extcandidate = [ext for ext in bot.extensions.keys() if ext.replace('extensions.','').strip('_') == module]
-						if extcandidate:
-							ext = extcandidate[0]
-							bot.reload_extension(ext)
-							if module.capitalize() in bot.cogs:
-								for listener in bot.cogs[module.capitalize()].get_listeners():
-									if listener[0] == 'on_ready':
-										await listener[1]()
-							await ctx.reply(bot.babel(ctx, 'main', 'extension_reload_success', extension=module))
-						elif module=='config':
-							bot.config.reload()
-							await ctx.reply(bot.babel(ctx, 'main', 'extension_reload_success', extension=module))
-						elif module=='babel':
-							bot.babel.reload()
-							await ctx.reply(bot.babel(ctx, 'main', 'extension_reload_success', extension=module))
-						else:
-							await ctx.reply(bot.babel(ctx, 'main', 'extension_file_missing'))
-					else:
-						await ctx.reply(bot.babel(ctx, 'main', 'extension_not_found'))
-				else:
-					raise Exception("'Auth' is a required extension in order to use reload.")
-
 		token = bot.config.get('main', 'token', fallback=None)
 		if token is not None:
 			bot.run(token)
 		else:
 			raise Exception("failed to login! make sure you filled the token field in the config file.")
-	
-	print("exited.")
+
+print("exited.")

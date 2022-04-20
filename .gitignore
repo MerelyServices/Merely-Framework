@@ -3,5 +3,6 @@ __pycache__/
 /logs*
 /config/config_history*
 /config/config.ini
+/merely_data
 .vscode/
 .pytest_cache/

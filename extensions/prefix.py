@@ -1,9 +1,9 @@
-import nextcord
-from nextcord.ext import commands
+import disnake
+from disnake.ext import commands
 from typing import Dict, Pattern, Union
 import re, asyncio
 
-class Prefix(commands.cog.Cog):
+class Prefix(commands.Cog):
   """a prototype service for commandless bots"""
   def __init__(self, bot:commands.Bot):
     self.bot = bot
@@ -16,10 +16,12 @@ class Prefix(commands.cog.Cog):
     self.fallback_prefix = bot.command_prefix
     bot.command_prefix = self.check_prefix
 
-  def check_prefix(self, bot, message:nextcord.Message):
-    if isinstance(message.channel, nextcord.TextChannel):
+  def check_prefix(self, bot, message:disnake.Message):
+    if isinstance(message.channel, disnake.TextChannel):
       if str(message.channel.guild.id) in self.bot.config['prefix'] and len(self.bot.config['prefix'][str(message.channel.guild.id)]):
-        return [self.bot.config['prefix'][str(message.guild.id)]] + commands.when_mentioned(bot, message)
+        if message.content.lower().startswith(self.bot.config['prefix'][str(message.channel.guild.id)].lower()):
+          return [message.content[0:len(self.bot.config['prefix'][str(message.channel.guild.id)])]]
+        return commands.when_mentioned(bot, message)
     return self.fallback_prefix(bot, message)
   
   @commands.group()
@@ -30,19 +32,23 @@ class Prefix(commands.cog.Cog):
     else:
       self.auth.admins(ctx)
   @prefix.command(name='set')
-  async def prefix_set(self, ctx:commands.Context, prefix:str):
+  async def prefix_set(self, ctx:commands.Context, prefix:str, guild:int=0):
     prefix = prefix.strip(' ')
-    self.bot.config['prefix'][str(ctx.guild.id)] = prefix
+    if guild:
+      self.auth.authusers(ctx)
+    self.bot.config['prefix'][str(guild if guild else ctx.guild.id)] = prefix
     self.bot.config.save()
     await ctx.reply(self.bot.babel(ctx, 'prefix', 'set_success', prefix=prefix))
   @prefix.command(name='unset')
-  async def prefix_unset(self, ctx:commands.Context):
-    self.bot.config.remove_option('prefix', str(ctx.guild.id))
+  async def prefix_unset(self, ctx:commands.Context, guild:int=0):
+    if guild:
+      self.auth.authusers(ctx)
+    self.bot.config.remove_option('prefix', str(guild if guild else ctx.guild.id))
     self.bot.config.save()
     await ctx.reply(self.bot.babel(ctx, 'prefix', 'unset_success'))
   @prefix.command(name='get')
-  async def prefix_get(self, ctx:commands.Context):
-    await ctx.reply(self.bot.babel(ctx, 'prefix', 'get', prefix=self.bot.config.get('prefix', str(ctx.guild.id), fallback='')))
+  async def prefix_get(self, ctx:commands.Context, guild:int=0):
+    await ctx.reply(self.bot.babel(ctx, 'prefix', 'get', prefix=self.bot.config.get('prefix', str(guild if guild else ctx.guild.id), fallback='*unset*')))
 
 def setup(bot):
   bot.add_cog(Prefix(bot))

@@ -1,10 +1,10 @@
-import nextcord
-from nextcord.ext import commands
+import disnake
+from disnake.ext import commands
 import asyncio
 import re
 from typing import Union
 
-class Help(commands.cog.Cog):
+class Help(commands.Cog):
   """the user-friendly documentation core"""
   def __init__(self, bot:commands.Bot):
     self.bot = bot
@@ -33,21 +33,21 @@ class Help(commands.cog.Cog):
       bot.config['help']['changes'] = '> '+bot.config['main']['ver']+'\n- No changes yet!'
     
     asyncio.ensure_future(self.set_status())
-  
+    
   @commands.Cog.listener('on_ready')
-  async def set_status(self, status:nextcord.Status=None, message:str=None):
+  async def set_status(self, status:disnake.Status=None, message:str=None):
     if self.bot.is_ready():
       if message is None:
         if self.bot.config['help']['customstatus']:
           message = self.bot.config['help']['customstatus']
         else:
           message = self.bot.config['main']['prefix_short']+'help'
-      status = nextcord.Status.online if status is None else status
-      activity = nextcord.Game(message)
+      status = disnake.Status.online if status is None else status
+      activity = disnake.Game(message)
       await self.bot.change_presence(status=status, activity=activity)
     else:
       # make the bot appear offline if it isn't ready to handle commands
-      await self.bot.change_presence(status=nextcord.Status.offline)
+      await self.bot.change_presence(status=disnake.Status.offline)
 
   def find_command(self, command:str):
     for cmd in self.bot.commands:
@@ -108,11 +108,12 @@ class Help(commands.cog.Cog):
 
     else:
       # show the generic help embed with a variety of featured commands
-      if str(ctx.channel.guild.id) in self.bot.config['prefix'] and len(self.bot.config['prefix'][str(ctx.channel.guild.id)]):
+      if str(ctx.author.id if isinstance(ctx.channel, disnake.DMChannel) else ctx.channel.guild.id) in self.bot.config['prefix'] and\
+         len(self.bot.config['prefix'][str(ctx.channel.guild.id)]):
         longprefix = None
       else:
         longprefix = self.bot.config['main']['prefix_long']
-      embed = nextcord.Embed(title = self.bot.babel(ctx, 'help', 'help_title'),
+      embed = disnake.Embed(title = f"{self.bot.config['main']['botname']} help",
                             description = self.bot.babel(ctx, 'help', 'introduction',
                                                          longprefix = longprefix,
                                                          videoexamples = self.bot.config.getboolean('help','helpurlvideoexamples'),
@@ -133,14 +134,13 @@ class Help(commands.cog.Cog):
       embed.set_footer(text = self.bot.babel(ctx, 'help', 'creator_footer'),
                        icon_url = self.bot.user.avatar.url)
       
-      #TODO: add voteurl callout from time to time
       await ctx.reply(self.bot.babel(ctx, 'help', 'helpurl_cta') if self.bot.config['help']['helpurl'] else "", embed=embed)
 
   @commands.command(aliases=['info','invite'])
   async def about(self, ctx:commands.Context):
     """information about this bot, including an invite link"""
 
-    embed = nextcord.Embed(title = self.bot.babel(ctx, 'help', 'about_title'),
+    embed = disnake.Embed(title = self.bot.babel(ctx, 'help', 'about_title'),
                           description = self.bot.babel(ctx, 'help', 'bot_description'),
                           color = int(self.bot.config['main']['themecolor'], 16),
                           url = self.bot.config['help']['helpurl'] if self.bot.config['help']['helpurl'] else '')
@@ -183,7 +183,7 @@ class Help(commands.cog.Cog):
 
     logurl = self.bot.config['help']['helpurl']+"changes.html#"+ver.replace('.','') if self.bot.config['help']['helpurl'] else ''
 
-    embed = nextcord.Embed(title = self.bot.babel(ctx, 'help', 'changelog_title'),
+    embed = disnake.Embed(title = self.bot.babel(ctx, 'help', 'changelog_title'),
                           description = self.bot.babel(ctx, 'help', 'changelog_description', ver=ver) +\
                                         '\n\n' + changelog,
                           color = int(self.bot.config['main']['themecolor'], 16),
@@ -199,7 +199,7 @@ class Help(commands.cog.Cog):
     if self.bot.config['help']['feedbackchannel']:
       feedbackchannel = await self.bot.fetch_channel(self.bot.config['help']['feedbackchannel'])
       if feedbackchannel:
-        embed = nextcord.Embed(title = self.bot.babel(ctx, 'help', 'feedback_title', author=f'{ctx.author.name}#{ctx.author.discriminator}', guild=ctx.guild.name if ctx.guild else ''),
+        embed = disnake.Embed(title = self.bot.babel(ctx, 'help', 'feedback_title', author=f'{ctx.author.name}#{ctx.author.discriminator}', guild=ctx.guild.name if ctx.guild else ''),
                               description = feedback,
                               color = int(self.bot.config['main']['themecolor'], 16))
         await feedbackchannel.send(embed=embed)

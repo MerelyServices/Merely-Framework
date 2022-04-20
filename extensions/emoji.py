@@ -1,8 +1,9 @@
-import nextcord
-from nextcord.ext import commands
+import disnake
+from disnake.ext import commands
 import re, random
 
-class Emoji(commands.cog.Cog):
+class Emoji(commands.Cog):
+  """Emojis from guilds as commands"""
   def __init__(self, bot:commands.Bot):
     self.bot = bot
     # ensure config file has required data
@@ -14,7 +15,7 @@ class Emoji(commands.cog.Cog):
   
   @commands.command()
   async def emoji(self, ctx:commands.Context, *, emojiname:str):
-    matches = [e for e in self.bot.emojis if emojiname.replace(':','') == e.name]
+    matches = [e for e in self.bot.emojis if emojiname.replace(':','').lower() == e.name.lower()]
     if matches:
       await ctx.reply(matches[0])
     else:
@@ -32,7 +33,9 @@ class Emoji(commands.cog.Cog):
       if ctx.invoked_with in names:
         template = templates[names.index(ctx.invoked_with)]
         server = int(servers[names.index(ctx.invoked_with)])
-        emojipool = [e for e in self.bot.emojis if e.guild_id == server and re.match(template, e.name) and e.is_usable()]
+        emojipool = [
+          e for e in self.bot.emojis if e.guild_id == server and re.match(template, e.name) and e.is_usable()
+        ]
         await ctx.reply(random.choice(emojipool))
 
 def setup(bot):

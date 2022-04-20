@@ -1,7 +1,7 @@
-import nextcord
-from nextcord.ext import commands
+import disnake
+from disnake.ext import commands
 
-class Example(commands.cog.Cog):
+class Example(commands.Cog):
   def __init__(self, bot:commands.Bot):
     self.bot = bot
     # ensure config file has required data
@@ -9,7 +9,7 @@ class Example(commands.cog.Cog):
       bot.config.add_section('example')
   
   @commands.Cog.listener()
-  async def on_member_join(self, member:nextcord.Member):
+  async def on_member_join(self, member:disnake.Member):
     print(f"{member.name} has joined!")
   
   @commands.command()

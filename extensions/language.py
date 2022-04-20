@@ -1,8 +1,8 @@
-import nextcord
-from nextcord.ext import commands
+import disnake
+from disnake.ext import commands
 import re
 
-class Language(commands.cog.Cog):
+class Language(commands.Cog):
   def __init__(self, bot:commands.Bot):
     self.bot = bot
     # ensure config file has required data
@@ -16,13 +16,15 @@ class Language(commands.cog.Cog):
       await self.language_list(ctx)
   @language.command(name='list')
   async def language_list(self, ctx:commands.Context):
-    embed = nextcord.Embed(title = self.bot.babel(ctx, 'language', 'list_title'),
+    embed = disnake.Embed(title = self.bot.babel(ctx, 'language', 'list_title'),
                           description = self.bot.babel(ctx, 'language', 'set_howto')+\
                           '\n'+self.bot.babel(ctx, 'language', 'contribute_cta') if self.bot.config['language']['contribute_url'] else '',
                           color = int(self.bot.config['main']['themecolor'], 16))
     
     for langcode,language in self.bot.babel.langs.items():
-      embed.add_field(name=f"{language.get('meta', 'name')} ({langcode})",
+      if prefix := self.bot.config['language']['prefix']:
+        if not langcode.startswith(prefix): continue
+      embed.add_field(name=f"{language.get('meta', 'name')} ({langcode.replace(prefix, '')})",
                       value=f"{language.get('meta', 'contributors', fallback=self.bot.babel(ctx, 'language', 'unknown_contributors'))}\n"+\
                             self.bot.babel(ctx, 'language', 'coverage_label', coverage = self.bot.babel.calculate_coverage(langcode)))
     
@@ -32,7 +34,7 @@ class Language(commands.cog.Cog):
     langs, origins = self.bot.babel.resolve_lang(ctx, debug=True)
 
     language = self.bot.babel.langs[langs[0]]
-    embed = nextcord.Embed(title = f"{language.get('meta', 'name')} ({langs[0]})",
+    embed = disnake.Embed(title = f"{language.get('meta', 'name')} ({langs[0]})",
                           description = self.bot.babel(ctx, 'language', 'origin_reason_'+origins[0]),
                           color = int(self.bot.config['main']['themecolor'], 16))
     
@@ -43,7 +45,7 @@ class Language(commands.cog.Cog):
       await ctx.reply(self.bot.babel(ctx, 'language', 'set_failed_invalid_pattern'))
     else:
       langcode = self.bot.config.get('language', 'prefix', fallback='')+langcode
-      if isinstance(ctx.channel, nextcord.abc.PrivateChannel) or not ctx.author.guild_permissions.administrator:
+      if isinstance(ctx.channel, disnake.abc.PrivateChannel) or not ctx.author.guild_permissions.administrator:
         usermode = True
         self.bot.config.set('language', str(ctx.author.id), langcode)
       else:

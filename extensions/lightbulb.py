@@ -1,13 +1,13 @@
-import nextcord
-from nextcord.ext import commands
-from typing import Dict, Pattern, Union
+import disnake
+from disnake.ext import commands
+from typing import Dict, Pattern, Optional
 import re, asyncio
 
 class LightbulbDriver():
   """just a simple data class"""
   name:str
   pattern:Pattern
-  action:Union[commands.Command, None]
+  action:Optional[str]
 
   def __init__(self, bot:commands.Bot):
     self.bot = bot
@@ -16,13 +16,13 @@ class LightbulbDriver():
     self.pattern = re.compile(pattern)
   
   def set_action(self, action:str):
-    actions = [cmd for cmd in self.bot.commands if cmd.name == action]
-    if actions:
-      self.action = actions[0]
+    actcmd = action.split()[0]
+    if [cmd for cmd in self.bot.commands if cmd.name == actcmd or actcmd in cmd.aliases]:
+      self.action = action
     else:
       self.action = None
 
-class Lightbulb(commands.cog.Cog):
+class Lightbulb(commands.Cog):
   """a prototype service for commandless bots"""
   drivers:Dict[str, LightbulbDriver] = {}
 
@@ -53,19 +53,19 @@ class Lightbulb(commands.cog.Cog):
     for k in list(self.drivers.keys()):
       if not self.drivers[k].action:
         faileddriver = self.drivers.pop(k)
-        print(f"unable to find command ({faileddriver.action}) for: {faileddriver.name}")
+        print(f"WARN: unable to find command ({v}) for: {faileddriver.name}")
   
-  def scan_message(self, message:nextcord.Message):
-    for driver in self.drivers.values():
-      match = driver.pattern.search(message.content)
-      if match:
-        return match, driver
+  def scan_message(self, message:disnake.Message):
+    if not message.author.bot:
+      for driver in self.drivers.values():
+        match = driver.pattern.search(message.content)
+        if match:
+          return match, driver
     return None, None
 
   @commands.Cog.listener('on_message')
-  async def check_message(self, message:nextcord.Message):
-    if not message.author.bot and\
-       isinstance(message.channel, nextcord.channel.TextChannel) and\
+  async def check_message(self, message:disnake.Message):
+    if isinstance(message.channel, disnake.channel.TextChannel) and\
        str(message.guild.id) in self.bot.config.get('lightbulb', 'opt_in', fallback='').split():
       match, driver = self.scan_message(message)
       if match:
@@ -77,14 +77,14 @@ class Lightbulb(commands.cog.Cog):
           pass
 
   @commands.Cog.listener('on_reaction_add')
-  async def check_reactions(self, reaction:nextcord.Reaction, user:nextcord.User):
-    if user != self.bot.user and str(reaction.emoji) == '💡' and\
-       isinstance(reaction.message.channel, nextcord.channel.TextChannel) and\
+  async def check_reactions(self, reaction:disnake.Reaction, user:disnake.User):
+    if not user.bot and str(reaction.emoji) == '💡' and\
+       isinstance(reaction.message.channel, disnake.channel.TextChannel) and\
        str(reaction.message.guild.id) in self.bot.config.get('lightbulb', 'opt_in', fallback='').split():
       match, driver = self.scan_message(reaction.message)
       if match:
         message = reaction.message
-        message.content = self.bot.config['main']['prefix_short']+driver.action.name+' '+' '.join(match.groups())
+        message.content = self.bot.config['main']['prefix_short']+driver.action+' '+' '.join(match.groups())
         await self.bot.process_commands(message)
   
   @commands.group()

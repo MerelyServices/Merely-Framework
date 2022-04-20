@@ -1,7 +1,17 @@
-import nextcord
-from nextcord.ext import commands
+"""
+  Log - User activity recording and error tracing
+  Features: to file, to channel, command, responses to a command, errors, misc
+  Recommended cogs: Error
+"""
 
-class Log(commands.cog.Cog):
+import traceback
+from types import TracebackType
+from typing import Union
+import disnake
+from disnake.ext import commands
+
+class Log(commands.Cog):
+  """ Record messages, commands and errors to file or a discord channel """
   def __init__(self, bot:commands.Bot):
     self.bot = bot
     self.logchannel = None
@@ -10,53 +20,74 @@ class Log(commands.cog.Cog):
       bot.config.add_section('log')
     if 'logchannel' not in bot.config['log']:
       bot.config['log']['logchannel'] = ''
-  
+
   @commands.Cog.listener('on_ready')
   async def get_logchannel(self):
+    """ Connect to the logging channel """
     if self.bot.config['log']['logchannel'].isdigit():
       self.logchannel = await self.bot.fetch_channel(int(self.bot.config['log']['logchannel']))
 
   def truncate(self, string:str, maxlen:int=30):
     return string[:maxlen] + ('...' if len(string) > maxlen else '')
-  
-  def wrap(self, message:nextcord.Message):
-    if isinstance(message.channel, nextcord.TextChannel):
-      return f"[{self.truncate(message.guild.name, 10)}#{self.truncate(message.channel.name)}] {self.truncate(message.author.name, 10)}#{message.author.discriminator}: {self.truncate(message.content)}"
-    elif isinstance(message.channel, nextcord.DMChannel):
-      return f"[DM({self.truncate(message.channel.recipient.name, 10)}#{message.channel.recipient.discriminator})] {'other' if message.author == self.bot.user else 'self'}: {self.truncate(message.content)}"
+
+  def wrap(self, content:str, author:disnake.User, channel:disnake.abc.Messageable):
+    """ Format log data consistently """
+    if isinstance(channel, disnake.TextChannel):
+      return f"[{self.truncate(channel.guild.name, 10)}#{self.truncate(channel.name)}] {self.truncate(author.name, 10)}#{author.discriminator}: {self.truncate(content)}"
+    elif isinstance(channel, disnake.DMChannel):
+      if channel.recipient:
+        return f"[DM({self.truncate(channel.recipient.name, 10)}#{channel.recipient.discriminator})] {author.name}#{author.discriminator}: {self.truncate(content)}"
+      else:
+        return f"[DM] {self.truncate(author.name, 10)}#{author.discriminator}: {self.truncate(content)}"
+    elif isinstance(channel, disnake.Thread):
+      return f"[Thread] {self.truncate(author.name, 10)}#{author.discriminator}: {self.truncate(content)}"
+    else:
+      return f"[Unknown] {self.truncate(author.name, 10)}#{author.discriminator}: {self.truncate(content)}"
 
   @commands.Cog.listener('on_command')
   async def log_command(self, ctx:commands.Context):
-    logentry = self.wrap(ctx.message)
+    """ Record any command calls """
+    logentry = self.wrap(ctx.message.content, ctx.message.author, ctx.message.channel)
     print(logentry)
     if self.logchannel:
       await self.logchannel.send(logentry, embed=ctx.message.embeds[0] if ctx.message.embeds else None)
-  
+
   @commands.Cog.listener('on_command_completion')
   async def log_response(self, ctx:commands.Context):
+    """ Record any replies to a command """
     responses = []
     async for msg in ctx.history(after=ctx.message):
       if msg.author == self.bot.user and msg.reference.message_id == ctx.message.id:
         responses.append(msg)
     for response in responses:
-      logentry = self.wrap(response)
+      logentry = self.wrap(response.content, response.author, response.channel)
       print(logentry)
       if self.logchannel:
         await self.logchannel.send(logentry, embed=response.embeds[0] if response.embeds else None)
-  
-  async def log_misc(self, msg:nextcord.Message):
-    """This version is intended to be called externally from other modules that react to more than just commands."""
-    logentry = self.wrap(msg)
+
+  async def log_misc_message(self, msg:disnake.Message):
+    """ Record a message that is in some way related to a command """
+    logentry = self.wrap(msg.content, msg.author, msg.channel)
     print(logentry)
     if self.logchannel:
       await self.logchannel.send(logentry, embed=msg.embeds[0] if msg.embeds else None)
 
+  async def log_misc_str(self, ctx:Union[commands.Context, disnake.Interaction], content:str):
+    """ Record a string and context separately """
+    logentry = self.wrap(content, ctx.author, ctx.channel)
+    print(logentry)
+    if self.logchannel:
+      await self.logchannel.send(logentry)
+
   @commands.Cog.listener('on_command_error')
-  async def report_error(self, ctx:commands.Context, error):
-    logentry = self.wrap(ctx.message) + '\ncaused an error:```'+str(error)+'```'
+  async def report_error(self, _:commands.Context, error:Exception):
+    """ Record errors """
+    ex = traceback.format_exception(type(error), error, error.__traceback__)
+    logentry = f"caused an error:\n```\n{''.join(ex)}```"
     print(logentry)
     if self.logchannel:
       await self.logchannel.send(logentry)
 
 def setup(bot):
+  """ Bind this cog to the bot """
   bot.add_cog(Log(bot))

@@ -1,12 +1,12 @@
 import asyncio
-import nextcord
-from nextcord.ext import tasks, commands
+import disnake
+from disnake.ext import tasks, commands
 from time import time
 import re
 
-from nextcord.raw_models import RawReactionActionEvent, RawReactionClearEvent
+from disnake.raw_models import RawReactionActionEvent, RawReactionClearEvent
 
-class Poll(commands.cog.Cog):
+class Poll(commands.Cog):
   """poll is an almost stateless poll extension for discord bots
   this improved poll handles votes even if the bot goes offline and keeps the countdown timer up to date for a week after expiry"""
 
@@ -115,7 +115,7 @@ class Poll(commands.cog.Cog):
     return '[' + width*'■' + abs(width-20)*'□' + ']'
   def generate_poll_embed(self, title:str, counter:int, answers:list, votes:list):
     """generates a poll embed based on the provided data"""
-    embed = nextcord.Embed(title=title)
+    embed = disnake.Embed(title=title)
     if counter>0: embed.description = f"{'⏳' if counter>60 else '⌛'} {self.inttotime(counter, 1, beforeprefix='closing')}"
     elif counter < -604800: embed.description = "⌛ expired a long time ago"
     else: embed.description = f"⌛ {self.inttotime(counter, 2 if counter > -86400 else 3, afterprefix='closed')}"
@@ -128,7 +128,7 @@ class Poll(commands.cog.Cog):
     embed.set_footer(text="react to vote | this poll is multichoice")
     return embed
 
-  async def redraw_poll(self, msg:nextcord.Message, expiry:int, expired:bool=False):
+  async def redraw_poll(self, msg:disnake.Message, expiry:int, expired:bool=False):
     """redraws the poll using real data"""
     title = msg.embeds[0].title
     counter = expiry - round(time())
@@ -143,7 +143,7 @@ class Poll(commands.cog.Cog):
     await msg.edit(embed=embed)
     return title, answers, votes # just returning these for the one situation where they need to be reused
   
-  async def expire_poll(self, msg:nextcord.Message, expiry:int):
+  async def expire_poll(self, msg:disnake.Message, expiry:int):
     """announces the winner of the poll"""
     title, answers, votes = await self.redraw_poll(msg, expiry, expired=True)
     winners = []
@@ -154,14 +154,14 @@ class Poll(commands.cog.Cog):
           winners.append(answer)
     
     if len(winners) == 0:
-      await msg.channel.send(self.bot.babel((0, msg.guild.id), 'poll', 'no_winner', title=title))
+      await msg.channel.send(self.bot.babel(msg.guild, 'poll', 'no_winner', title=title))
     elif len(winners) == 1:
-      await msg.channel.send(self.bot.babel((0, msg.guild.id), 'poll', 'one_winner', title=title, winner=winners[0]))
+      await msg.channel.send(self.bot.babel(msg.guild, 'poll', 'one_winner', title=title, winner=winners[0]))
     else:
       if len(winners) > 2:
         winners.insert(len(winners)-1, 'and')
       winnerstring = '", "'.join(winners).replace(', and,', ' and')
-      await msg.channel.send(self.bot.babel((0, msg.guild.id), 'poll', 'multiple_winners', title=title, num=len(winners), winners=winnerstring))
+      await msg.channel.send(self.bot.babel(msg.guild, 'poll', 'multiple_winners', title=title, num=len(winners), winners=winnerstring))
     
     self.bot.config.remove_option('poll', f'{msg.channel.id}_{msg.id}_expiry')
     self.bot.config['poll'][f'{msg.channel.id}_{msg.id}_expiry_expired'] = str(expiry)
