@@ -1,50 +1,52 @@
-![merely logo](profile.png)
-# merelybot
-[![Python build status](https://github.com/MerelyServices/Merely-Framework/actions/workflows/pythonapp.yml/badge.svg)](https://github.com/MerelyServices/Merely-Framework/actions/workflows/pythonapp.yml)
+![Merely logo](profile.png)
+# Merelybot
+![Python build status](https://github.com/yiays/merely/workflows/merelybot/badge.svg?branch=master)
+**Merelybot is an extended feature-set for python Discord bots. Adding features like live reloading of code, a feature rich help command, translation support, error handling, and paywalled commands.**
 
-**merely is a framework for discord bots buit atop of disnake**, merely is incredibly modular, multilingual, and supports live-reloading of extensions, translations, and config files! get started with the code on this repo, which provides a nice template config file and some example extensions.
+## Featured implementations
+You can test these implementations on my [official Discord server](https://discord.gg/wfKx24kDUR).
+ - [Merely](https://discordapp.com/oauth2/authorize?client_id=309270899909984267&scope=bot&permissions=0) is an example implementation of the framework. Merely uses the default config included with this code so you can run it yourself.
+ - [ConfessionBot](https://github.com/yiays/ConfessionBot-2.0) is an anonymous messaging system for Discord. ConfessionBot uses the help command, translation support, and module reloading features to speed up development and shares improvements to the framework back here.
 
-> demo an implementation of merelybot, merely, on my [discord server](https://discord.gg/wfKx24kDUR)
-
-> *try out the flagship merelybot for yourself;*
-> [add merely to your server >](https://discord.com/oauth2/authorize?client_id=309270899909984267&permissions=0&scope=bot%20applications.commands)
-
-## news
-translation tooling for my projects (including merely) has launched! contribute translations with the help of this tooling and see your language become available in all sorts of places!
+## News
+Translation tooling for my projects (including ConfessionBot) has launched! contribute translations with the help of this tooling and see your language become available in all sorts of places!
 > [try it now >](https://translate.yiays.com)
 
-merely v1.0.0 has launched! with this update comes a wave of potential for 3rd party extensions and custom discord bots. it is also full of breaking changes. upgrading requires manual migration of your config.
-> [see the roadmap for future updates >](https://github.com/MerelyServices/Merely-Framework/projects/1)
+merely v1.0.0 has launched! with this update comes a wave of potential for 3rd party extensions and custom discord bots. it is also full of breaking changes, the config migration tool should be able to help, but .
+> [see the roadmap for future updates >](https://github.com/yesiateyoursheep/merely/projects/1)
 
-## usage
- - clone the project to a folder
- - install python <=3.9
- - install required python packages with `python3 -m pip install -r requirements.txt`
- - create a discord bot in the [Discord Developer Portal](https://discordapp.com/developers/applications/), you will need the token to continue
- - give merelybot the token by setting it in the [main] section of the config.
- - Add your user ID to the superusers section of the [auth] section of the config.
- - run it with `python3 main.py`
- - add your merelybot to your server.
- - enable and disable extensions as you please using `m/module`.
+## Usage
+ - Clone the project to a folder
+ - Install python <=3.9
+ - Install required python packages with `python3 -m pip install -r requirements.txt`
+ - Create a discord bot in the [Discord Developer Portal](https://discordapp.com/developers/applications/), you will need the token to continue
+ - Give MerelyBot the token by setting it in the [main] section of the config
+ - Run MerelyBot with `python3 merelybot.py`
+ - Add your instance of merely to your server
+ - *optional*: create a log channel on your server and copy the id to merely_data/config.ini > logchannel. - you can also do the same with a channel for feedback and a channel for moderators.
 
-`m/help` will list some featured commands, if they have a ❌ symbol, they require an extension to be enabled.
+The first run generates a `config.ini` file, you can modify it from there to enable features.
 
-## contributing
-the best way to contribute is to create your own discord bot using this framework, and send any improvements to the framework my way in the form of a pull request!
+## Contributing
+The best way to contribute is to create your own discord bot using this framework, and send any improvements to the framework my way in the form of a pull request!
 
-### design
-merely is a highly customizable and extensible discord bot. through the config file, people can create their own discord bots by enabling and disabling extensions, changing the bot name and prefix. other developers can even write their own extensions.
+### Design
+Merely is a highly customizable and extensible discord bot. through the config file, people can create their own discord bots by enabling and disabling extensions, and changing the bot name. Other developers can even write their own extensions.
 
-### code structure
-extensions need to be able to be entirely independant of each other and should rarely need to communicate with each other. extensions must inherit from the [disnake.ext.commands.Cog](https://docs.disnake.dev/en/latest/ext/commands/api.html#cog) class. effort should be made to avoid clashes with existing commands, preferably by using subcommands. [extensions/example.py](extensions/example.py) should demonstrate all of this.
+### Code structure
+Extensions need to be able to be entirely independant of each other and should rarely need to communicate with each other. extensions must inherit from the [disnake.ext.commands.Cog](https://docs.disnake.dev/en/latest/ext/commands/api.html#cog) class. effort should be made to avoid clashes with existing commands, preferably by using subcommands. [extensions/example.py](extensions/example.py) should demonstrate all of this.
 
-### file structure
-extensions are placed in the extensions folder. from there, they will be added to the config and can be enabled.
+### File structure
+ - Core plugins are stored in the top directory, these elements cannot be reloaded or disabled. Reloading babel or config refreshes the data, but not the code.
+ - Extensions are placed in the extensions folder, from there, they will be added to the config and can be enabled.
+ - Config and config history will be found in the config folder.
+ - Translation data is stored in the babel folder.
+ - Error and usage logs are stored in the logs folder.
 
-## extensions
-| extension | description | added |
+## Extensions
+| Extension | Description | Ver. Added |
 | ------ | ----------- | ----- |
-| [main](main.py)* | imports extensions, creates some global variables, establishes a log, and runs the main loop | 0.1.0 |
+| [main](main.py)* | imports extensions, creates some global variables, establishes a log, and runs the main loop | N/A |
 | [config](config.py)* | reads configuration data and ensures that the config file is valid | 1.0 |
 | [babel](babel.py)* | provides translated and formatted strings that contributors can easily translate to more languages | 1.0 |
 | [auth](extensions/__auth.py)* | provides security checks for other commands which need authorization | 1.0 |

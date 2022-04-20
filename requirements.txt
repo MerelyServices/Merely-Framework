@@ -1,3 +1,1 @@
-git+https://github.com/Rapptz/discord.py
-asyncio
-
+disnake==2.4.*

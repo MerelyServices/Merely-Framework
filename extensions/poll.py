@@ -168,6 +168,7 @@ class Poll(commands.Cog):
     self.bot.config.save()
 
   @commands.command(aliases=['vote'])
+  #@commands.slash_command(description="A wizard for creating a poll on Discord.")
   @commands.guild_only()
   async def poll(self, ctx:commands.Context, *, title:str):
     """poll creation wizard"""
