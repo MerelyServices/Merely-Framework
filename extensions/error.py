@@ -24,7 +24,7 @@ class Error(commands.Cog):
     if isinstance(error, commands.CommandOnCooldown):
       print("cooldown")
       return
-    kwargs = {'ephemeral': True}
+    kwargs = {'ephemeral': True} if isinstance(ctx, disnake.Interaction) else {}
     if isinstance(
       error,
       (commands.CommandNotFound, commands.BadArgument, commands.MissingRequiredArgument)
@@ -58,7 +58,8 @@ class Error(commands.Cog):
         else:
           await self.bot.cogs['Help'].help(
             ctx,
-            ctx.invoked_with if isinstance(ctx, commands.Context) else ctx.application_command.name
+            ctx.invoked_with if isinstance(ctx, commands.Context) else ctx.application_command.name,
+            **kwargs
           )
       else:
         await ctx.send(self.bot.babel(ctx, 'error', 'missingrequiredargument'), **kwargs)
@@ -73,9 +74,9 @@ class Error(commands.Cog):
       if 'Auth' in self.bot.cogs and isinstance(error.original, self.bot.cogs['Auth'].AuthError):
         await ctx.send(str(error.original), **kwargs)
         return
-      await ctx.send(self.bot.babel(ctx, 'error', 'commanderror'))
+      await ctx.send(self.bot.babel(ctx, 'error', 'commanderror'), **kwargs)
       raise error
-    elif isinstance(error, (commands.CheckFailure, commands.CheckAnyFailure), **kwargs):
+    elif isinstance(error, (commands.CheckFailure, commands.CheckAnyFailure)):
       return
 
 def setup(bot):
