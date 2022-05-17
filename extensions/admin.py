@@ -72,5 +72,5 @@ class Admin(commands.Cog):
       await ctx.reply(self.bot.babel(ctx, 'admin', 'clean_success', n=len(deleted)))
 
 
-def setup(bot):
+def setup(bot:commands.Bot):
   bot.add_cog(Admin(bot))

@@ -79,6 +79,6 @@ class Error(commands.Cog):
     elif isinstance(error, (commands.CheckFailure, commands.CheckAnyFailure)):
       return
 
-def setup(bot):
+def setup(bot:commands.Bot):
   """ Bind this cog to the bot """
   bot.add_cog(Error(bot))

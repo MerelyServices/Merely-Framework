@@ -64,6 +64,6 @@ class Auth(commands.Cog):
       return True
     raise self.AuthError(self.bot.babel(msg, 'auth', 'not_authuser'))
 
-def setup(bot):
+def setup(bot:commands.Bot):
   """ Bind this cog to the bot """
   bot.add_cog(Auth(bot))

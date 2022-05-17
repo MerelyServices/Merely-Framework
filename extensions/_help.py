@@ -379,6 +379,6 @@ class Help(commands.Cog):
     else:
       await inter.send(self.bot.babel(inter, 'help', 'feedback_not_implemented', serverinv = self.bot.config['help']['serverinv']))
 
-def setup(bot):
+def setup(bot:commands.Bot):
   """ Bind this cog to the bot """
   bot.add_cog(Help(bot))

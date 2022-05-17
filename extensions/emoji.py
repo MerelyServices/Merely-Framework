@@ -38,5 +38,5 @@ class Emoji(commands.Cog):
         ]
         await ctx.reply(random.choice(emojipool))
 
-def setup(bot):
+def setup(bot:commands.Bot):
   bot.add_cog(Emoji(bot))

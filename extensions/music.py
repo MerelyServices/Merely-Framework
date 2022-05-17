@@ -37,6 +37,6 @@ class Music(commands.Cog):
     elif ctx.invoked_with == 'music':
       await ctx.reply(self.bot.babel(ctx, 'music', 'success'))
 
-def setup(bot):
+def setup(bot:commands.Bot):
   """ Bind this cog to the bot """
   bot.add_cog(Music(bot))

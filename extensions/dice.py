@@ -21,5 +21,5 @@ class Dice(commands.Cog):
         rolls.append(self.bot.babel(ctx, 'dice', 'roll_result', i=i + 1, r=r))
     await ctx.reply('\n'.join(rolls))
 
-def setup(bot):
+def setup(bot:commands.Bot):
   bot.add_cog(Dice(bot))

@@ -169,6 +169,6 @@ class System(commands.Cog):
       self.bot.config.save()
     await self.bot.close()
 
-def setup(bot):
+def setup(bot:commands.Bot):
   """ Bind this cog to the bot """
   bot.add_cog(System(bot))
