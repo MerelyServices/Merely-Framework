@@ -9,35 +9,6 @@ from typing import Union, Optional
 import disnake
 from disnake.ext import commands
 
-# Autocomplete
-
-def ac_command(inter:disnake.ApplicationCommandInteraction, command:str):
-  """ find any commands that contain the provided string """
-  matches = []
-  hide = inter.bot.config.get('help', 'hidden_commands', fallback='').split(', ')
-  for cmd in inter.bot.slash_commands:
-    if command in cmd.name and cmd.name not in matches and cmd.name not in hide:
-      matches.append(cmd.name)
-  for cmd in inter.bot.commands:
-    if command in cmd.name and cmd.name not in matches and cmd.name not in hide:
-      matches.append(cmd.name)
-    else:
-      for alias in cmd.aliases:
-        if command in alias and cmd.name not in matches and cmd.name not in hide:
-          matches.append(cmd.name)
-  return matches
-
-def ac_version(inter:disnake.ApplicationCommandInteraction, search:str):
-  """ find any matching versions """
-  matches = []
-  iver = '0'
-  for line in inter.bot.config['help']['changelog'].splitlines():
-    if line.startswith('> '):
-      iver = line[2:]
-    if search.lower() in line.lower() and iver not in matches:
-      matches.append(iver)
-  return matches
-
 class Help(commands.Cog):
   """the user-friendly documentation core"""
   def __init__(self, bot:commands.Bot):
@@ -122,9 +93,7 @@ class Help(commands.Cog):
 
   @commands.slash_command(name='help')
   async def slash_help(
-    self,
-    inter:disnake.ApplicationCommandInteraction,
-    command:Optional[str] = commands.Param(None, autocomplete=ac_command)
+    self, inter:disnake.ApplicationCommandInteraction, command:Optional[str]
   ):
     """
     Learn how to use this bot
@@ -216,6 +185,22 @@ class Help(commands.Cog):
         embed=embed,
         **kwargs
       )
+  @slash_help.autocomplete('command')
+  def ac_command(self, _:disnake.ApplicationCommandInteraction, command:str):
+    """ find any commands that contain the provided string """
+    matches = []
+    hide = self.bot.config.get('help', 'hidden_commands', fallback='').split(', ')
+    for cmd in self.bot.slash_commands:
+      if command in cmd.name and cmd.name not in matches and cmd.name not in hide:
+        matches.append(cmd.name)
+    for cmd in self.bot.commands:
+      if command in cmd.name and cmd.name not in matches and cmd.name not in hide:
+        matches.append(cmd.name)
+      else:
+        for alias in cmd.aliases:
+          if command in alias and cmd.name not in matches and cmd.name not in hide:
+            matches.append(cmd.name)
+    return matches
 
   @commands.slash_command()
   async def about(self, inter:disnake.ApplicationCommandInteraction):
@@ -289,11 +274,7 @@ class Help(commands.Cog):
     )
 
   @commands.slash_command()
-  async def changes(
-    self,
-    inter:disnake.ApplicationCommandInteraction,
-    search:str=commands.Param(None, autocomplete=ac_version)
-  ):
+  async def changes(self, inter:disnake.ApplicationCommandInteraction, search:str):
     """
     See what's changed in recent updates
 
@@ -316,7 +297,10 @@ class Help(commands.Cog):
     if end < len(fchanges):
       changelog += "\n..."
 
-    logurl = self.bot.config['help']['helpurl']+"changes.html#"+search.replace('.','') if self.bot.config['help']['helpurl'] else ''
+    logurl = (
+      self.bot.config['help']['helpurl']+"changes.html#"+search.replace('.','')
+      if self.bot.config['help']['helpurl'] else ''
+    )
 
     embed = disnake.Embed(
       title = self.bot.babel(inter, 'help', 'changelog_title'),
@@ -329,11 +313,22 @@ class Help(commands.Cog):
       text = self.bot.babel(inter, 'help', 'creator_footer'),
       icon_url = self.bot.user.avatar.url
     )
-    
+
     await inter.send(
       self.bot.babel(inter, 'help', 'changelog_cta', logurl=logurl) if logurl else None,
       embed=embed
     )
+  @changes.autocomplete('search')
+  def ac_version(self, _:disnake.ApplicationCommandInteraction, search:str):
+    """ find any matching versions """
+    matches = []
+    iver = '0'
+    for line in self.bot.config['help']['changelog'].splitlines():
+      if line.startswith('> '):
+        iver = line[2:]
+      if search.lower() in line.lower() and iver not in matches:
+        matches.append(iver)
+    return matches
 
   @commands.slash_command()
   async def feedback(
