@@ -42,8 +42,8 @@ class System(commands.Cog):
 
     Parameters
     ----------
-    Action: The action you want to perform
-    Module: The target cog which will be affected, leave empty for a list of loaded Cogs
+    action: The action you want to perform
+    module: The target cog which will be affected, leave empty for a list of loaded Cogs
     """
 
     self.bot.cogs['Auth'].superusers(inter)
