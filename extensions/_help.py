@@ -363,16 +363,23 @@ class Help(commands.Cog):
           embed.set_image(screenshot.url)
         await feedbackchannel.send(embed=embed)
         await inter.send(
-          self.bot.babel(inter, 'help', 'feedback_success')+\
-          ('\n' + self.bot.babel(inter, 'help', 'feedback_cta')) if self.bot.config['help']['serverinv'] else ''
+          self.bot.babel(inter, 'help', 'feedback_success') +
+          ('\n' + self.bot.babel(inter, 'help', 'feedback_cta'))
+          if self.bot.config['help']['serverinv'] else ''
         )
       else:
         await inter.send(
-          self.bot.babel(inter, 'help', 'feedback_failed')+\
-          ('\n' + self.bot.babel(inter, 'help', 'feedback_cta')) if self.bot.config['help']['serverinv'] else ''
+          self.bot.babel(inter, 'help', 'feedback_failed') +
+          ('\n' + self.bot.babel(inter, 'help', 'feedback_cta'))
+          if self.bot.config['help']['serverinv'] else ''
         )
     else:
-      await inter.send(self.bot.babel(inter, 'help', 'feedback_not_implemented', serverinv = self.bot.config['help']['serverinv']))
+      await inter.send(self.bot.babel(
+        inter,
+        'help',
+        'feedback_not_implemented',
+        serverinv = self.bot.config['help']['serverinv']
+      ))
 
 def setup(bot:commands.Bot):
   """ Bind this cog to the bot """
