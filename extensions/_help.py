@@ -108,7 +108,7 @@ class Help(commands.Cog):
   async def help(
     self,
     ctx:Union[commands.Context, disnake.ApplicationCommandInteraction],
-    command:str=None,
+    command:Optional[str]=None,
     **kwargs
   ):
     """finds usage information in babel and sends them
