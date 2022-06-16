@@ -21,6 +21,7 @@ class merelybot(commands.AutoShardedBot):
 	intents.invites = config.getboolean('intents', 'invites')
 	intents.voice_states = config.getboolean('intents', 'voice_states')
 	intents.presences = config.getboolean('intents', 'presences')
+	intents.message_content = config.getboolean('intents', 'message_content')
 	intents.messages = config.getboolean('intents', 'messages')
 	intents.guild_messages = config.getboolean('intents', 'guild_messages')
 	intents.dm_messages = config.getboolean('intents', 'dm_messages')
