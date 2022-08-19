@@ -1,9 +1,8 @@
 __pycache__/
 /.vscode
-/0.0.1/
-/logs*
-/config/config_history*
-/config/config.ini
-/merely_data
-.vscode/
 .pytest_cache/
+/0.0.1/
+/config/config_history
+/config/config.ini
+/logs
+/merely_data
