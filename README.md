@@ -51,21 +51,20 @@ Extensions need to be able to be entirely independant of each other and should r
 | [babel](babel.py)* | provides translated and formatted strings that contributors can easily translate to more languages | 1.0 |
 | [auth](extensions/__auth.py)* | provides security checks for other commands which need authorization | 1.0 |
 | [error](extensions/error.py) | provides error handling for all other extensions so they don't have to | 1.0 |
-| [log](extensions/log.py) | provides logging to a designated channel on a server for convenience | 1.0 |
-| [help](extensions/help.py)** | `help, about` - lists featured commands and can fetch docstrings on commands | 1.0 |
+| [log](extensions/log.py) | allows for logging to file, or to a text channel in a rich format | 1.0 |
+| [help](extensions/help.py)** | `help, about` - lists featured commands and fetches translated usage instructions | 1.0 |
 | [language](extensions/language.py) | `language` - allows bot users to change the language or request a translation | 1.0 |
 | [admin](extensions/admin.py) | `die, janitor, clean, purge` - power tools for server administrators | 1.0 |
 | [dice](extensions/dice.py) | `dice` - a simple dice rolling command with some advanced features | 1.0 |
 | [emoji](extensions/emoji.py) | `emoji, thonk` - allows non-nitro users to use a selection of custom emojis | 1.0 |
 | [greeter](extensions/greeter.py) | `welcome, farewell` - automated messages, configurable by admins | 1.0 |
-| [meme](extensions/meme.py) | a stand-in extension for promoting a different bot | 1.0 |
 | [poll](extensions/poll.py) | `poll` - adds polls to discord with an interactive poll builder and countdown timers | 1.0 |
 | [reactroles](extensions/reactroles.py) | `reactrole` - adds reaction roles to discord with an interactive setup | 1.0 |
 | [prefix](extensions/prefix.py) | `prefix` - allows guilds to have a custom prefix to use when this bot | 1.0 |
+| [system](extensions/system.py) | `module, die` - modify behaviour of the bot while it's running | 1.2 |
 | [premium](extensions/premium.py) | `premium` - locks select features behind a paywall, using a premium role to check | 1.0 |
 | ------ | ----------- | ----- |
 | [example](extensions/example.py) | `ping` - example commands for getting started on writing your own extension | 1.0 |
-| [lightbulb](extensions/lightbulb.py) | an experimental extension for commandless bot interaction | 1.0 |
 
  - \* = must be imported for minimal functionality
  - \*\* = must be imported, or replaced with a compatible replacement
