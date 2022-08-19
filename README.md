@@ -59,7 +59,6 @@ Extensions need to be able to be entirely independant of each other and should r
 | [emoji](extensions/emoji.py) | `emoji, thonk` - allows non-nitro users to use a selection of custom emojis | 1.0 |
 | [greeter](extensions/greeter.py) | `welcome, farewell` - automated messages, configurable by admins | 1.0 |
 | [meme](extensions/meme.py) | a stand-in extension for promoting a different bot | 1.0 |
-| [music](extensions/music.py) | a stand-in extension for promoting a different bot | 1.0 |
 | [poll](extensions/poll.py) | `poll` - adds polls to discord with an interactive poll builder and countdown timers | 1.0 |
 | [reactroles](extensions/reactroles.py) | `reactrole` - adds reaction roles to discord with an interactive setup | 1.0 |
 | [prefix](extensions/prefix.py) | `prefix` - allows guilds to have a custom prefix to use when this bot | 1.0 |
