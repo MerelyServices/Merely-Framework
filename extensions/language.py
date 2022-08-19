@@ -60,11 +60,7 @@ class Language(commands.Cog):
     """
     Get the language the bot is using with you right now and the reason why it was selected
     """
-    langs, origins = self.bot.babel.resolve_lang(
-      user_id=inter.author.id,
-      guild_id=inter.guild_id,
-      debug=True
-    )
+    langs, origins = self.bot.babel.resolve_lang(inter.author, inter.guild, inter, debug=True)
 
     embeds = []
     backup = False
@@ -138,7 +134,9 @@ class Language(commands.Cog):
     for lang in self.bot.babel.langs.keys():
       if lang.startswith(prefix) and search in lang:
         matches.append(lang.replace(prefix, ''))
-    return ['default'] + matches
+    if len(matches) > 24:
+      matches = matches[:23] + ['...']
+    return (['default'] if 'default'.startswith(search) else []) + matches
 
 def setup(bot:commands.Bot):
   """ Bind this cog to the bot """
