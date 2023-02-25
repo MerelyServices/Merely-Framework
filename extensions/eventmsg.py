@@ -51,9 +51,9 @@ class EventMsg(commands.Cog):
   @commands.slash_command()
   async def eventmessage(
     self,
-    inter:disnake.GuildCommandInteraction,
-    
-  )
+    inter:disnake.GuildCommandInteraction 
+  ):
+    pass
 
   @commands.group()
   @commands.guild_only()
