@@ -9,7 +9,7 @@ You can test these implementations on my [official Discord server](https://disco
  - [ConfessionBot](https://github.com/yiays/ConfessionBot-2.0) is an anonymous messaging system for Discord. ConfessionBot uses the help command, translation support, and module reloading features to speed up development and shares improvements to the framework back here.
 
 ## News
-Translation tooling for my projects (including ConfessionBot) has launched! contribute translations with the help of this tooling and see your language become available in all sorts of places!
+Translation tooling for my projects (including MerelyBot) has launched! contribute translations with the help of this tooling and see your language become available in all sorts of places!
 > [try it now >](https://translate.yiays.com)
 
 merely v1.0.0 has launched! with this update comes a wave of potential for 3rd party extensions and custom discord bots. it is also full of breaking changes, the config migration tool should be able to help, but .
@@ -57,7 +57,7 @@ Extensions need to be able to be entirely independant of each other and should r
 | [admin](extensions/admin.py) | `die, janitor, clean, purge` - power tools for server administrators | 1.0 |
 | [dice](extensions/dice.py) | `dice` - a simple dice rolling command with some advanced features | 1.0 |
 | [emoji](extensions/emoji.py) | `emoji, thonk` - allows non-nitro users to use a selection of custom emojis | 1.0 |
-| [greeter](extensions/greeter.py) | `welcome, farewell` - automated messages, configurable by admins | 1.0 |
+| [eventmsg](extensions/eventmsg.py) | `eventmsg` - automated messages in response to user actions | 1.0 |
 | [poll](extensions/poll.py) | `poll` - adds polls to discord with an interactive poll builder and countdown timers | 1.0 |
 | [reactroles](extensions/reactroles.py) | `reactrole` - adds reaction roles to discord with an interactive setup | 1.0 |
 | [prefix](extensions/prefix.py) | `prefix` - allows guilds to have a custom prefix to use when this bot | 1.0 |

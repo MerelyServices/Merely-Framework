@@ -8,8 +8,7 @@
 import os, re
 from configparser import ConfigParser
 from typing import Optional, Union
-import disnake
-from disnake import Guild, Message, Interaction, User, Member
+from disnake import Locale, Guild, Message, Interaction, User, Member
 from disnake.ext.commands import Context
 
 class Babel():
@@ -28,6 +27,7 @@ class Babel():
     """ Load data from config and babel files """
     self.defaultlang = self.config.get('language', 'default', fallback='en')
     # defaultlang is the requested language to default new users to
+    self.prefix = self.config.get('language', 'prefix', fallback='')
 
     if os.path.isfile(self.path):
       os.remove(self.path)
@@ -66,9 +66,9 @@ class Babel():
     self.langs = {}
     self.load()
 
-  def localeconv(self, locale:disnake.Locale) -> str:
+  def localeconv(self, locale:Locale) -> str:
     """ Converts a Discord API locale to a babel locale """
-    return str(locale).replace('-US', '').replace('-UK', '')
+    return self.prefix + str(locale).replace('-US', '').replace('-UK', '')
 
   def resolve_lang(
     self,
@@ -82,13 +82,17 @@ class Babel():
     dbg_origins = []
 
     def resolv(locale, origin):
+      """ Find the specific babel lang struct for this locale """
       if locale not in self.langs and '_' in locale:
-        # guess that the non-superset version of the language is what it would've inherited from
+        # Guess that the non-superset version of the language is what it would've inherited from
         locale = locale.split('_')[0]
       if locale in self.langs:
+        # A language file was found
         langs.append(locale)
         if debug: dbg_origins.append(origin)
+        # Follow the inheritance chain
         locale = self.langs[langs[-1]].get('meta', 'inherit', fallback=None)
+        # Loop interrupts if this chain has been followed before
         while locale and locale not in langs and locale in self.langs:
           langs.append(locale)
           if debug: dbg_origins.append('inherit '+origin)
@@ -110,15 +114,9 @@ class Babel():
     if inter and inter.guild and 'COMMUNITY' in inter.guild.features:
       locale = self.localeconv(inter.guild_locale)
       resolv(locale, 'guild_locale')
-
+    # Default language
     if self.defaultlang not in langs:
-      langs.append(self.defaultlang)
-      if debug:
-        dbg_origins.append('default')
-    if self.baselang not in langs:
-      langs.append(self.baselang)
-      if debug:
-        dbg_origins.append('default')
+      resolv(self.defaultlang, 'default')
 
     if not debug:
       return langs
