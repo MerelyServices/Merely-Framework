@@ -8,17 +8,31 @@ import disnake
 from disnake.ext import commands
 from enum import Enum
 
-class Action(Enum):
-  """ Actions that can be performed on an event """
-  disable = 0
-  enable = 1
-
 class Event(Enum):
   """ Types of events that are supported """
-  welcome = 0
-  farewell = 1
-  rank = 2
-  derank = 3
+  # Built-in disnake events, most require members scope
+  WELCOME = 'on_member_join'
+  FAREWELL = 'on_member_leave'
+  ROLE_GAIN = 'on_member_update role add'
+  ROLE_LOSE = 'on_member_update role remove'
+  MESSAGE = 'on_message' # Requires message content scope
+  NEW_EMOJI = 'on_guild_emojis_update'
+  BAN = 'on_member_ban'
+  UNBAN = 'on_member_unban'
+  # Time system
+  DAILY = 'on_day'
+  WEEKLY = 'on_week'
+  MONTHLY = 'on_month'
+  QUARTERLY = 'on_quarter'
+  YEARLY = 'on_year'
+  # XP system, does nothing unless XP module is enabled
+  LEVEL_UP = 'on_level_up'
+
+class Action(Enum):
+  """ Actions that can be performed on an event """
+  NOTHING = 0
+  MESSAGE = 1
+  GRANT_XP = 2
 
 class EventMsg(commands.Cog):
   """ Setup custom messages to send on an event """
@@ -32,27 +46,40 @@ class EventMsg(commands.Cog):
     if not bot.config.has_section('eventmsg'):
       bot.config.add_section('eventmsg')
 
-  @commands.Cog.listener("on_member_join")
-  async def on_welcome(self, member):
+  @commands.Cog.listener("on_raw_member_join")
+  async def on_welcome(self, member:disnake.Member):
     """welcome service, shows a custom welcome message to new users"""
     if f"{member.guild.id}_welcome" in self.bot.config['eventmsg']:
       data = self.bot.config['eventmsg'][f"{member.guild.id}_welcome"].split(', ')
       channel = member.guild.get_channel(int(data[0]))
       await channel.send(', '.join(data[1:]).format(member.mention, member.guild.name))
 
-  @commands.Cog.listener("on_member_leave")
-  async def on_farewell(self, member):
+  @commands.Cog.listener("on_raw_member_leave")
+  async def on_farewell(self, payload:disnake.RawGuildMemberRemoveEvent):
     """farewell service, shows a custom farewell message whenever someone leaves"""
-    if f"{member.guild.id}_farewell" in self.bot.config['eventmsg']:
-      data = self.bot.config['eventmsg'][f"{member.guild.id}_farewell"].split(', ')
-      channel = member.guild.get_channel(int(data[0]))
-      await channel.send(', '.join(data[1:]).format(f"{member.name}#{member.discriminator}", member.guild.name))
+    if f"{payload.guild_id}_farewell" in self.bot.config['eventmsg']:
+      data = self.bot.config['eventmsg'][f"{payload.guild_id}_farewell"].split(', ')
+      guild = self.bot.get_guild(payload.guild_id)
+      channel = guild.get_channel(int(data[0]))
+      await channel.send(', '.join(data[1:]).format(f"{payload.user.name}#{payload.user.discriminator}", guild.name))
 
   @commands.slash_command()
   async def eventmessage(
     self,
-    inter:disnake.GuildCommandInteraction 
+    inter:disnake.GuildCommandInteraction,
+    channel: disnake.TextChannel,
+    event: Event,
+    action: Action
   ):
+    """
+    Set up a message/action to take whenever something happens on the server.
+
+    Parameters
+    ----------
+    channel: The target channel where the event message will be sent
+    event: The event for the bot to watch for
+    action: The action the bot will take in response
+    """
     pass
 
   @commands.group()
