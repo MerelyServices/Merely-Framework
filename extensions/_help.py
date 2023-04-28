@@ -20,6 +20,8 @@ class Help(commands.Cog):
       bot.config['help']['customstatus'] = ''
     if 'helpurl' not in bot.config['help']:
       bot.config['help']['helpurl'] = ''
+    if 'codeurl' not in bot.config['help']:
+      bot.config['help']['codeurl'] = ''
     if 'helpurlvideoexamples' not in bot.config['help']:
       bot.config['help']['helpurlvideoexamples'] = ''
     if 'serverinv' not in bot.config['help']:
