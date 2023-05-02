@@ -10,8 +10,7 @@ import disnake
 from disnake.ext import commands
 
 class Actions(int, Enum):
-  """ Actions that can be performed on an option """
-  list = 0
+  """ Actions that can be performed on a module """
   load = 1
   unload = 2
   reload = 3
@@ -35,7 +34,7 @@ class System(commands.Cog):
     self,
     inter:disnake.ApplicationCommandInteraction,
     action:Actions,
-    module:Optional[str] = None
+    module:str
   ):
     """
     Manage modules of the bot in real time
@@ -55,12 +54,6 @@ class System(commands.Cog):
     active_extensions = [
       e.replace('extensions.','').strip('_') for e in self.bot.extensions.keys()
     ] + ['config', 'babel']
-    if module is None:
-      await inter.send(
-        self.bot.babel(inter, 'main', 'extensions_list', list='\n'.join(active_extensions)),
-        ephemeral=True
-      )
-      return
     module = module.lower()
 
     ext = None
@@ -144,8 +137,6 @@ class System(commands.Cog):
         extension_list = (
           e.replace('extensions.','').strip('_') for e in self.bot.extensions.keys()
         )
-      elif inter.filled_options['action'] == Actions.list:
-        return []
     if extension_list is None:
       extension_list = (f[11:-3].strip('_') for f in glob(os.path.join('extensions', '*.py')))
     return (
