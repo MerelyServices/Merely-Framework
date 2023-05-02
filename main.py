@@ -37,7 +37,7 @@ class MerelyBot(commands.AutoShardedBot):
 		intents = disnake.Intents.none()
 		intents.guilds = self.config.getboolean('intents', 'guilds')
 		intents.members = self.config.get('intents', 'members') != 'none'
-		intents.bans = self.config.getboolean('intents', 'bans')
+		intents.moderation = self.config.getboolean('intents', 'moderation')
 		intents.emojis = self.config.getboolean('intents', 'emojis')
 		intents.integrations = self.config.getboolean('intents', 'integrations')
 		intents.webhooks = self.config.getboolean('intents', 'webhooks')
@@ -45,15 +45,12 @@ class MerelyBot(commands.AutoShardedBot):
 		intents.voice_states = self.config.getboolean('intents', 'voice_states')
 		intents.presences = self.config.getboolean('intents', 'presences')
 		intents.message_content = self.config.getboolean('intents', 'message_content')
-		intents.guild_messages = 'guild' in self.config.get('intents', 'guild_messages')
-		intents.dm_messages = 'dm' in self.config.get('intents', 'dm_messages')
-		intents.messages = intents.guild_messages or intents.dm_messages
+		intents.guild_messages = 'guild' in self.config.get('intents', 'messages')
+		intents.dm_messages = 'dm' in self.config.get('intents', 'messages')
 		intents.guild_reactions = 'guild' in self.config.get('intents', 'reactions')
 		intents.dm_reactions = 'dm' in self.config.get('intents', 'reactions')
-		intents.reactions = intents.guild_reactions or intents.dm_reactions
 		intents.guild_typing = 'guild' in self.config.get('intents', 'typing')
 		intents.dm_typing = 'dm' in self.config.get('intents', 'typing')
-		intents.typing = intents.guild_typing or intents.dm_typing
 
 		# set cache policy
 		if self.config.get('intents', 'members') == 'uncached':

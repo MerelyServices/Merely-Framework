@@ -67,12 +67,10 @@ class ReactRoles(commands.Cog):
       guild = await self.bot.fetch_guild(data.guild_id)
       member = await guild.fetch_member(data.user_id)
       emojiid = data.emoji if data.emoji.is_unicode_emoji() else data.emoji.id
-      print('DEBUG', f"{data.channel_id}_{data.message_id}_{emojiid}_roles")
       if f"{data.channel_id}_{data.message_id}_{emojiid}_roles" in self.bot.config['reactroles']:
         channel = await self.bot.fetch_channel(data.channel_id)
         roleids = [int(r) for r in self.bot.config['reactroles'][f"{data.channel_id}_{data.message_id}_{emojiid}_roles"].split(' ')]
         roles = []
-        print('DEBUG we made it this far')
         for roleid in roleids:
           try:
             roles.append(channel.guild.get_role(roleid))

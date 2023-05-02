@@ -85,22 +85,10 @@ class Config(ConfigParser):
       self['intents']['presences'] = 'False'
     if 'messages' not in self['intents']:
       self['intents']['messages'] = 'False'
-    if 'guild_messages' not in self['intents']:
-      self['intents']['guild_messages'] = 'False'
-    if 'dm_messages' not in self['intents']:
-      self['intents']['dm_messages'] = 'False'
     if 'reactions' not in self['intents']:
       self['intents']['reactions'] = 'False'
-    if 'guild_reactions' not in self['intents']:
-      self['intents']['guild_reactions'] = 'False'
-    if 'dm_reactions' not in self['intents']:
-      self['intents']['dm_reactions'] = 'False'
     if 'typing' not in self['intents']:
       self['intents']['typing'] = 'False'
-    if 'guild_typing' not in self['intents']:
-      self['intents']['guild_typing'] = 'False'
-    if 'dm_typing' not in self['intents']:
-      self['intents']['dm_typing'] = 'False'
     if 'extensions' not in self.sections():
       self.add_section('extensions')
     if 'allow_reloading' not in self['extensions']:
