@@ -4,47 +4,161 @@
   Dependancies: Auth
 """
 
+from enum import Enum
+from typing import Optional, Union
 import disnake
 from disnake.ext import commands
-from enum import Enum
 
-class Event(Enum):
-  """ Types of events that are supported """
+getdatecomponent = [
+  disnake.ui.Button(
+    label="Edit date",
+    custom_id='edit_date',
+    style=disnake.ButtonStyle.secondary,
+    emoji=disnake.PartialEmoji(name='📅')
+  )
+]
+
+class Event():
+  """ The conditions of an event which the bot should watch for """
+  def __init__(
+    self,
+    name:str,
+    usage:str,
+    variables:tuple[str],
+    components:Optional[list[disnake.Component]]=[]
+  ) -> None:
+    self.name = name
+    self.example = usage
+    self.variables = variables
+    self.components = components # Additional custom components for this event
+
+Events = {
   # Built-in disnake events, most require members scope
-  WELCOME = 'on_member_join'
-  FAREWELL = 'on_member_leave'
-  ROLE_GAIN = 'on_member_update role add'
-  ROLE_LOSE = 'on_member_update role remove'
-  MESSAGE = 'on_message' # Requires message content scope
-  NEW_EMOJI = 'on_guild_emojis_update'
-  BAN = 'on_member_ban'
-  UNBAN = 'on_member_unban'
+  'WELCOME': Event(
+    'on_member_join',
+    "{member.mention} has joined {guild.name}!",
+    ('member.mention', 'member.name', 'guild.name')
+  ),
+  'FAREWELL': Event(
+    'on_member_leave',
+    "{member.name}#{member.discriminator} has left {guild.name}.",
+    ('member.name', 'member.discriminator', 'guild.name')
+  ),
+  'ROLE_GAIN': Event(
+    'on_member_update role add',
+    "{member.mention} has been given the role {role.name}!",
+    ('member.mention', 'member.name', 'role.name')
+  ),
+  'ROLE_LOSE': Event(
+    'on_member_update role remove',
+    "{member.mention} has lost the role {role.name}!",
+    ('member.mention', 'member.name', 'role.name')
+  ),
+  'MESSAGE': Event(
+    'on_message',
+    "{member.name} just posted in {channel.mention}",
+    ('member.name', 'channel.mention')
+  ), # Requires message content scope
+  'NEW_EMOJI': Event(
+    'on_guild_emojis_update',
+    "A new emoji has just been added; {emoji} - use it with :{emoji.name}:!",
+    ('emoji', 'emoji.name')
+  ),
+  'BAN': Event(
+    'on_member_ban',
+    "{user.name}#{user.discriminator} has been banned! Reason: {ban.reason}.",
+    ('user.name', 'user.discriminator', 'ban.reason')
+  ),
+  'UNBAN': Event(
+    'on_member_unban',
+    "{user.name}#{user.disciminator}'s ban has been lifted!",
+    ('user.name', 'user.discriminator')
+  ),
   # Time system
-  DAILY = 'on_day'
-  WEEKLY = 'on_week'
-  MONTHLY = 'on_month'
-  QUARTERLY = 'on_quarter'
-  YEARLY = 'on_year'
+  'DAILY': Event(
+    'on_day',
+    "Daily post - {date}",
+    ('date',),
+    getdatecomponent
+  ),
+  'WEEKLY': Event(
+    'on_week',
+    "Weekly post - {date.week}",
+    ('date','date.week'),
+    getdatecomponent
+  ),
+  'MONTHLY': Event(
+    'on_month',
+    "Monthly post - {date.month}",
+    ('date', 'date.month'),
+    getdatecomponent
+  ),
+  'QUARTERLY': Event(
+    'on_quarter',
+    "Quarterly post - {date.quarter}, {date.year}",
+    ('date', 'date.quarter', 'date.year'),
+    getdatecomponent
+  ),
+  'YEARLY': Event(
+    'on_year',
+    "Yearly post - {date.year}",
+    ('date', 'date.year'),
+    getdatecomponent
+  ),
   # XP system, does nothing unless XP module is enabled
-  LEVEL_UP = 'on_level_up'
+  'XP_UP': Event(
+    'on_xp_up',
+    "{member.mention} has gained XP; level {xp.level}, {xp} XP.",
+    ('member.mention', 'member.username', 'xp.level', 'xp')
+  ),
+  'LEVEL_UP': Event(
+    'on_level_up',
+    "{member.mention} is now level {xp.level}!",
+    ('member.mention', 'member.username', 'xp.level', 'xp')
+  )
+}
 
 class Action(Enum):
   """ Actions that can be performed on an event """
   NOTHING = 0
-  MESSAGE = 1
-  GRANT_XP = 2
+  SEND_MESSAGE = 1
+  EDIT_MESSAGE = 2
+  GRANT_XP = 3
 
 class EventMsg(commands.Cog):
   """ Setup custom messages to send on an event """
   def __init__(self, bot:commands.Bot):
     self.bot = bot
     if not bot.config.getboolean('extensions', 'auth', fallback=False):
-      raise Exception("'auth' must be enabled to use 'eventmsg'")
+      raise AssertionError("'auth' must be enabled to use 'eventmsg'")
     if not bot.config.getboolean('extensions', 'help', fallback=False):
       print(Warning("'help' is a recommended extension for 'eventmsg'"))
     # ensure config file has required data
     if not bot.config.has_section('eventmsg'):
       bot.config.add_section('eventmsg')
+
+  def pop_msg_var(self, event:Event, message:str, **kwargs) -> str:
+    """ Goes through allowed variables for this event and fills the string """
+    newmessage = message
+    for evar in event.variables:
+      currentval = None
+      evarparts = evar.split('.')
+      if evarparts[0] in kwargs and kwargs[evarparts[0]] is not None:
+        currentvar = kwargs[evarparts[0]]
+        if len(evarparts) > 1:
+          if evarparts[1] in dir(currentvar):
+            currentval = getattr(currentvar, evarparts[1])
+          else:
+            raise AssertionError(f".{evarparts[1]} was not found in {evarparts[0]}!")
+        else:
+          currentval = currentvar
+        if currentval is not None:
+          newmessage = newmessage.replace("{"+evar+"}", currentval)
+        else:
+          print(f"WARN: Missing variable {evar} for event (value is None)")
+      else:
+        print(f"WARN: Missing variable {evar} for event (was not in kwargs)")
+    return newmessage
 
   @commands.Cog.listener("on_raw_member_join")
   async def on_welcome(self, member:disnake.Member):
@@ -61,15 +175,16 @@ class EventMsg(commands.Cog):
       data = self.bot.config['eventmsg'][f"{payload.guild_id}_farewell"].split(', ')
       guild = self.bot.get_guild(payload.guild_id)
       channel = guild.get_channel(int(data[0]))
-      await channel.send(', '.join(data[1:]).format(f"{payload.user.name}#{payload.user.discriminator}", guild.name))
+      await channel.send(', '.join(data[1:])
+                         .format(f"{payload.user.name}#{payload.user.discriminator}", guild.name))
 
   @commands.slash_command()
   async def eventmessage(
     self,
     inter:disnake.GuildCommandInteraction,
-    channel: disnake.TextChannel,
-    event: Event,
-    action: Action
+    channel:disnake.TextChannel,
+    raw_event:str = commands.Param(name='event', choices=list(Events)),
+    raw_action:Action = commands.Param(name='action')
   ):
     """
     Set up a message/action to take whenever something happens on the server.
@@ -80,7 +195,65 @@ class EventMsg(commands.Cog):
     event: The event for the bot to watch for
     action: The action the bot will take in response
     """
-    pass
+    event = Events[raw_event]
+    action = Action(raw_action)
+
+    components = [disnake.ui.ActionRow()]
+    match action:
+      case Action.SEND_MESSAGE | Action.EDIT_MESSAGE:
+        components[0].add_button(
+          label="Edit message",
+          custom_id=f"action_{raw_action}_edit",
+          style=disnake.ButtonStyle.secondary,
+          emoji='📝'
+        )
+        if len(event.components):
+          components.insert(0, disnake.ui.ActionRow(*event.components))
+      case Action.GRANT_XP:
+        components.insert(0, disnake.ui.ActionRow())
+        components[0].add_select(
+          custom_id=f"action_{raw_action}_value",
+          placeholder="XP Points",
+          options=range(1,25)
+        )
+        if raw_event == 'MESSAGE':
+          components[0].add_select(
+            custom_id=f"action_{raw_action}_mode",
+            placeholder="Mode",
+            options={'Number (simple mode)': 0, 'Message length': 1}
+          )
+      case _:
+        raise AssertionError("An event was specified which was not handled in /eventmessage")
+    components[len(components)-1].add_button(
+      label="Submit",
+      custom_id=f"{inter.guild_id}_{channel.id}_{raw_event}",
+      style=disnake.ButtonStyle.primary,
+      emoji='✅',
+      disabled=True
+    )
+
+    usage = self.pop_msg_var(
+      event=event,
+      message='\n'.join(["`[["+evar+"]]` = {"+evar+"}" for evar in event.variables]),
+      guild=inter.guild,
+      member=inter.user,
+      channel=channel,
+      emoji=disnake.PartialEmoji(name='🤖'),
+      role=inter.guild.roles[-1]
+    ).replace('[[', '{').replace(']]', '}')
+
+    message = event.example
+
+    await inter.response.send_message(
+      f"""
+        Use the controls below to configure your event handler.\n
+        **In {channel.mention}:** `{message}`\n
+        >>> *Available variables (and example values):*\n{usage}
+      """.replace('        ', ''),
+      components=components,
+      ephemeral=True,
+      allowed_mentions=[]
+    )
 
   @commands.group()
   @commands.guild_only()
