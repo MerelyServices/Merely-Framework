@@ -69,8 +69,8 @@ class Config(ConfigParser):
       self['intents']['guilds'] = 'False'
     if 'members' not in self['intents']:
       self['intents']['members'] = 'False'
-    if 'bans' not in self['intents']:
-      self['intents']['bans'] = 'False'
+    if 'moderation' not in self['intents']:
+      self['intents']['moderation'] = 'False'
     if 'emojis' not in self['intents']:
       self['intents']['emojis'] = 'False'
     if 'integrations' not in self['intents']:
