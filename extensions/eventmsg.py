@@ -4,6 +4,7 @@
   Dependancies: Auth
 """
 
+from datetime import datetime
 from enum import Enum
 from typing import Optional, Union
 import disnake
@@ -77,44 +78,44 @@ Events = {
   # Time system
   'DAILY': Event(
     'on_day',
-    "Daily post - {date}",
-    ('date',),
+    "Daily post - {date.date}",
+    ('date.date',),
     getdatecomponent
   ),
   'WEEKLY': Event(
     'on_week',
     "Weekly post - {date.week}",
-    ('date','date.week'),
+    ('date.date', 'date.week'),
     getdatecomponent
   ),
   'MONTHLY': Event(
     'on_month',
     "Monthly post - {date.month}",
-    ('date', 'date.month'),
+    ('date.date', 'date.month'),
     getdatecomponent
   ),
   'QUARTERLY': Event(
     'on_quarter',
-    "Quarterly post - {date.quarter}, {date.year}",
-    ('date', 'date.quarter', 'date.year'),
+    "Quarterly post - Q{date.quarter}{date.shortyear}",
+    ('date.date', 'date.quarter', 'date.year', 'date.shortyear'),
     getdatecomponent
   ),
   'YEARLY': Event(
     'on_year',
     "Yearly post - {date.year}",
-    ('date', 'date.year'),
+    ('date.date', 'date.year', 'date.shortyear'),
     getdatecomponent
   ),
   # XP system, does nothing unless XP module is enabled
   'XP_UP': Event(
     'on_xp_up',
     "{member.mention} has gained XP; level {xp.level}, {xp} XP.",
-    ('member.mention', 'member.username', 'xp.level', 'xp')
+    ('member.mention', 'member.name', 'xp.level', 'xp')
   ),
   'LEVEL_UP': Event(
     'on_level_up',
     "{member.mention} is now level {xp.level}!",
-    ('member.mention', 'member.username', 'xp.level', 'xp')
+    ('member.mention', 'member.name', 'xp.level', 'xp')
   )
 }
 
@@ -124,6 +125,27 @@ class Action(Enum):
   SEND_MESSAGE = 1
   EDIT_MESSAGE = 2
   GRANT_XP = 3
+
+class Date(datetime):
+  """
+  This is a modified datetime class which adds some easy formatting properties for strings
+  """
+  @property
+  def date(self) -> str:
+    """ Override for date, returns D/MM/YYYY """
+    return f"<t:{round(self.timestamp())}:d>"
+  @property
+  def week(self) -> int:
+    """ Week number (0-52) """
+    return int(self.strftime('%W'))
+  @property
+  def quarter(self) -> int:
+    """ Quarter number (1-4) as in Q422 """
+    return {1:1, 2:1, 3:1, 4:2, 5:2, 6:2, 7:3, 8:3, 9:3, 10:4, 11:4, 12:4}[self.month]
+  @property
+  def shortyear(self) -> int:
+    """ 2 digit representaion of the current year (0-99) """
+    return self.year % 100
 
 class EventMsg(commands.Cog):
   """ Setup custom messages to send on an event """
@@ -141,7 +163,9 @@ class EventMsg(commands.Cog):
     """ Goes through allowed variables for this event and fills the string """
     newmessage = message
     for evar in event.variables:
-      currentval = None
+      currentval: Optional[Union[
+        disnake.Member,disnake.User,disnake.Guild,disnake.Role,disnake.Emoji,Date
+      ]] = None
       evarparts = evar.split('.')
       if evarparts[0] in kwargs and kwargs[evarparts[0]] is not None:
         currentvar = kwargs[evarparts[0]]
@@ -153,7 +177,7 @@ class EventMsg(commands.Cog):
         else:
           currentval = currentvar
         if currentval is not None:
-          newmessage = newmessage.replace("{"+evar+"}", currentval)
+          newmessage = newmessage.replace("{"+evar+"}", str(currentval))
         else:
           print(f"WARN: Missing variable {evar} for event (value is None)")
       else:
@@ -199,6 +223,7 @@ class EventMsg(commands.Cog):
     action = Action(raw_action)
 
     components = [disnake.ui.ActionRow()]
+    mainrow = 0
     match action:
       case Action.SEND_MESSAGE | Action.EDIT_MESSAGE:
         components[0].add_button(
@@ -207,24 +232,31 @@ class EventMsg(commands.Cog):
           style=disnake.ButtonStyle.secondary,
           emoji='📝'
         )
-        if len(event.components):
-          components.insert(0, disnake.ui.ActionRow(*event.components))
+        for comp in event.components:
+          if comp is disnake.ui.Button:
+            components[mainrow].append_item(comp)
+          else:
+            components.insert(0, disnake.ui.ActionRow(*(comp,)))
+            mainrow += 1
       case Action.GRANT_XP:
         components.insert(0, disnake.ui.ActionRow())
+        mainrow += 1
         components[0].add_select(
           custom_id=f"action_{raw_action}_value",
           placeholder="XP Points",
           options=range(1,25)
         )
         if raw_event == 'MESSAGE':
-          components[0].add_select(
+          components.insert(1, disnake.ui.ActionRow())
+          mainrow += 1
+          components[1].add_select(
             custom_id=f"action_{raw_action}_mode",
             placeholder="Mode",
             options={'Number (simple mode)': 0, 'Message length': 1}
           )
       case _:
         raise AssertionError("An event was specified which was not handled in /eventmessage")
-    components[len(components)-1].add_button(
+    components[mainrow].add_button(
       label="Submit",
       custom_id=f"{inter.guild_id}_{channel.id}_{raw_event}",
       style=disnake.ButtonStyle.primary,
@@ -232,28 +264,32 @@ class EventMsg(commands.Cog):
       disabled=True
     )
 
-    usage = self.pop_msg_var(
-      event=event,
-      message='\n'.join(["`[["+evar+"]]` = {"+evar+"}" for evar in event.variables]),
-      guild=inter.guild,
-      member=inter.user,
-      channel=channel,
-      emoji=disnake.PartialEmoji(name='🤖'),
-      role=inter.guild.roles[-1]
-    ).replace('[[', '{').replace(']]', '}')
+    usage = ''
+    message = ''
+    xp=0
+    if action in (Action.SEND_MESSAGE, Action.EDIT_MESSAGE):
+      usage = self.pop_msg_var(
+        event=event,
+        message='\n'.join(["`[["+evar+"]]` = {"+evar+"}" for evar in event.variables]),
+        guild=inter.guild,
+        member=inter.user,
+        channel=channel,
+        emoji=inter.guild.emojis[-1],
+        role=inter.guild.roles[-1],
+        date=Date(2023, 10, 28) # example date shows month and day numbers clearly
+      ).replace('[[', '{').replace(']]', '}')
+      
+      message = event.example
 
-    message = event.example
-
-    await inter.response.send_message(
-      f"""
-        Use the controls below to configure your event handler.\n
-        **In {channel.mention}:** `{message}`\n
-        >>> *Available variables (and example values):*\n{usage}
-      """.replace('        ', ''),
-      components=components,
-      ephemeral=True,
-      allowed_mentions=[]
-    )
+    await inter.response.send_message(self.bot.babel(
+      inter,
+      'eventmsg',
+      'event_controlpanel',
+      message=message,
+      channel=channel.mention,
+      xp=xp,
+      usage=usage
+    ), components=components, ephemeral=True, allowed_mentions=[])
 
   @commands.group()
   @commands.guild_only()
