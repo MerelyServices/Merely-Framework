@@ -202,6 +202,81 @@ class EventMsg(commands.Cog):
       await channel.send(', '.join(data[1:])
                          .format(f"{payload.user.name}#{payload.user.discriminator}", guild.name))
 
+  class EventMessageEditor(disnake.ui.Modal):
+    """ Modal simply provides a text box to change the event message """
+    def __init__(self, eid:str, message:str, channel:str, usage:str):
+      """ Create modal with the current message content """
+      super().__init__(
+        title="Edit event message",
+        custom_id=f'{eid}_editor',
+        components=[disnake.ui.TextInput(
+          label="Message",
+          custom_id='message',
+          placeholder=message,
+          value=message,
+          style=disnake.TextInputStyle.paragraph,
+          min_length=1
+        )]
+      )
+
+      self.eid = eid
+      self.message = message
+      self.channel = channel
+      self.usage = usage
+
+    async def callback(self, inter:disnake.ModalInteraction, /):
+      """ Handle the new message content """
+      self.message = inter.text_values['message']
+
+      state = inter.bot.babel(
+        inter,
+        'eventmsg',
+        'event_controlpanel',
+        message=self.message,
+        channel=self.channel,
+        usage=self.usage
+      )
+      await inter.response.edit_message(state)
+
+  class EventEditButton(disnake.ui.Button):
+    """ Stores eventmessage state while the message is being edited """
+    """ TODO: This isn't going to work, refactor to a View """
+    def __init__(
+      self,
+      parent:"EventMsg",
+      event:Event,
+      action:Action,
+      usage:str,
+      message:str,
+      xp:int,
+      channel:disnake.TextChannel
+    ):
+      eid = f"{channel.guild.id}_{channel.id}_{event.name}_{action.value}"
+      super().__init__(
+        label="Edit message",
+        custom_id=f"{eid}_edit",
+        style=disnake.ButtonStyle.secondary,
+        emoji='📝'
+      )
+
+      self.parent = parent
+      self.event = event
+      self.action = action
+      self.eid = eid
+      self.usage = usage
+      self.message = message
+      self.xp = xp
+      self.channel = channel
+
+    async def callback(self, inter:disnake.MessageInteraction, /):
+      print('called')
+      inter.response.send_modal(self.parent.EventMessageEditor(
+        self.eid,
+        self.message,
+        self.channel,
+        self.usage
+      ))
+
   @commands.slash_command()
   async def eventmessage(
     self,
@@ -222,48 +297,8 @@ class EventMsg(commands.Cog):
     event = Events[raw_event]
     action = Action(raw_action)
 
-    components = [disnake.ui.ActionRow()]
-    mainrow = 0
-    match action:
-      case Action.SEND_MESSAGE | Action.EDIT_MESSAGE:
-        components[0].add_button(
-          label="Edit message",
-          custom_id=f"action_{raw_action}_edit",
-          style=disnake.ButtonStyle.secondary,
-          emoji='📝'
-        )
-        for comp in event.components:
-          if comp is disnake.ui.Button:
-            components[mainrow].append_item(comp)
-          else:
-            components.insert(0, disnake.ui.ActionRow(*(comp,)))
-            mainrow += 1
-      case Action.GRANT_XP:
-        components.insert(0, disnake.ui.ActionRow())
-        mainrow += 1
-        components[0].add_select(
-          custom_id=f"action_{raw_action}_value",
-          placeholder="XP Points",
-          options=range(1,25)
-        )
-        if raw_event == 'MESSAGE':
-          components.insert(1, disnake.ui.ActionRow())
-          mainrow += 1
-          components[1].add_select(
-            custom_id=f"action_{raw_action}_mode",
-            placeholder="Mode",
-            options={'Number (simple mode)': 0, 'Message length': 1}
-          )
-      case _:
-        raise AssertionError("An event was specified which was not handled in /eventmessage")
-    components[mainrow].add_button(
-      label="Submit",
-      custom_id=f"{inter.guild_id}_{channel.id}_{raw_event}",
-      style=disnake.ButtonStyle.primary,
-      emoji='✅',
-      disabled=True
-    )
-
+    # Default state
+    eid = f"{inter.guild_id}_{channel.id}_{raw_event}_{raw_action}"
     usage = ''
     message = ''
     xp=0
@@ -278,10 +313,49 @@ class EventMsg(commands.Cog):
         role=inter.guild.roles[-1],
         date=Date(2023, 10, 28) # example date shows month and day numbers clearly
       ).replace('[[', '{').replace(']]', '}')
-      
+
       message = event.example
 
-    await inter.response.send_message(self.bot.babel(
+    # Build view
+    components = [disnake.ui.ActionRow()]
+    mainrow = 0
+    match action:
+      case Action.SEND_MESSAGE | Action.EDIT_MESSAGE:
+        components[0].append_item(self.EventEditButton(
+          self, event, action, usage, message, xp, channel
+        ))
+        for comp in event.components:
+          if comp is disnake.ui.Button:
+            components[mainrow].append_item(comp)
+          else:
+            components.insert(0, disnake.ui.ActionRow(*(comp,)))
+            mainrow += 1
+      case Action.GRANT_XP:
+        components.insert(0, disnake.ui.ActionRow())
+        mainrow += 1
+        components[0].add_select(
+          custom_id=f"{eid}_xpmult",
+          placeholder="XP Points",
+          options=range(1,25)
+        )
+        if raw_event == 'MESSAGE':
+          components.insert(1, disnake.ui.ActionRow())
+          mainrow += 1
+          components[1].add_select(
+            custom_id=f"{eid}_xpmode",
+            placeholder="Mode",
+            options={'Number (simple mode)': 0, 'Message length': 1}
+          )
+      case _:
+        raise AssertionError("An event was specified which was not handled in /eventmessage")
+    components[mainrow].add_button(
+      label="Submit",
+      custom_id=f"{eid}_submit",
+      style=disnake.ButtonStyle.primary,
+      emoji='✅',
+      disabled=True
+    )
+    state = self.bot.babel(
       inter,
       'eventmsg',
       'event_controlpanel',
@@ -289,7 +363,8 @@ class EventMsg(commands.Cog):
       channel=channel.mention,
       xp=xp,
       usage=usage
-    ), components=components, ephemeral=True, allowed_mentions=[])
+    )
+    await inter.response.send_message(state, components=components, ephemeral=True, allowed_mentions=[])
 
   @commands.group()
   @commands.guild_only()
