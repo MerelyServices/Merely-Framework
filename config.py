@@ -29,7 +29,10 @@ class Config(ConfigParser):
     if path.isfile(self.path):
       remove(self.path)
     if not path.exists(self.path):
-      print(f"WARNING: {self.path} missing - creating folder and generating bare-minimum defaults, you should consider downloading and including ./{self.template}")
+      print(
+        f"WARNING: {self.path} missing - creating folder and generating bare-minimum defaults,",
+        "you should consider downloading and including ./{self.template}"
+      )
       makedirs(self.path)
     if not path.exists(self.file):
       if path.exists(self.template):
@@ -42,7 +45,7 @@ class Config(ConfigParser):
       if ini.endswith('\n\n'):
         ConfigParser.read_string(self, ini)
       else:
-        raise Exception(f"FATAL: {self.file} appears to be incomplete!")
+        raise AssertionError(f"FATAL: {self.file} appears to be incomplete!")
 
     # Ensure required sections exist and provide sane defaults
     if 'main' not in self.sections():
@@ -120,7 +123,7 @@ class Config(ConfigParser):
     #TODO: autodelete all but one of each config history
     with open(self.file, 'w', encoding='utf-8') as f:
       ConfigParser.write(self, f)
-  
+
   def reload(self):
     """ reset config and load it again """
     for section in self.sections():

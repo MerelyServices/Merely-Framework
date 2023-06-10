@@ -20,7 +20,35 @@ getdatecomponent = [
 ]
 
 class Event():
-  """ The conditions of an event which the bot should watch for """
+  """
+    The conditions of an event which the bot should watch for
+
+    Event parameter cheat sheet;
+    member
+      mention
+      name
+      discriminator
+    guild
+      name
+    role
+      name
+    channel
+      name
+      mention
+    emoji
+      name
+    ban
+      reason
+    date
+      date
+      week
+      month
+      quarter
+      year
+      shortyear
+    xp
+      level
+  """
   def __init__(
     self,
     name:str,
@@ -33,32 +61,6 @@ class Event():
     self.variables = variables
     self.components = components # Additional custom components for this event
 
-"""
-member
-  mention
-  name
-  discriminator
-guild
-  name
-role
-  name
-channel
-  name
-  mention
-emoji
-  name
-ban
-  reason
-date
-  date
-  week
-  month
-  quarter
-  year
-  shortyear
-xp
-  level
-"""
 Events = {
   # Built-in disnake events, most require members scope
   'WELCOME': Event(
@@ -229,6 +231,13 @@ class EventMsg(commands.Cog):
                          .format(f"{payload.user.name}#{payload.user.discriminator}", guild.name))
 
   class CallbackButton(disnake.ui.Button):
+    """ Modified Button which can have a pre-defined callback function """
+    def __init__(self, callback:Callable[[disnake.MessageInteraction], None], **kwargs) -> None:
+      super().__init__(**kwargs)
+      self.callback = callback
+
+  class CallbackSelect(disnake.ui.Select):
+    """ Modified Select which can have a pre-defined callback function """
     def __init__(self, callback:Callable[[disnake.MessageInteraction], None], **kwargs) -> None:
       super().__init__(**kwargs)
       self.callback = callback
@@ -270,9 +279,9 @@ class EventMsg(commands.Cog):
       channel:disnake.TextChannel,
       usage:str
     ):
+      """ Create all buttons """
       super().__init__(timeout=60)
 
-      """ Create all buttons """
       self.parent = parent
       self.inter = inter
       self.event = event
@@ -300,13 +309,15 @@ class EventMsg(commands.Cog):
                 **comp
               ))
         case Action.GRANT_XP:
-          self.add_item(disnake.ui.Select(
+          self.add_item(parent.CallbackSelect(
+            callback=self.custom_click,
             custom_id=f"{self.eid}_xpmult",
             placeholder="XP Points",
             options=range(1,25)
           ))
           if event.name == 'on_message':
-            self.add_item(disnake.ui.Select(
+            self.add_item(parent.CallbackSelect(
+              callback=self.custom_click,
               custom_id=f"{self.eid}_xpmode",
               placeholder="Mode",
               options={'Number (simple mode)': 0, 'Message length': 1}
@@ -324,6 +335,7 @@ class EventMsg(commands.Cog):
       ))
 
     async def update(self, inter:disnake.ModalInteraction):
+      """ Refresh the view, reflecting any changes made to variables """
       state = self.parent.bot.babel(
         inter,
         'eventmsg',
@@ -341,17 +353,27 @@ class EventMsg(commands.Cog):
         submitbtn.disabled=False
       else:
         submitbtn.disabled=True
-      
+
       await inter.response.edit_message(state, components=self.children)
 
     async def edit_click(self, inter:disnake.MessageInteraction):
+      """ Opens the event message editor """
       await inter.response.send_modal(EventMsg.EventMessageEditor(self))
 
     async def submit_click(self, inter:disnake.MessageInteraction):
+      """ Saves event to storage and finishes the interaction """
       pass
 
     async def custom_click(self, inter:disnake.MessageInteraction):
-      pass
+      """ Code to handle any other user input (Button or Select) """
+      if inter.component.custom_id == 'edit_date':
+        pass
+      elif inter.component.custom_id.endswith('_xpmult'):
+        pass
+      elif inter.component.custom_id.endswith('_xpmode'):
+        pass
+      else:
+        raise AssertionError(f"Unhandled click event '{inter.component.custom_id}'")
 
   @commands.slash_command()
   async def eventmessage(
@@ -479,4 +501,5 @@ class EventMsg(commands.Cog):
 
 
 def setup(bot:commands.Bot):
+  """ Bind this cog to the bot """
   bot.add_cog(EventMsg(bot))
