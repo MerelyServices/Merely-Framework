@@ -115,10 +115,10 @@ class LivePoll():
             name=(TIMEPLURALS[ni] if product != 1 else TIMENAMES[ni])
           ))
           workingnumber = workingnumber % multiplier
-          if ni >= precisionlimit:
-            break
           if len(times) >= 2:
             break
+      if ni >= precisionlimit:
+        break
 
     timelist = self.babel_list(guild, times)
     if timelist == '':
@@ -131,23 +131,30 @@ class LivePoll():
         timelist=timelist
       )
 
-  def generate_line(self, value:int, maxwidth:int):
+  def generate_line(self, value:int, maxval:int):
     """ Create a progress bar using string manipulation """
-    width = round(((value/maxwidth)*20))
-    return '[' + width*'■' + abs(width-20)*'□' + ']'
+    width = round(((value/maxval)*40)) / 2
+    half = width % 1
+    if half:
+      width -= 0.5
+    return int(width)*'█' + ('▒' if half else '') + abs(int(width)-20)*'░'
 
   def generate_embed(self, guild:disnake.Guild):
     """ Generates a poll embed based on the object data """
     embed = disnake.Embed(title=self.title)
     if self.counter > 0:
       # Counting down
-      embed.description = f"{'⏳' if self.counter>60 else '⌛'} {self.expiry_to_time(guild, 5)}"
+      if self.counter > 60:
+        embed.description = f"⏳ {self.expiry_to_time(guild, 5)}" # 5 = count minutes
+      else:
+        embed.description = f"⌛ {self.expiry_to_time(guild, 6)}" # 6 = count seconds
     elif self.counter <= -604800:
       # Expired
       embed.description = f"⌛ {self.bot.babel(guild, 'poll', 'inf_past')}"
     else:
       # Poll has finished, counting time since
-      embed.description = f"⌛ {self.expiry_to_time(guild, 5 if self.counter > -86400 else 3)}"
+      embed.description = f"⌛ {self.expiry_to_time(guild, 4 if self.counter > -86400 else 2)}"
+      #                                                    4 = count hours,  3 = count days
     votemax = max(self.votes + [1])
     index = 0
     for answer,vote in tuple(zip(self.answers,self.votes)):
@@ -170,19 +177,17 @@ class LivePoll():
     if not hasattr(self, 'title'):
       self.title = self.message.embeds[0].title
       self.answers = [f.name[4:-1] for f in self.message.embeds[0].fields]
-    if self.expired:
-      if not hasattr(self, 'votes'):
+      if self.expired:
         self.votes = [
           int(re.match(r'.*\((\d+)\)', f.value).group(1)) for f in self.message.embeds[0].fields
         ]
-    else:
-      self.votes = [0 for _ in self.answers]
-      for react in self.message.reactions:
-        if str(react.emoji) in self.EMOJIS:
-          self.votes[self.EMOJIS.index(str(react.emoji))] = react.count-1
+      else:
+        self.votes = [0 for _ in self.answers]
+        for react in self.message.reactions:
+          if str(react.emoji) in self.EMOJIS:
+            self.votes[self.EMOJIS.index(str(react.emoji))] = react.count-1
     embed = self.generate_embed(self.message.guild)
     await self.message.edit(embed=embed)
-    print(f'redrawing "{self.title}" {self.message.id} {self.expired} {self.votes[0]}')
 
   async def finish(self):
     """ Announce the winner of the poll """
@@ -199,24 +204,30 @@ class LivePoll():
 
     if len(winners) == 0:
       await self.message.channel.send(
-        self.bot.babel(self.message.guild, 'poll', 'no_winner', title=self.title)
+        self.bot.babel(self.message.guild, 'poll', 'no_winner', title=self.title),
+        reference=self.message
       )
     elif len(winners) == 1:
       await self.message.channel.send(
-        self.bot.babel(self.message.guild, 'poll', 'one_winner', title=self.title, winner=winners[0])
+        self.bot.babel(self.message.guild, 'poll', 'one_winner', title=self.title, winner=winners[0]),
+        reference=self.message
       )
     else:
       if len(winners) > 2:
         winners.insert(len(winners)-1, 'and')
       winnerstring = self.babel_list(self.message.guild, winners)
-      await self.message.channel.send(self.bot.babel(
-        self.message.guild,
-        'poll',
-        'multiple_winners',
-        title=self.title,
-        num=len(winners),
-        winners=winnerstring
-      ))
+      await self.message.channel.send(
+        self.bot.babel(
+          self.message.guild,
+          'poll',
+          'multiple_winners',
+          title=self.title,
+          num=len(winners),
+          winners=winnerstring
+        ),
+        reference=self.message
+      )
+    await self.redraw()
 
 
 class Poll(commands.Cog):
@@ -227,6 +238,7 @@ class Poll(commands.Cog):
   """
 
   livepolls: dict[int, LivePoll] = {}
+  poll_tick_timer: tasks.Loop
   current_poll_timer: tasks.Loop
   old_poll_timer: tasks.Loop
   ancient_poll_timer: tasks.Loop
@@ -238,13 +250,9 @@ class Poll(commands.Cog):
     if not bot.config.has_section('poll'):
       bot.config.add_section('poll')
 
-    # start timers
-    self.current_poll_timer.start()
-    self.old_poll_timer.start()
-    self.ancient_poll_timer.start()
-
   def cog_unload(self) -> None:
     # stop timers, otherwise old code continues running
+    self.poll_tick_timer.cancel()
     self.current_poll_timer.cancel()
     self.old_poll_timer.cancel()
     self.ancient_poll_timer.cancel()
@@ -252,16 +260,31 @@ class Poll(commands.Cog):
 
   @commands.Cog.listener('on_connect')
   async def validate_cache(self):
+    save = False
     for key in self.bot.config['poll']:
       keysplit = key.split('_')
       if len(keysplit) >= 2:
-        channel_id, message_id = keysplit[:2]
+        channel_id, message_id = (int(k) for k in keysplit[:2])
         if message_id not in self.livepolls:
-          channel = await self.bot.fetch_channel(int(channel_id))
-          if message := await channel.fetch_message(int(message_id)):
-            self.livepolls[message_id] = LivePoll(self.bot)
-            self.livepolls[message_id].load(message)
-            await self.livepolls[message_id].redraw()
+          try:
+            channel = await self.bot.fetch_channel(channel_id)
+            message = await channel.fetch_message(message_id)
+          except (disnake.NotFound, disnake.Forbidden):
+            self.bot.config.remove_option('poll', key)
+            save = True
+            continue
+
+          self.livepolls[message_id] = LivePoll(self.bot)
+          self.livepolls[message_id].load(message)
+          await self.livepolls[message_id].redraw()
+    if save:
+      self.bot.config.save()
+
+    # start timers
+    self.poll_tick_timer.start()
+    self.current_poll_timer.start()
+    self.old_poll_timer.start()
+    self.ancient_poll_timer.start()
 
   @commands.Cog.listener('on_raw_reaction_add')
   @commands.Cog.listener('on_raw_reaction_remove')
@@ -271,27 +294,63 @@ class Poll(commands.Cog):
     e:Union[disnake.RawReactionActionEvent, disnake.RawReactionClearEvent]
   ):
     """ Handle changes to the reaction list of a poll """
-    if e.message_id in self.livepolls and e.user_id != self.bot.user.id:
+    if e.message_id in self.livepolls and\
+       (not hasattr(e, 'user_id') or e.user_id != self.bot.user.id):
       poll = self.livepolls[e.message_id]
       if poll.expiry > time():
-        await poll.redraw()
+        if isinstance(e, disnake.RawReactionActionEvent):
+          poll.votes[poll.EMOJIS.index(str(e.emoji))] += 1 if e.event_type == 'REACTION_ADD' else -1
+        else:
+          poll.votes = [0 for _ in poll.answers]
+          await poll.add_reacts()
+        if poll.expiry > time() + 60:
+          await poll.redraw()
 
-  #TODO: add event listener for deleted messages
+  @commands.Cog.listener('on_message_delete')
+  async def poll_delete(self, message:disnake.Message):
+    if message.id in self.livepolls:
+      self.livepolls[message.id].remove()
+      self.livepolls.pop(message.id)
 
-  @tasks.loop(minutes=1)
-  async def current_poll_timer(self):
-    """ Polls that haven't expired yet count down every minute """
-    for poll in self.livepolls.values():
-      if not poll.expired:
+  @tasks.loop(seconds=1)
+  async def poll_tick_timer(self):
+    """ Polls that have less than a minute to go count down every second """
+    poll: LivePoll
+    iters = len(self.livepolls)
+    for i in range(iters):
+      if i < len(self.livepolls):
+        poll = self.livepolls[list(self.livepolls.keys())[i]]
+      else:
+        continue
+      if not poll.expired and poll.expiry <= time() + 60:
         if poll.expiry > time():
           await poll.redraw()
         else:
           await poll.finish()
 
+  @tasks.loop(minutes=1)
+  async def current_poll_timer(self):
+    """ Polls that haven't expired yet count down every minute """
+    poll: LivePoll
+    iters = len(self.livepolls)
+    for i in range(iters):
+      if i < len(self.livepolls):
+        poll = self.livepolls[list(self.livepolls.keys())[i]]
+      else:
+        continue
+      if not poll.expired and poll.expiry > time() + 60:
+          await poll.redraw()
+
   @tasks.loop(hours=1)
   async def old_poll_timer(self):
     """ Polls that expired within the last 24 hours count once an hour """
-    for poll in self.livepolls.values():
+    poll: LivePoll
+    iters = len(self.livepolls)
+    for i in range(iters):
+      if i < len(self.livepolls):
+        poll = self.livepolls[list(self.livepolls.keys())[i]]
+      else:
+        continue
       if poll.expired and poll.expiry > time() - (60 * 60 * 24):
         await poll.redraw()
 
@@ -301,7 +360,13 @@ class Poll(commands.Cog):
       Polls that expired more than 24 hours ago count once a day
       After a week, they are deleted from the config
     """
-    for poll in self.livepolls.values():
+    poll: LivePoll
+    iters = len(self.livepolls)
+    for i in range(iters):
+      if i < len(self.livepolls):
+        poll = self.livepolls[list(self.livepolls.keys())[i]]
+      else:
+        continue
       if poll.expired and poll.expiry <= time() - (60 * 60 * 24):
         await poll.redraw()
         if poll.expiry < time() - (60 * 60 * 24 * 7):
@@ -326,7 +391,7 @@ class Poll(commands.Cog):
     answer10:Optional[str] = None,
     expiry_days:Optional[int] = 0,
     expiry_hours:Optional[int] = 0,
-    expiry_minutes:Optional[int] = 5,
+    expiry_minutes:Optional[int] = 0,
     expiry_seconds:Optional[int] = 0
   ):
     """
@@ -350,11 +415,17 @@ class Poll(commands.Cog):
       expiry_minutes: Number of minutes until the poll expires. Summed with other expiry fields.
       expiry_seconds: Number of seconds until the poll expires. Summed with other expiry fields.
     """
-    answers = set((
+    # Remove duplicate answers and unset answers while preserving the specified order
+    raw_answers = [
       answer1, answer2, answer3, answer4, answer5, answer6, answer7, answer8, answer9, answer10
-    ))
-    answers.discard(None)
+    ]
+    answer_set = set(raw_answers)
+    answer_set.discard(None)
+    answers = [ans for ans in raw_answers if ans in answer_set]
+
     expiry = expiry_seconds + (expiry_minutes * 60) + (expiry_hours * 3600) + (expiry_days * 86400)
+    if expiry == 0:
+      expiry = 300
     poll = LivePoll(self.bot)
     poll.create(title, answers, [0]*len(answers), time() + expiry)
 
