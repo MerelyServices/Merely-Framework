@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 import asyncio
 import disnake
 from disnake.ext import commands
@@ -28,19 +28,18 @@ class ReactRoles(commands.Cog):
     self.watching:list[disnake.Message] = []
 
   #TODO: make it possible for admins to add more reaction roles or delete them later
-  #TODO: notice if the rr prompt is deleted during setup
 
   # Utility functions
 
-  async def get_roles(self, guild:disnake.Guild, configid:str) -> list[disnake.Role] | None:
+  async def get_roles(self, guild:disnake.Guild, configid:str) -> set[disnake.Role] | None:
     if configid in self.bot.config['reactroles']:
       roleids = [
         int(r) for r in self.bot.config['reactroles'][configid].split(' ')
       ]
-      roles:list[disnake.Role] = []
+      roles:set[disnake.Role] = set()
       for roleid in roleids:
         try:
-          roles.append(guild.get_role(roleid))
+          roles.add(guild.get_role(roleid))
         except Exception as e:
           print("failed to get role for reactrole: "+str(e))
       return roles
@@ -49,15 +48,19 @@ class ReactRoles(commands.Cog):
   async def change_roles(
     self,
     member:disnake.Member,
-    give:Union[list[disnake.Role], set[disnake.Role]] = [],
-    take:Union[list[disnake.Role], set[disnake.Role]] = [],
+    give:set[disnake.Role] = set(),
+    take:set[disnake.Role] = set(),
     reason='reactroles',
     dm=True
   ) -> int:
+    if len(give) + len(take) == 0:
+      return 0
     # Don't add roles that the member already has
-    (give.remove(role) for role in member.roles)
+    for role in member.roles:
+      if role in give:
+        give.remove(role)
     # Don't take roles that the member already doesn't have
-    take = set(take) & set(member.roles)
+    take = take & set(member.roles)
     # Action on the remaining roles and notify the user in DMs
     try:
       if len(give):
