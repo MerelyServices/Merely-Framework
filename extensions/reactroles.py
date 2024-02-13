@@ -55,6 +55,10 @@ class ReactRoles(commands.Cog):
   ) -> int:
     if len(give) + len(take) == 0:
       return 0
+    # If give and take contradict, give wins
+    for role in give:
+      if role in take:
+        take.remove(role)
     # Don't add roles that the member already has
     for role in member.roles:
       if role in give:
@@ -80,37 +84,40 @@ class ReactRoles(commands.Cog):
       pass
     return len(give)+len(take)
 
-  async def catchup(self, msg:disnake.Message):
+  async def catchup(self, messages:list[disnake.Message]):
     """ Give and take roles as needed to catch up to reality """
-    members = await msg.guild.fetch_members().flatten()
-    reacts = msg.reactions
     changecount = 0
-    pendingchanges: dict[disnake.Member, dict[bool, set[disnake.Role]]]
-    pendingchanges = {m: {True: set(), False: set()} for m in members}
+    guilds = set(m.guild for m in messages)
+    for guild in guilds:
+      members = await guild.fetch_members().flatten()
+      pendingchanges: dict[disnake.Member, dict[bool, set[disnake.Role]]]
+      pendingchanges = {m: {True: set(), False: set()} for m in members}
 
-    for react in reacts:
-      emojiid = react.emoji if type(react.emoji) is str else react.emoji.id
-      roleconfid = f"{msg.channel.id}_{msg.id}_{emojiid}_roles"
-      if roles := await self.get_roles(msg.guild, roleconfid):
-        reactors = await react.users().flatten()
-        for member in members:
-          if member == self.bot.user or member.bot:
-            continue
-          if (
-            member in reactors and
-            not all(memberrole in roles for memberrole in member.roles)
-          ):
-            pendingchanges[member][True].update(roles)
-          elif (
-            member not in reactors and
-            any(memberrole in roles for memberrole in member.roles)
-          ):
-            pendingchanges[member][False].update(roles)
+      for msg in messages:
+        if msg.guild == guild:
+          for react in msg.reactions:
+            emojiid = react.emoji if type(react.emoji) is str else react.emoji.id
+            roleconfid = f"{msg.channel.id}_{msg.id}_{emojiid}_roles"
+            if roles := await self.get_roles(guild, roleconfid):
+              reactors = await react.users().flatten()
+              for member in members:
+                if member == self.bot.user or member.bot:
+                  continue
+                if (
+                  member in reactors and
+                  not all(memberrole in roles for memberrole in member.roles)
+                ):
+                  pendingchanges[member][True].update(roles)
+                elif (
+                  member not in reactors and
+                  any(memberrole in roles for memberrole in member.roles)
+                ):
+                  pendingchanges[member][False].update(roles)
 
-    for member in members:
-      give = pendingchanges[member][True].difference(pendingchanges[member][False])
-      take = pendingchanges[member][False].difference(pendingchanges[member][False])
-      changecount += await self.change_roles(member, give, take, 'reactroles catchup')
+          for member in members:
+            give = pendingchanges[member][True].difference(pendingchanges[member][False])
+            take = pendingchanges[member][False].difference(pendingchanges[member][False])
+            changecount += await self.change_roles(member, give, take, 'reactroles catchup')
 
     return changecount
 
@@ -120,7 +127,6 @@ class ReactRoles(commands.Cog):
   async def fetch_tracking_messages(self):
     """ Request the message once so we'll be notified if reactions change """
     search = [k for k in self.bot.config['reactroles'].keys()]
-    changes = 0
     print("reactroles catchup started")
     for chid,msgid in set([(rr.split('_')[0], rr.split('_')[1]) for rr in search]):
       msg: disnake.Message
@@ -131,7 +137,7 @@ class ReactRoles(commands.Cog):
         print(f"failed to get reactionrole message {msgid} from channel {chid}. {e}")
         continue
       self.watching.append(msg)
-      changes += await self.catchup(msg)
+    changes = await self.catchup(self.watching)
     print("reactroles catchup ended. Delta: ", changes)
 
   @commands.Cog.listener("on_message_delete")
