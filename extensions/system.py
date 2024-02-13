@@ -135,8 +135,9 @@ class System(commands.Cog):
           )
         else:
           raise commands.BadArgument
-        if module.capitalize() in self.bot.cogs:
-          for listener in self.bot.cogs[module.capitalize()].get_listeners():
+        cogmodules = {cog.lower(): cog for cog in self.bot.cogs}
+        if module in cogmodules:
+          for listener in self.bot.cogs[cogmodules[module]].get_listeners():
             if listener[0] == 'on_ready':
               asyncio.ensure_future(listener[1]())
       else:
