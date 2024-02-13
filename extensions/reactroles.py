@@ -25,7 +25,7 @@ class ReactRoles(commands.Cog):
     # ensure config file has required data
     if not bot.config.has_section('reactroles'):
       bot.config.add_section('reactroles')
-    self.watching:list[disnake.abc.Messageable] = []
+    self.watching:list[disnake.Message] = []
 
   #TODO: make it possible for admins to add more reaction roles or delete them later
   #TODO: notice if the rr prompt is deleted during setup
@@ -34,14 +34,19 @@ class ReactRoles(commands.Cog):
   async def fetch_tracking_messages(self):
     """ Request the message once so we'll be notified if reactions change """
     search = [k for k in self.bot.config['reactroles'].keys()]
+    changes = 0
+    print("reactroles catchup started")
     for chid,msgid in set([(rr.split('_')[0], rr.split('_')[1]) for rr in search]):
+      msg: disnake.Message
       try:
         ch = await self.bot.fetch_channel(chid)
         msg = await ch.fetch_message(msgid)
-        self.watching.append(msg)
       except Exception as e:
         print(f"failed to get reactionrole message {msgid} from channel {chid}. {e}")
-    await self.catchup()
+        continue
+      self.watching.append(msg)
+      changes += await self.catchup(msg)
+    print("reactroles catchup ended. Delta: ", changes)
 
   @commands.Cog.listener("on_message_delete")
   async def revoke_tracking_message(self, message):
@@ -52,7 +57,7 @@ class ReactRoles(commands.Cog):
       ]
       for k in matches:
         self.bot.config.remove_option('reactroles',k)
-      #TODO: (low priority) maybe remove deleted message from self.watching?
+      self.watching.remove(message)
 
   @commands.Cog.listener("on_raw_reaction_add")
   async def reactrole_add(self, data:disnake.RawReactionActionEvent):
@@ -69,10 +74,10 @@ class ReactRoles(commands.Cog):
             roles.append(channel.guild.get_role(roleid))
           except Exception as e:
             print("failed to get role for reactrole: "+str(e))
+        await data.member.add_roles(*roles, reason='reactroles')
         await data.member.send(self.bot.babel(
           data.member, 'reactroles', 'role_granted', roles=', '.join([role.name for role in roles])
         ))
-        await data.member.add_roles(*roles, reason='reactroles')
 
   @commands.Cog.listener("on_raw_reaction_remove")
   async def reactrole_remove(self, data:disnake.RawReactionActionEvent):
@@ -85,24 +90,72 @@ class ReactRoles(commands.Cog):
       if roleconfid in self.bot.config['reactroles']:
         channel = await self.bot.fetch_channel(data.channel_id)
         roleids = [
-          int(r) for r in self.bot.config['reactroles'][roleconfid].split(' ')]
+          int(r) for r in self.bot.config['reactroles'][roleconfid].split(' ')
+        ]
         roles:list[disnake.Role] = []
         for roleid in roleids:
           try:
             roles.append(channel.guild.get_role(roleid))
           except Exception as e:
             print("failed to get role for reactrole: "+str(e))
+        await member.remove_roles(*roles, reason='reactroles')
         await member.send(self.bot.babel(
           member,
           'reactroles',
           'role_taken',
           roles=', '.join([role.name for role in roles])
         ))
-        await member.remove_roles(*roles, reason='reactroles')
 
-  async def catchup(self):
-    #TODO: give and take roles as needed to catch up to reality
-    pass
+  async def catchup(self, msg:disnake.Message):
+    """ Give and take roles as needed to catch up to reality """
+    members = await msg.guild.fetch_members().flatten()
+    reacts = msg.reactions
+    changecount = 0
+    for react in reacts:
+      emojiid = react.emoji if type(react.emoji) is str else react.emoji.id
+      roleconfid = f"{msg.channel.id}_{msg.id}_{emojiid}_roles"
+      if roleconfid in self.bot.config['reactroles']:
+        roleids = [
+          int(r) for r in self.bot.config['reactroles'][roleconfid].split(' ')
+        ]
+        roles:list[disnake.Role] = []
+        for roleid in roleids:
+          try:
+            roles.append(msg.guild.get_role(roleid))
+          except Exception as e:
+            print("failed to get role for reactrole: "+str(e))
+        reactors = await react.users().flatten()
+        for member in members:
+          if member == self.bot.user or member.bot:
+            continue
+          try:
+            if (
+              member in reactors and
+              not all(memberrole in roles for memberrole in member.roles)
+            ):
+              await member.add_roles(*roles, reason='reactroles catchup')
+              await member.send(self.bot.babel(
+                member,
+                'reactroles',
+                'role_granted',
+                roles=', '.join([role.name for role in roles])
+              ))
+              changecount += 1
+            elif (
+              member not in reactors and
+              any(memberrole in roles for memberrole in member.roles)
+            ):
+              await member.remove_roles(*roles, reason='reactroles catchup')
+              await member.send(self.bot.babel(
+                member,
+                'reactroles',
+                'role_taken',
+                roles=', '.join([role.name for role in roles])
+              ))
+              changecount += 1
+          except disnake.HTTPException:
+            pass
+    return changecount
 
   @commands.command(aliases=['reactionrole', 'rr', 'reactroles', 'reactionroles'])
   @commands.guild_only()
