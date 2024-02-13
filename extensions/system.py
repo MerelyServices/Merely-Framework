@@ -138,7 +138,9 @@ class System(commands.Cog):
         cogmodules = {cog.lower(): cog for cog in self.bot.cogs}
         if module in cogmodules:
           for listener in self.bot.cogs[cogmodules[module]].get_listeners():
-            if listener[0] == 'on_ready':
+            if listener[0] == 'on_connect':
+              asyncio.ensure_future(listener[1]())
+            elif listener[0] == 'on_ready':
               asyncio.ensure_future(listener[1]())
       else:
         await inter.send(self.bot.babel(inter, 'main', 'extension_file_missing'), ephemeral=True)

@@ -8,13 +8,215 @@ from __future__ import annotations
 
 from time import time
 import re
-import asyncio
-from typing import Union, TYPE_CHECKING
+from typing import Union, Optional, TYPE_CHECKING
 import disnake
 from disnake.ext import tasks, commands
 
 if TYPE_CHECKING:
   from ..main import MerelyBot
+
+
+class LivePoll():
+  """
+    LivePoll stores the state of one ongoing poll
+
+    An ongoing poll is defined as any poll which is occasionally updating on Discord.
+  """
+  bot:MerelyBot
+  title:str
+  answers:list[str]
+  votes:list[int]
+  expiry:int
+  expired:bool = False
+  message:disnake.Message
+
+  EMOJIS = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟']
+
+  def __init__(self, bot:MerelyBot):
+    self.bot = bot
+
+  @property
+  def counter(self) -> int:
+    return int(self.expiry - time())
+
+  def get_expiry(self):
+    configkey = f'{self.message.channel.id}_{self.message.id}_expiry'
+    if configkey in self.bot.config['poll']:
+      self.expiry = self.bot.config.getint('poll', configkey)
+    else:
+      self.expiry = self.bot.config.getint('poll', configkey+'_expired')
+      self.expired = True
+
+  def create(self, title:str, answers:list[str], votes:list[int], expiry:int):
+    """ Creates a new poll based on user input """
+    self.title = title
+    self.answers = answers
+    self.votes = votes
+    self.expiry = int(expiry)
+
+  def save(self, message:disnake.Message):
+    """ Writes poll to config and stores message in memory """
+    self.message = message
+    configkey = f'{message.channel.id}_{message.id}_expiry'+('_expired' if self.expired else '')
+    self.bot.config['poll'][configkey] = str(self.expiry)
+    self.bot.config.save()
+
+  def load(self, message:disnake.Message):
+    """ Loads poll from config and stores message in memory """
+    self.message = message
+    self.get_expiry()
+
+  def remove(self, save=True):
+    """ Clears poll from config - from here, this object can safely be dereferenced """
+    configkey = f'{self.message.channel.id}_{self.message.id}_expiry' +\
+                ('_expired' if self.expired else '')
+    self.bot.config.remove_option('poll', configkey)
+    if save:
+      self.bot.config.save()
+
+  def babel_list(self, guild:disnake.Guild, items:list[str]) -> str:
+    """ Takes list items, and joins them together in a regionally correct way """
+    CONJUNCTION = self.bot.babel(guild, 'poll', 'list_conjunction').replace('_', ' ')
+    CONJUNCTIONLAST = self.bot.babel(guild, 'poll', 'list_last_conjunction').replace('_', ' ')
+
+    iter = 1
+    while iter < len(items):
+      items.insert(iter, CONJUNCTIONLAST if iter < len(items) - 1 else CONJUNCTION)
+      iter += 2
+
+    return ''.join(items)
+
+  def expiry_to_time(self, guild:disnake.Guild, precisionlimit:int = 1) -> str:
+    """ Converts countdown seconds into a nicely formatted sentence """
+    # Import current locale strings
+    TIMENAMES = self.bot.babel(guild, 'poll', 'timenames').split(',')
+    assert len(TIMENAMES) == 7
+    TIMEPLURALS = self.bot.babel(guild, 'poll', 'timeplurals').split(',')
+    assert len(TIMEPLURALS) == 7
+    TIMENUMFORMAT = self.bot.babel(guild, 'poll', 'time_number_format')
+    assert TIMENUMFORMAT.find('{number}') >= 0 and TIMENUMFORMAT.find('{name}') >= 0
+
+    if self.counter == 0:
+      return self.bot.babel(guild, 'poll', 'present')
+
+    MULTIPLIERS = [31449600, 2419200, 604800, 86400, 3600, 60,    1]
+    #              year      month    week    day    hour  minute second
+
+    times = []
+    workingnumber = abs(self.counter)
+
+    for multiplier,ni in tuple(zip(MULTIPLIERS, range(len(MULTIPLIERS)))):
+      # ni is the name index, used to map TIMENAMES and TIMEPLURALS
+      if workingnumber >= multiplier:
+        product = workingnumber // multiplier
+        if product > 0:
+          times.append(TIMENUMFORMAT.format(
+            number=str(product),
+            name=(TIMEPLURALS[ni] if product != 1 else TIMENAMES[ni])
+          ))
+          workingnumber = workingnumber % multiplier
+          if ni >= precisionlimit:
+            break
+          if len(times) >= 2:
+            break
+
+    timelist = self.babel_list(guild, times)
+    if timelist == '':
+      return self.bot.babel(guild, 'poll', 'near_past' if self.counter < 0 else 'near_future')
+    else:
+      return self.bot.babel(
+        guild,
+        'poll',
+        'far_past' if self.counter < 0 else 'far_future',
+        timelist=timelist
+      )
+
+  def generate_line(self, value:int, maxwidth:int):
+    """ Create a progress bar using string manipulation """
+    width = round(((value/maxwidth)*20))
+    return '[' + width*'■' + abs(width-20)*'□' + ']'
+
+  def generate_embed(self, guild:disnake.Guild):
+    """ Generates a poll embed based on the object data """
+    embed = disnake.Embed(title=self.title)
+    if self.counter > 0:
+      # Counting down
+      embed.description = f"{'⏳' if self.counter>60 else '⌛'} {self.expiry_to_time(guild, 5)}"
+    elif self.counter <= -604800:
+      # Expired
+      embed.description = f"⌛ {self.bot.babel(guild, 'poll', 'inf_past')}"
+    else:
+      # Poll has finished, counting time since
+      embed.description = f"⌛ {self.expiry_to_time(guild, 5 if self.counter > -86400 else 3)}"
+    votemax = max(self.votes + [1])
+    index = 0
+    for answer,vote in tuple(zip(self.answers,self.votes)):
+      embed.add_field(
+        name=f'{self.EMOJIS[index]} {answer}:',
+        value=f'{self.generate_line(vote,votemax)} ({vote})',
+        inline=False
+      )
+      index += 1
+    if not self.expired:
+      embed.set_footer(text=self.bot.babel(guild, 'poll', 'vote_cta', multichoice=True))
+    return embed
+
+  async def add_reacts(self):
+    for i in range(len(self.answers)):
+      await self.message.add_reaction(self.EMOJIS[i])
+
+  async def redraw(self):
+    """ Recover data from the embed, count reactions, then regenerate the embed """
+    if not hasattr(self, 'title'):
+      self.title = self.message.embeds[0].title
+      self.answers = [f.name[4:-1] for f in self.message.embeds[0].fields]
+    if self.expired:
+      if not hasattr(self, 'votes'):
+        self.votes = [
+          int(re.match(r'.*\((\d+)\)', f.value).group(1)) for f in self.message.embeds[0].fields
+        ]
+    else:
+      self.votes = [0 for _ in self.answers]
+      for react in self.message.reactions:
+        if str(react.emoji) in self.EMOJIS:
+          self.votes[self.EMOJIS.index(str(react.emoji))] = react.count-1
+    embed = self.generate_embed(self.message.guild)
+    await self.message.edit(embed=embed)
+    print(f'redrawing "{self.title}" {self.message.id} {self.expired} {self.votes[0]}')
+
+  async def finish(self):
+    """ Announce the winner of the poll """
+    self.remove(False)
+    self.expired = True
+    self.save(self.message)
+    await self.redraw()
+    winners = []
+    votemax = max(self.votes + [1])
+    if votemax > 0:
+      for answer,votecount in tuple(zip(self.answers, self.votes)):
+        if votecount == votemax:
+          winners.append(answer)
+
+    if len(winners) == 0:
+      await self.message.channel.send(
+        self.bot.babel(self.message.guild, 'poll', 'no_winner', title=self.title)
+      )
+    elif len(winners) == 1:
+      await self.message.channel.send(
+        self.bot.babel(self.message.guild, 'poll', 'one_winner', title=self.title, winner=winners[0])
+      )
+    else:
+      if len(winners) > 2:
+        winners.insert(len(winners)-1, 'and')
+      winnerstring = self.babel_list(self.message.guild, winners)
+      await self.message.channel.send(self.bot.babel(
+        self.message.guild,
+        'poll',
+        'multiple_winners',
+        title=self.title,
+        num=len(winners),
+        winners=winnerstring
+      ))
 
 
 class Poll(commands.Cog):
@@ -24,21 +226,42 @@ class Poll(commands.Cog):
     Also keeps the countdown timer up to date for a week after expiry
   """
 
-  #TODO: partial rewrite needed in order to support babel
-
-  emojis = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟']
+  livepolls: dict[int, LivePoll] = {}
   current_poll_timer: tasks.Loop
   old_poll_timer: tasks.Loop
   ancient_poll_timer: tasks.Loop
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
-    self.current_poll_timer.start()
-    self.old_poll_timer.start()
-    self.ancient_poll_timer.start()
+
     # ensure config file has required data
     if not bot.config.has_section('poll'):
       bot.config.add_section('poll')
+
+    # start timers
+    self.current_poll_timer.start()
+    self.old_poll_timer.start()
+    self.ancient_poll_timer.start()
+
+  def cog_unload(self) -> None:
+    # stop timers, otherwise old code continues running
+    self.current_poll_timer.cancel()
+    self.old_poll_timer.cancel()
+    self.ancient_poll_timer.cancel()
+    self.livepolls = {}
+
+  @commands.Cog.listener('on_connect')
+  async def validate_cache(self):
+    for key in self.bot.config['poll']:
+      keysplit = key.split('_')
+      if len(keysplit) >= 2:
+        channel_id, message_id = keysplit[:2]
+        if message_id not in self.livepolls:
+          channel = await self.bot.fetch_channel(int(channel_id))
+          if message := await channel.fetch_message(int(message_id)):
+            self.livepolls[message_id] = LivePoll(self.bot)
+            self.livepolls[message_id].load(message)
+            await self.livepolls[message_id].redraw()
 
   @commands.Cog.listener('on_raw_reaction_add')
   @commands.Cog.listener('on_raw_reaction_remove')
@@ -48,46 +271,29 @@ class Poll(commands.Cog):
     e:Union[disnake.RawReactionActionEvent, disnake.RawReactionClearEvent]
   ):
     """ Handle changes to the reaction list of a poll """
-    if str(e.channel_id)+'_'+str(e.message_id)+'_expiry' in self.bot.config['poll']:
-      expiry = int(self.bot.config['poll'][str(e.channel_id)+'_'+str(e.message_id)+'_expiry'])
-      if expiry > time():
-        channel = await self.bot.fetch_channel(e.channel_id)
-        pollmsg = await channel.fetch_message(e.message_id)
-        await self.redraw_poll(pollmsg, expiry)
+    if e.message_id in self.livepolls and e.user_id != self.bot.user.id:
+      poll = self.livepolls[e.message_id]
+      if poll.expiry > time():
+        await poll.redraw()
+
+  #TODO: add event listener for deleted messages
 
   @tasks.loop(minutes=1)
   async def current_poll_timer(self):
-    """ Polls that haven't expired yet count down every second """
-    for key, value in self.bot.config['poll'].items():
-      try:
-        expiry = int(value)
-      except ValueError:
-        continue
-      keysplit = key.split('_')
-      if len(keysplit) == 3:
-        channel_id, message_id, _ = keysplit
-        channel = await self.bot.fetch_channel(channel_id)
-        votemsg = await channel.fetch_message(message_id)
-        if expiry > time():
-          await self.redraw_poll(votemsg, expiry)
+    """ Polls that haven't expired yet count down every minute """
+    for poll in self.livepolls.values():
+      if not poll.expired:
+        if poll.expiry > time():
+          await poll.redraw()
         else:
-          await self.expire_poll(votemsg, expiry)
+          await poll.finish()
 
   @tasks.loop(hours=1)
   async def old_poll_timer(self):
     """ Polls that expired within the last 24 hours count once an hour """
-    for key, value in self.bot.config['poll'].items():
-      try:
-        expiry = int(value)
-      except ValueError:
-        continue
-      if expiry < time() and expiry > time() - (60 * 60 * 24):
-        keysplit = key.split('_')
-        if len(keysplit) == 4:
-          channel_id, message_id, _, _ = keysplit
-          channel = await self.bot.fetch_channel(channel_id)
-          votemsg = await channel.fetch_message(message_id)
-          await self.redraw_poll(votemsg, expiry, expired=True)
+    for poll in self.livepolls.values():
+      if poll.expired and poll.expiry > time() - (60 * 60 * 24):
+        await poll.redraw()
 
   @tasks.loop(hours=24)
   async def ancient_poll_timer(self):
@@ -95,178 +301,71 @@ class Poll(commands.Cog):
       Polls that expired more than 24 hours ago count once a day
       After a week, they are deleted from the config
     """
-    for key, value in self.bot.config['poll'].items():
-      try:
-        expiry = int(value)
-      except ValueError:
-        continue
-      if expiry <= time() - (60 * 60 * 24):
-        keysplit = key.split('_')
-        if len(keysplit) == 4:
-          channel_id, message_id, _, _ = keysplit
-          channel = await self.bot.fetch_channel(channel_id)
-          votemsg = await channel.fetch_message(message_id)
-          await self.redraw_poll(votemsg, expiry, expired=True)
-          if expiry < time() - 604800:
-            self.bot.config.remove_option('poll', key)
-            self.bot.config.save()
+    for poll in self.livepolls.values():
+      if poll.expired and poll.expiry <= time() - (60 * 60 * 24):
+        await poll.redraw()
+        if poll.expiry < time() - (60 * 60 * 24 * 7):
+          self.livepolls.pop(poll.message.id)
+          poll.remove()
 
-  def inttotime(self, i:int, precisionlimit:int=0, beforeprefix:str='', afterprefix:str='happened'):
-    """ Converts countdown seconds into a nicely formatted sentence """
-    #TODO: add babel support
-    if i == 0:
-      return ' '.join([beforeprefix, 'now.'])
-    out = []
-    ii = abs(i)
-    multipliers = [31449600, 2419200, 604800, 86400, 3600,   60,       1       ] # noqa
-    timenames   = ['year',   'month', 'week', 'day', 'hour', 'minute', 'second']
-    precision = len(multipliers) - precisionlimit
-    pluralizer  = 's'
-
-    for multiplier,timename in tuple(zip(multipliers[0:precision], timenames[0:precision])):
-      if ii>=multiplier:
-        product = ii//multiplier
-        if product>0:
-          out.append(str(product)+' '+timename+(pluralizer if product!=1 else ''))
-          ii = ii%multiplier
-    if len(out) > 1:
-      out.insert(len(out)-1, 'and')
-    out = ', '.join(out).replace(', and,',' and')
-    if out == '':
-      out = (afterprefix+' recently.' if i < 0 else ' '.join([beforeprefix, 'soon.']))
-    else: out = (afterprefix+' ' if i<0 else beforeprefix+(' in 'if beforeprefix else '')) + out + (' ago.' if i<0 else '.')
-    return out
-
-  def generate_poll_line(self, value:int, maxwidth:int):
-    """ Create a progress bar using string manipulation """
-    width = round(((value/maxwidth)*20))
-    return '[' + width*'■' + abs(width-20)*'□' + ']'
-  def generate_poll_embed(self, title:str, counter:int, answers:list, votes:list):
-    """generates a poll embed based on the provided data"""
-    embed = disnake.Embed(title=title)
-    if counter>0:
-      embed.description = f"{'⏳' if counter>60 else '⌛'} {self.inttotime(counter, 1, beforeprefix='closing')}"
-    elif counter < -604800:
-      embed.description = "⌛ expired a long time ago"
-    else: embed.description = f"⌛ {self.inttotime(counter, 2 if counter > -86400 else 3, afterprefix='closed')}"
-    if len(answers) > 0:
-      votemax = max(votes, 1)
-      index = 0
-      for answer,votes in tuple(zip(answers,votes)):
-        embed.add_field(name=f'{self.emojis[index]} {answer}:', value=f'{self.generate_poll_line(votes,votemax)} ({votes})', inline=False)
-        index += 1
-    embed.set_footer(text="react to vote | this poll is multichoice")
-    return embed
-
-  async def redraw_poll(self, msg:disnake.Message, expiry:int, expired:bool=False):
-    """redraws the poll using real data"""
-    title = msg.embeds[0].title
-    counter = expiry - round(time())
-    answers = [f.name[4:-1] for f in msg.embeds[0].fields]
-    if expired:
-      votes = [int(re.match(r'.*\((\d+)\)', f.value).group(1)) for f in msg.embeds[0].fields]
-    else:
-      votes = [0 for _ in answers]
-      for react in msg.reactions:
-        if str(react.emoji) in self.emojis:
-          votes[self.emojis.index(str(react.emoji))] = react.count-1
-    embed = self.generate_poll_embed(title, counter, answers, votes)
-    await msg.edit(embed=embed)
-    return title, answers, votes # just returning these for the one situation where they need to be reused
-
-  async def expire_poll(self, msg:disnake.Message, expiry:int):
-    """announces the winner of the poll"""
-    title, answers, votes = await self.redraw_poll(msg, expiry, expired=True)
-    winners = []
-    votemax = max(votes,1)
-    if votemax > 0:
-      for answer,votecount in tuple(zip(answers, votes)):
-        if votecount == votemax:
-          winners.append(answer)
-
-    if len(winners) == 0:
-      await msg.channel.send(self.bot.babel(msg.guild, 'poll', 'no_winner', title=title))
-    elif len(winners) == 1:
-      await msg.channel.send(self.bot.babel(msg.guild, 'poll', 'one_winner', title=title, winner=winners[0]))
-    else:
-      if len(winners) > 2:
-        winners.insert(len(winners)-1, 'and')
-      winnerstring = '", "'.join(winners).replace(', and,', ' and')
-      await msg.channel.send(self.bot.babel(msg.guild, 'poll', 'multiple_winners', title=title, num=len(winners), winners=winnerstring))
-
-    self.bot.config.remove_option('poll', f'{msg.channel.id}_{msg.id}_expiry')
-    self.bot.config['poll'][f'{msg.channel.id}_{msg.id}_expiry_expired'] = str(expiry)
-    self.bot.config.save()
-
-  @commands.command(aliases=['vote'])
   @commands.guild_only()
-  async def poll(self, ctx:commands.Context, *, title:str):
-    """poll creation wizard"""
-    counter = 300
-    answers = []
-    votes = []
-    embed = self.generate_poll_embed(title, counter, answers, votes)
-    pollmsg = await ctx.send(self.bot.babel(ctx, 'poll', 'poll_preview'), embed=embed)
+  @commands.slash_command()
+  async def poll(
+    self,
+    inter:disnake.CommandInteraction,
+    title:str,
+    answer1:str,
+    answer2:str,
+    answer3:Optional[str] = None,
+    answer4:Optional[str] = None,
+    answer5:Optional[str] = None,
+    answer6:Optional[str] = None,
+    answer7:Optional[str] = None,
+    answer8:Optional[str] = None,
+    answer9:Optional[str] = None,
+    answer10:Optional[str] = None,
+    expiry_days:Optional[int] = 0,
+    expiry_hours:Optional[int] = 0,
+    expiry_minutes:Optional[int] = 5,
+    expiry_seconds:Optional[int] = 0
+  ):
+    """
+      Creates a poll with up to 10 options and an expiry time
 
-    done = False
-    while not done and len(answers)<10:
-      qmsg = await ctx.reply(self.bot.babel(ctx, 'poll', 'setup1'))
-      try:
-        reply = await self.bot.wait_for('message', check=lambda m: m.author==ctx.author and m.channel==ctx.channel, timeout=30)
-      except asyncio.TimeoutError:
-        if len(answers) == 0:
-          await pollmsg.delete()
-          await qmsg.delete()
-          await ctx.reply(self.bot.babel(ctx, 'poll', 'setup_cancelled'))
-          return
-        else:
-          await qmsg.delete()
-          done=True
-      else:
-        if reply.content == '[stop]':
-          if len(answers) == 0:
-            await pollmsg.delete()
-            await qmsg.delete()
-            await ctx.reply(self.bot.babel(ctx, 'poll', 'setup_cancelled'))
-            return
-          else:
-            await qmsg.delete()
-            await reply.delete()
-            done=True
-        else:
-          answers.append(reply.content)
-          votes.append(0)
-          embed = self.generate_poll_embed(title, counter, answers, votes)
-          await pollmsg.edit(embed=embed)
-          await pollmsg.add_reaction(self.emojis[len(answers)-1])
-          await qmsg.delete()
-          await reply.delete()
+      Parameters
+      ----------
+      title: The subject of the poll, appears above the options
+      answer1: Option A. Required
+      answer2: Option B. Required
+      answer3: Option C. Not required.
+      answer4: Option D. Not required.
+      answer5: Option E. Not required.
+      answer6: Option F. Not required.
+      answer7: Option G. Not required.
+      answer8: Option H. Not required.
+      answer9: Option I. Not required.
+      answer10: Option J. Not required.
+      expiry_days: Number of days until the poll expires. Summed with other expiry fields.
+      expiry_hours: Number of hours until the poll expires. Summed with other expiry fields.
+      expiry_minutes: Number of minutes until the poll expires. Summed with other expiry fields.
+      expiry_seconds: Number of seconds until the poll expires. Summed with other expiry fields.
+    """
+    answers = set((
+      answer1, answer2, answer3, answer4, answer5, answer6, answer7, answer8, answer9, answer10
+    ))
+    answers.discard(None)
+    expiry = expiry_seconds + (expiry_minutes * 60) + (expiry_hours * 3600) + (expiry_days * 86400)
+    poll = LivePoll(self.bot)
+    poll.create(title, answers, [0]*len(answers), time() + expiry)
 
-    qmsg = await ctx.reply(self.bot.babel(ctx, 'poll', 'setup2'))
-    reply = None
-    try:
-      reply = await self.bot.wait_for('message', check=lambda m: m.author==ctx.author and m.channel==ctx.channel, timeout=30)
-    except asyncio.TimeoutError:
-      pass
-    else:
-      try:
-        counter = int(reply.content)*60
-      except ValueError:
-        pass
-    await qmsg.delete()
-    if reply:
-      await reply.delete()
-    if counter == 300:
-      await ctx.reply(self.bot.babel(ctx, 'poll', 'setup2_failed'))
+    embed = poll.generate_embed(inter.guild)
+    announce = self.bot.babel(inter.guild, 'poll', 'poll_created', author=inter.user.mention)
+    await inter.response.send_message(announce, embed=embed)
+    message = await inter.original_response()
 
-    await pollmsg.delete()
-    embed = self.generate_poll_embed(title, counter, answers, votes)
-    pollmsg = await ctx.reply(self.bot.babel(ctx, 'poll', 'poll_created', author=ctx.author.mention), embed=embed)
-    for emoji in self.emojis[:len(answers)]:
-      await pollmsg.add_reaction(emoji)
-
-    self.bot.config['poll'][f'{ctx.channel.id}_{pollmsg.id}_expiry'] = str(round(time())+counter)
-    self.bot.config.save()
+    self.livepolls[message.id] = poll
+    poll.save(message)
+    await poll.add_reacts()
 
 
 def setup(bot:MerelyBot):
