@@ -172,45 +172,55 @@ class ReactRoles(commands.Cog):
 
   # Commands
 
-  @commands.command(aliases=['reactionrole', 'rr', 'reactroles', 'reactionroles'])
   @commands.guild_only()
-  async def reactrole(self, ctx:commands.Context, *, prompt:str):
-    """react role setup interface"""
-    self.bot.cogs['Auth'].admins(ctx.message)
+  @commands.slash_command()
+  @commands.default_member_permissions(administrator=True)
+  async def reactrole(self, inter:disnake.CommandInteraction, prompt:str):
+    """
+      Grant members roles whenever they react to a message
 
-    target = await ctx.reply(prompt)
+      Parameters
+      ----------
+      prompt: The content of the message that users will react to
+    """
+    self.bot.cogs['Auth'].admins(inter.message)
+
+    await inter.response.send_message(prompt)
+    target = await inter.original_response()
     tmp = None
 
     emojis = []
     try:
       while len(emojis) < 10:
-        tmp = await ctx.reply(self.bot.babel(ctx, 'reactroles', 'setup1', canstop=len(emojis) > 0))
+        tmp = await inter.channel.send(
+          self.bot.babel(inter, 'reactroles', 'setup1', canstop=len(emojis) > 0)
+        )
         reaction, _ = await self.bot.wait_for(
           'reaction_add',
-          check=lambda r, u: u == ctx.author and r.message == target,
+          check=lambda r, u: u == inter.author and r.message == target,
           timeout=30
         )
 
         if reaction.emoji not in emojis:
           await target.add_reaction(reaction)
           try:
-            await target.remove_reaction(reaction, ctx.author)
+            await target.remove_reaction(reaction, inter.author)
           except (disnake.Forbidden, disnake.NotFound):
             pass
           await tmp.delete()
 
-          tmp = await ctx.reply(self.bot.babel(
-            ctx, 'reactroles', 'setup2', emoji=str(reaction.emoji)
+          tmp = await inter.channel.send(self.bot.babel(
+            inter, 'reactroles', 'setup2', emoji=str(reaction.emoji)
           ))
           msg = await self.bot.wait_for(
             'message',
             check=(
               lambda m:
-              m.channel == ctx.channel and m.author == ctx.author and len(m.role_mentions) > 0
+              m.channel == inter.channel and m.author == inter.author and len(m.role_mentions) > 0
             ),
             timeout=30)
           emojiid = reaction.emoji if isinstance(reaction.emoji, str) else str(reaction.emoji.id)
-          roleconfid = f"{ctx.channel.id}_{target.id}_{emojiid}_roles"
+          roleconfid = f"{inter.channel.id}_{target.id}_{emojiid}_roles"
           self.bot.config['reactroles'][roleconfid] = ' '.join(
             [str(r.id) for r in msg.role_mentions]
           )
@@ -220,11 +230,11 @@ class ReactRoles(commands.Cog):
           emojis.append(reaction)
         else:
           try:
-            await target.remove_reaction(reaction, ctx.author)
+            await target.remove_reaction(reaction, inter.author)
           except (disnake.Forbidden, disnake.NotFound):
             pass
           await tmp.delete()
-          tmp = await ctx.reply(self.bot.babel(ctx, 'reactroles', 'setup2_repeat'))
+          tmp = await inter.channel.send(self.bot.babel(inter, 'reactroles', 'setup2_repeat'))
           await asyncio.sleep(5)
           await tmp.delete()
 
@@ -236,16 +246,16 @@ class ReactRoles(commands.Cog):
             await tmp.delete()
         except (disnake.Forbidden, disnake.NotFound):
           pass
-        await ctx.reply(self.bot.babel(ctx, 'reactroles', 'setup_cancel'))
+        await inter.channel.send(self.bot.babel(inter, 'reactroles', 'setup_cancel'))
       else:
         try:
           await tmp.delete()
         except (disnake.Forbidden, disnake.NotFound):
           pass
-        await ctx.reply(self.bot.babel(ctx, 'reactroles', 'setup_success'))
+        await inter.response.send_message(self.bot.babel(inter, 'reactroles', 'setup_success'))
         self.watching.append(target)
     else:
-      await ctx.reply(self.bot.babel(ctx, 'reactroles', 'setup_success'))
+      await inter.response.send_message(self.bot.babel(inter, 'reactroles', 'setup_success'))
       self.watching.append(target)
     self.bot.config.save()
 
