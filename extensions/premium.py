@@ -15,8 +15,9 @@ if TYPE_CHECKING:
 
 
 class Premium(commands.Cog):
+  premiumroles: list[disnake.Role]
+
   def __init__(self, bot:MerelyBot):
-    #TODO: this cog
     self.bot = bot
     # ensure config file has required data
     if not bot.config.has_section('premium'):
@@ -44,30 +45,35 @@ class Premium(commands.Cog):
         "config[help][serverinv]!"
       )
 
-  #TODO: fetch the premium guild on ready
+    bot.add_check(self.check_premium_command)
+    bot.add_app_command_check(self.check_premium_slash_command, slash_commands=True)
+
+  #TODO: cache premium guild and roles on_connect
 
   async def check_premium(self, user:disnake.User):
     premiumguild = self.bot.get_guild(self.bot.config.getint('premium', 'premium_role_guild'))
-    premiumroles = [
+    self.premiumroles = [
       premiumguild.get_role(int(i)) for i in self.bot.config.get('premium', 'premium_roles')
       .split(' ')
     ]
-    if not premiumroles:
+    if not self.premiumroles:
       raise Exception("The designated premium role was not found!")
 
     member = await premiumguild.fetch_member(user.id)
     if isinstance(member, disnake.Member):
-      return list(set(premiumroles) & set(member.roles))
+      return list(set(self.premiumroles) & set(member.roles))
     else:
       return False
 
-  @commands.check
   async def check_premium_command(self, ctx:commands.Context):
     if ctx.command.name in self.bot.config['premium']['restricted_commands'].split(' '):
       if await self.check_premium(ctx.author):
         return True # user is premium
-      embed = disnake.Embed(title=self.bot.babel(ctx, 'premium', 'required_title'),
-                            description=self.bot.babel(ctx, 'premium', 'required_error'))
+      rolelist = ', '.join([r.name for r in self.premiumroles])
+      embed = disnake.Embed(
+        title=self.bot.babel(ctx, 'premium', 'required_title'),
+        description=self.bot.babel(ctx, 'premium', 'required_error', role=rolelist)
+      )
       embed.url = (
         self.bot.config['premium']['patreon'] if self.bot.config['premium']['patreon']
         else self.bot.config['premium']['other']
@@ -78,10 +84,33 @@ class Premium(commands.Cog):
       return False # user is not premium
     return True # command is not restricted
 
-  @commands.command(aliases=['support'])
-  async def premium(self, ctx:commands.Context):
-    embed = disnake.Embed(title=self.bot.babel(ctx, 'premium', 'name'),
-                          description=self.bot.babel(ctx, 'premium', 'desc'))
+  async def check_premium_slash_command(self, inter:disnake.CommandInteraction):
+    restricted = self.bot.config['premium']['restricted_commands'].split(' ')
+    if inter.application_command.name in restricted:
+      if await self.check_premium(inter.author):
+        return True # user is premium
+      rolelist = ', '.join([r.name for r in self.premiumroles])
+      embed = disnake.Embed(
+        title=self.bot.babel(inter, 'premium', 'required_title'),
+        description=self.bot.babel(inter, 'premium', 'required_error', role=rolelist)
+      )
+      embed.url = (
+        self.bot.config['premium']['patreon'] if self.bot.config['premium']['patreon']
+        else self.bot.config['premium']['other']
+      )
+      embed.set_thumbnail(url=self.bot.config['premium']['icon'])
+
+      await inter.response.send_message(embed=embed, ephemeral=True)
+      return False # user is not premium
+    return True # command is not restricted
+
+  @commands.slash_command()
+  async def premium(self, inter:disnake.CommandInteraction):
+    """
+      Learn more about premium.
+    """
+    embed = disnake.Embed(title=self.bot.babel(inter, 'premium', 'name'),
+                          description=self.bot.babel(inter, 'premium', 'desc'))
 
     embed.url = (
       self.bot.config['premium']['patreon'] if self.bot.config['premium']['patreon']
@@ -91,14 +120,18 @@ class Premium(commands.Cog):
 
     i = 1
     while f'feature_{i}' in self.bot.babel.langs[self.bot.babel.baselang]['premium']:
-      embed.add_field(name=self.bot.babel(ctx, 'premium', f'feature_{i}'),
-                      value=self.bot.babel(ctx, 'premium', f'feature_{i}_desc'),
+      if self.bot.babel(inter, 'premium', f'feature_{i}') == '':
+        continue
+      embed.add_field(name=self.bot.babel(inter, 'premium', f'feature_{i}'),
+                      value=self.bot.babel(inter, 'premium', f'feature_{i}_desc'),
                       inline=False)
       i += 1
 
-    embed.set_footer(text=self.bot.babel(ctx, 'premium', 'fine_print'))
+    embed.set_footer(text=self.bot.babel(inter, 'premium', 'fine_print'))
 
-    await ctx.reply(self.bot.babel(ctx, 'premium', 'cta', link=embed.url), embed=embed)
+    await inter.response.send_message(
+      self.bot.babel(inter, 'premium', 'cta', link=embed.url), embed=embed
+    )
 
 
 def setup(bot:MerelyBot):
