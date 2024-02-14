@@ -419,9 +419,10 @@ class Poll(commands.Cog):
     raw_answers = [
       answer1, answer2, answer3, answer4, answer5, answer6, answer7, answer8, answer9, answer10
     ]
-    answer_set = set(raw_answers)
-    answer_set.discard(None)
-    answers = [ans for ans in raw_answers if ans in answer_set]
+    answers = []
+    for ans in raw_answers:
+      if ans is not None and ans not in answers:
+        answers.append(ans)
 
     expiry = expiry_seconds + (expiry_minutes * 60) + (expiry_hours * 3600) + (expiry_days * 86400)
     if expiry == 0:
