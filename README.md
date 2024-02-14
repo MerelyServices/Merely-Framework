@@ -9,15 +9,15 @@ You can test these implementations on my [official Discord server](https://disco
  - [ConfessionBot](https://github.com/yiays/ConfessionBot-2.0) is an anonymous messaging system for Discord. ConfessionBot uses the help command, translation support, and module reloading features to speed up development and shares improvements to the framework back here.
 
 ## News
-Translation tooling for my projects (including MerelyBot) has launched! contribute translations with the help of this tooling and see your language become available in all sorts of places!
-> [try it now >](https://translate.yiays.com)
+Seven languages are now supported! English, German, French, Polish, Brazilian Portugese, Tagalog, and Chinese are all available to choose with `/language set` today, but most are incomplete. *MerelyBot now also follows your user and server language preferences by default.*
+> [See live translation stats and contribute >](https://translate.yiays.com)
 
-merely v1.0.0 has launched! with this update comes a wave of potential for 3rd party extensions and custom discord bots. it is also full of breaking changes, the config migration tool should be able to help, but .
-> [see the roadmap for future updates >](https://github.com/yesiateyoursheep/merely/projects/1)
+MerelyBot v1.2.0 has launched! This update marks the completed migration to slash commands, which comes with countless performance and usability improvements. Some highlights are the newly-polished `/poll` and ReactRoles now catch up after any interruptions.
+> [See the roadmap for future updates >](https://github.com/orgs/MerelyServices/projects/1)
 
 ## Usage
  - Clone the project to a folder
- - Install python <=3.9
+ - Install python <=3.10
  - Install required python packages with `python3 -m pip install -r requirements.txt`
  - Create a discord bot in the [Discord Developer Portal](https://discordapp.com/developers/applications/), you will need the token to continue
  - Give MerelyBot the token by setting it in the [main] section of the config
@@ -30,11 +30,32 @@ The first run generates a `config.ini` file, you can modify it from there to ena
 ## Contributing
 The best way to contribute is to create your own discord bot using this framework, and send any improvements to the framework my way in the form of a pull request!
 
+### Translation
+I have built a website which makes it easier to translate my projects, including Merely-Framework. [Babel Translator](https://translate.yiays.com).
+
+### Code contribution
+Merely-Framework is written in Python with the help of the disnake API wrapper (like discord.py). Refer to the [Project roadmap](https://github.com/orgs/MerelyServices/projects/1) for future features we'd like to implement. All contributions are welcome and support can be given in the [Discord server](https://discord.gg/wfKx24kDUR).
+
 ### Design
-Merely is a highly customizable and extensible discord bot. through the config file, people can create their own discord bots by enabling and disabling extensions, and changing the bot name. Other developers can even write their own extensions.
+Merely is a highly customizable and extensible framework for discord bots. through the config file, people can enable and disable extensions, change the bot name, and configure extensions. Developers can even write their own extensions to further extend the Merely Framework.
 
 ### Code structure
-Extensions need to be able to be entirely independant of each other and should rarely need to communicate with each other. extensions must inherit from the [disnake.ext.commands.Cog](https://docs.disnake.dev/en/latest/ext/commands/api.html#cog) class. effort should be made to avoid clashes with existing commands, preferably by using subcommands. [extensions/example.py](extensions/example.py) should demonstrate all of this.
+Extensions should operate entirely independant of each other and should rarely need to communicate with each other. Extensions must inherit from the [disnake.ext.commands.Cog](https://docs.disnake.dev/en/latest/ext/commands/api.html#cog) class and bind themselves on import. Effort should be made to avoid clashes with existing commands. [extensions/example.py](extensions/example.py) should demonstrate all of this.
+
+For major extensions that create an entirely different category of bot (like my own ConfessionBot), an overlay system will soon be implemented so it's easier to update the framework without affecting overrides.
+
+#### Strings
+As the Babel language framework is being used, there's no need to provide strings for your code. Myself and the volunteer translators can add strings later. In place of strings, simply invent a meaningful key, for example;
+
+```py
+self.bot.babel('example', 'echo', content=userinput)
+# Appears like the following until a string is written:
+"<ECHO: content={content}>"
+# An example of a written string:
+"You said: \"{content}\"."
+```
+
+If you wish to provide strings, add them to `babel/en.ini`.
 
 ### File structure
  - Core plugins are stored in the top directory, these elements cannot be reloaded or disabled. Reloading babel or config refreshes the data, but not the code.
