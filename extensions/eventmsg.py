@@ -389,6 +389,7 @@ class EventMsg(commands.Cog):
         raise AssertionError(f"Unhandled click event '{inter.component.custom_id}'")
 
   @commands.slash_command()
+  @commands.default_member_permissions(moderate_members=True)
   async def eventmessage(
     self,
     inter:disnake.GuildCommandInteraction,
@@ -448,6 +449,7 @@ class EventMsg(commands.Cog):
       allowed_mentions=[]
     )
 
+  #TODO: add slash command support to welcome/farewell
   @commands.group()
   @commands.guild_only()
   async def welcome(self, ctx:commands.Context):

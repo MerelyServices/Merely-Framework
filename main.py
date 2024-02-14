@@ -158,6 +158,7 @@ class Logger(object):
 
   def flush(self):
     """ This is here just to keep the writable requirement of stdout and stderr happy """
+    self.terminal.flush()
     return self
 
 

@@ -33,12 +33,14 @@ class System(commands.Cog):
     if not bot.config.getboolean('extensions', 'auth', fallback=False):
       raise Exception("'auth' must be enabled to use 'admin'")
 
+    # Restrict usage of these commands to one guild
     guilds = bot.config['auth']['botadmin_guilds']
     botadmin_guilds = [int(guild) for guild in guilds.split(' ')]
     for cmd in self.get_application_commands():
       cmd.guild_ids = botadmin_guilds
 
   @commands.slash_command()
+  @commands.default_member_permissions(administrator=True)
   async def module(
     self,
     inter:disnake.ApplicationCommandInteraction,

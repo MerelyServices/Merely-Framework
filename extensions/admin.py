@@ -27,8 +27,6 @@ class Admin(commands.Cog):
   """ Admin tools """
   def __init__(self, bot:MerelyBot):
     self.bot = bot
-    if not bot.config.getboolean('extensions', 'auth', fallback=False):
-      raise AssertionError("'auth' must be enabled to use 'admin'")
     # ensure config file has required data
     if not bot.config.has_section('admin'):
       bot.config.add_section('admin')
@@ -56,7 +54,7 @@ class Admin(commands.Cog):
         await asyncio.sleep(30)
         await message.delete()
 
-  @commands.slash_command()
+  @commands.slash_command(default_member_permissions=disnake.Permissions.administrator)
   async def janitor(
     self, inter:disnake.GuildCommandInteraction, mode:JanitorMode
   ):
@@ -67,8 +65,6 @@ class Admin(commands.Cog):
       -----------
       mode: Choose whether to have janitor enabled or disabled in this channel
     """
-    self.bot.cogs['Auth'].admins(inter)
-
     if mode != JanitorMode.DISABLED:
       self.bot.config['admin'][f'{inter.channel.id}_janitor'] = str(int(mode))
       self.bot.config.save()
@@ -79,6 +75,7 @@ class Admin(commands.Cog):
       await inter.send(self.bot.babel(inter, 'admin', 'janitor_unset_success'))
 
   @commands.slash_command()
+  @commands.default_member_permissions(moderate_members=True)
   async def clean(
     self,
     inter:disnake.GuildCommandInteraction,
@@ -95,9 +92,6 @@ class Admin(commands.Cog):
       clean_to: Searches through message history until this message is reached
       strict: A strict clean, when enabled, deletes all messages by all users
     """
-
-    self.bot.cogs['Auth'].mods(inter)
-
     try:
       await inter.response.defer(with_message=True)
       if clean_to:

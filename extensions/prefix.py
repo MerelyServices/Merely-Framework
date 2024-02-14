@@ -1,6 +1,7 @@
 """
   Prefix - change the activation prefix in text mode
   Mostly useless now as Discord heavily encourages using slash commands instead
+  Keeping only for custom bots on small servers
 """
 
 from __future__ import annotations
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
 
 
 class Prefix(commands.Cog):
-  """a prototype service for commandless bots"""
+  """ Change the prefix used to activate this bot """
   def __init__(self, bot:MerelyBot):
     self.bot = bot
     if not bot.config.getboolean('extensions', 'auth', fallback=False):
