@@ -234,11 +234,12 @@ class Babel():
     CONJUNCTIONLAST = self(target, 'main', 'list_last_conjunction').replace('_', ' ')
 
     items = list(items)
-    i = 0
-    for i in range(len(items) - 2):
-      items.insert(i * 2 + 1, CONJUNCTION)
-    i += 1
-    items.insert(i * 2 + 1, CONJUNCTIONLAST)
+    if len(items) > 1:
+      i = 0
+      for i in range(len(items) - 2):
+        items.insert(i * 2 + 1, CONJUNCTION)
+      i += 1
+      items.insert(i * 2 + 1, CONJUNCTIONLAST)
 
     return ''.join(items)
 

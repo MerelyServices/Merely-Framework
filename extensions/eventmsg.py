@@ -232,7 +232,7 @@ class EventMsg(commands.Cog):
       data = self.bot.config['eventmsg'][f"{member.guild.id}_welcome"].split(', ')
       channel = member.guild.get_channel(int(data[0]))
       await channel.send(
-        self.bot.babel.string_list(channel.guild, data[1:]).format(member.mention, member.guild.name)
+        ', '.join(data[1:]).format(member.mention, member.guild.name)
       )
 
   @commands.Cog.listener("on_raw_member_leave")
@@ -242,7 +242,7 @@ class EventMsg(commands.Cog):
       data = self.bot.config['eventmsg'][f"{payload.guild_id}_farewell"].split(', ')
       guild = self.bot.get_guild(payload.guild_id)
       channel = guild.get_channel(int(data[0]))
-      await channel.send(self.bot.babel.string_list(guild, data[1:])
+      await channel.send(', '.join(data[1:])
                          .format(f"{payload.user.name}#{payload.user.discriminator}", guild.name))
 
   class CallbackButton(disnake.ui.Button):
@@ -469,7 +469,7 @@ class EventMsg(commands.Cog):
             'greeter',
             'greeting_preview',
             channel=inter.guild.get_channel(int(data[0])).mention,
-            message=self.bot.babel.string_list(inter, data[1:]).format('@USER', inter.guild.name)
+            message=', '.join(data[1:]).format('@USER', inter.guild.name)
           ),
           ephemeral=True
         )
@@ -530,7 +530,7 @@ class EventMsg(commands.Cog):
           'greeter',
           'greeting_preview',
           channel=inter.guild.get_channel(int(data[0])).mention,
-          message=self.bot.babel.string_list(inter, data[1:]).format('USER#1234', inter.guild.name)
+          message=', '.join(data[1:]).format('USER#1234', inter.guild.name)
         ),
         ephemeral=True
       )
