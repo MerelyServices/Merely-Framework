@@ -452,87 +452,118 @@ class EventMsg(commands.Cog):
     )
 
   #TODO: add slash command support to welcome/farewell
-  @commands.group()
   @commands.guild_only()
-  async def welcome(self, ctx:commands.Context):
-    """welcome setter / getter"""
-    if ctx.invoked_subcommand is None:
-      raise commands.BadArgument
+  @commands.slash_command()
+  @commands.default_member_permissions(moderate_members=True)
+  async def welcome(self, _):
+    """ An automation that posts a message whenever a member joins """
 
-  @welcome.command(name='get')
-  async def welcome_get(self, ctx:commands.Context):
-    if f'{ctx.guild.id}_welcome' in self.bot.config['eventmsg']:
-      data = self.bot.config['eventmsg'][f"{ctx.guild.id}_welcome"].split(', ')
-      await ctx.reply(self.bot.babel(
-        ctx,
-        'eventmsg',
-        'greeting_preview',
-        channel=ctx.guild.get_channel(int(data[0])).mention,
-        message=self.bot.babel.string_list(data[1:]).format('@USER', ctx.guild.name)
-      ))
+  @welcome.sub_command(name='get')
+  async def welcome_get(self, inter:disnake.CommandInteraction):
+    """ Gets the current welcome message. Otherwise, gives instructions on how to set one """
+    if f'{inter.guild.id}_welcome' in self.bot.config['eventmsg']:
+      data = self.bot.config['eventmsg'][f"{inter.guild.id}_welcome"].split(', ')
+      await inter.response.send_message(
+          self.bot.babel(
+            inter,
+            'greeter',
+            'greeting_preview',
+            channel=inter.guild.get_channel(int(data[0])).mention,
+            message=self.bot.babel.string_list(data[1:]).format('@USER', inter.guild.name)
+          ),
+          ephemeral=True
+        )
     else:
-      await self.welcome_set(ctx)
+      await inter.response.send_message(
+        self.bot.babel(inter, 'greeter', 'welcome_set_instructions'),
+        ephemeral=True
+      )
 
-  @welcome.command(name='set')
-  async def welcome_set(self, ctx:commands.Context, *, message:str = ''):
-    self.bot.cogs['Auth'].admins(ctx.message)
-    if not message:
-      await ctx.reply(self.bot.babel(ctx, 'eventmsg', 'welcome_set_instructions'))
-    else:
-      self.bot.config['eventmsg'][f'{ctx.guild.id}_welcome'] = f"{ctx.channel.id}, {message}"
+  @welcome.sub_command(name='set')
+  async def welcome_set(self, inter:disnake.CommandInteraction, message:str):
+    """
+      Sets the welcome message based on your input.
+
+      Parameters
+      ----------
+      message: The message that will be sent when a member joins.
+    """
+    self.bot.cogs['Auth'].admins(inter)
+    self.bot.config['eventmsg'][f'{inter.guild.id}_welcome'] = f"{inter.channel.id}, {message}"
+    self.bot.config.save()
+    await inter.response.send_message(
+      self.bot.babel(inter, 'greeter', 'welcome_set_success'),
+      ephemeral=True
+    )
+
+  @welcome.sub_command(name='clear')
+  async def welcome_clear(self, inter:disnake.CommandInteraction):
+    """ Clears the welcome message """
+    self.bot.cogs['Auth'].admins(inter)
+    if f'{inter.guild.id}_welcome' in self.bot.config['eventmsg']:
+      self.bot.config.remove_option('eventmsg', f'{inter.guild.id}_welcome')
       self.bot.config.save()
-      await ctx.reply(self.bot.babel(ctx, 'eventmsg', 'welcome_set_success'))
-
-  @welcome.command(name='clear')
-  async def welcome_clear(self, ctx:commands.Context):
-    self.bot.cogs['Auth'].admins(ctx.message)
-    if f'{ctx.guild.id}_welcome' in self.bot.config['eventmsg']:
-      self.bot.config.remove_option('eventmsg', f'{ctx.guild.id}_welcome')
-      self.bot.config.save()
-      await ctx.reply(self.bot.babel(ctx, 'eventmsg', 'welcome_clear_success'))
+      await inter.response.send_message(
+        self.bot.babel(inter, 'greeter', 'welcome_clear_success'),
+        ephemeral=True
+      )
     else:
-      await ctx.reply(self.bot.babel(ctx, 'eventmsg', 'welcome_clear_failed'))
+      await inter.response.send_message(
+        self.bot.babel(inter, 'greeter', 'welcome_clear_failed'),
+        ephemeral=True
+      )
 
-  @commands.group()
   @commands.guild_only()
-  async def farewell(self, ctx:commands.Context):
-    """getter / setter for farewell"""
-    if ctx.invoked_subcommand is None:
-      raise commands.BadArgument
+  @commands.slash_command()
+  @commands.default_member_permissions(moderate_members=True)
+  async def farewell(self, _):
+    """ An automation that posts a message whenever a user leaves """
 
-  @farewell.command(name='get')
-  async def farewell_get(self, ctx:commands.Context):
-    if f'{ctx.guild.id}_farewell' in self.bot.config['eventmsg']:
-      data = self.bot.config['eventmsg'][f"{ctx.guild.id}_farewell"].split(', ')
-      await ctx.reply(self.bot.babel(
-        ctx,
-        'eventmsg',
-        'greeting_preview',
-        channel=ctx.guild.get_channel(int(data[0])).mention,
-        message=self.bot.babel.string_list(data[1:]).format('USER#1234', ctx.guild.name)
-      ))
+  @farewell.sub_command(name='get')
+  async def farewell_get(self, inter:disnake.CommandInteraction):
+    """ Gets the current farewell message. Otherwise, gives instructions on how to set one """
+    if f'{inter.guild.id}_farewell' in self.bot.config['eventmsg']:
+      data = self.bot.config['eventmsg'][f"{inter.guild.id}_farewell"].split(', ')
+      await inter.response.send_message(
+        self.bot.babel(
+          inter,
+          'greeter',
+          'greeting_preview',
+          channel=inter.guild.get_channel(int(data[0])).mention,
+          message=self.bot.babel.string_list(data[1:]).format('USER#1234', inter.guild.name)
+        ),
+        ephemeral=True
+      )
     else:
-      await self.farewell_set(ctx)
+      await inter.response.send_message(
+        self.bot.babel(inter, 'greeter', 'farewell_set_instructions'),
+        ephemeral=True
+      )
 
-  @farewell.command(name='set')
-  async def farewell_set(self, ctx:commands.Context, *, message:str = ''):
-    self.bot.cogs['Auth'].admins(ctx.message)
-    if not message:
-      await ctx.reply(self.bot.babel(ctx, 'eventmsg', 'farewell_set_instructions'))
-    else:
-      self.bot.config['eventmsg'][f'{ctx.guild.id}_farewell'] = f"{ctx.channel.id}, {message}"
+  @farewell.sub_command(name='set')
+  async def farewell_set(self, inter:disnake.CommandInteraction, message:str):
+    """
+      Sets the welcome message based on your input.
+
+      Parameters
+      ----------
+      message: The message that will be sent when a member joins.
+    """
+    self.bot.cogs['Auth'].admins(inter)
+    self.bot.config['eventmsg'][f'{inter.guild.id}_farewell'] = f"{inter.channel.id}, {message}"
+    self.bot.config.save()
+    await inter.response.send_message(self.bot.babel(inter, 'greeter', 'farewell_set_success'))
+
+  @farewell.sub_command(name='clear')
+  async def farewell_clear(self, inter:disnake.CommandInteraction):
+    """ Clears the farewell message """
+    self.bot.cogs['Auth'].admins(inter)
+    if f'{inter.guild.id}_farewell' in self.bot.config['eventmsg']:
+      self.bot.config.remove_option('eventmsg', f'{inter.guild.id}_farewell')
       self.bot.config.save()
-      await ctx.reply(self.bot.babel(ctx, 'eventmsg', 'farewell_set_success'))
-
-  @farewell.command(name='clear')
-  async def farewell_clear(self, ctx:commands.Context):
-    self.bot.cogs['Auth'].admins(ctx.message)
-    if f'{ctx.guild.id}_farewell' in self.bot.config['eventmsg']:
-      self.bot.config.remove_option('eventmsg', f'{ctx.guild.id}_farewell')
-      self.bot.config.save()
-      await ctx.reply(self.bot.babel(ctx, 'eventmsg', 'farewell_clear_success'))
+      await inter.response.send_message(self.bot.babel(inter, 'greeter', 'farewell_clear_success'))
     else:
-      await ctx.reply(self.bot.babel(ctx, 'eventmsg', 'farewell_clear_failure'))
+      await inter.response.send_message(self.bot.babel(inter, 'greeter', 'farewell_clear_failure'))
 
 
 def setup(bot:MerelyBot):
