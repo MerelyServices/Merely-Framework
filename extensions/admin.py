@@ -54,7 +54,8 @@ class Admin(commands.Cog):
         await asyncio.sleep(30)
         await message.delete()
 
-  @commands.slash_command(default_member_permissions=disnake.Permissions.administrator)
+  @commands.slash_command()
+  @commands.default_member_permissions(administrator=True)
   async def janitor(
     self, inter:disnake.GuildCommandInteraction, mode:JanitorMode
   ):

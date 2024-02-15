@@ -43,7 +43,7 @@ class System(commands.Cog):
   @commands.default_member_permissions(administrator=True)
   async def module(
     self,
-    inter:disnake.ApplicationCommandInteraction,
+    inter:disnake.CommandInteraction,
     action:Actions,
     module:Optional[str] = None
   ):
@@ -150,7 +150,7 @@ class System(commands.Cog):
       await inter.send(self.bot.babel(inter, 'main', 'extension_not_found'), ephemeral=True)
 
   @module.autocomplete('module')
-  async def module_ac(self, inter:disnake.ApplicationCommandInteraction, search:str):
+  async def module_ac(self, inter:disnake.CommandInteraction, search:str):
     """ Suggests modules based on the list in config """
     extension_list = None
     if 'action' in inter.filled_options:
@@ -170,7 +170,7 @@ class System(commands.Cog):
   @commands.slash_command()
   async def delete_message(
     self,
-    inter:disnake.ApplicationCommandInteraction,
+    inter:disnake.CommandInteraction,
     channel_id:str,
     message_id:str
   ):
@@ -197,7 +197,7 @@ class System(commands.Cog):
 
   @commands.slash_command()
   @commands.cooldown(1, 1)
-  async def die(self, inter:disnake.ApplicationCommandInteraction, saveconfig:bool = False):
+  async def die(self, inter:disnake.CommandInteraction, saveconfig:bool = False):
     """
     Log out and shut down
 

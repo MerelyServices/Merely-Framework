@@ -24,13 +24,13 @@ class Language(commands.Cog):
       bot.config.add_section('language')
 
   @commands.slash_command()
-  async def language(self, inter:disnake.ApplicationCommandInteraction):
+  async def language(self, _:disnake.CommandInteraction):
     """
     Changes the language this bot speaks to you, or to a server you administrate
     """
 
   @language.sub_command(name='list')
-  async def language_list(self, inter:disnake.ApplicationCommandInteraction):
+  async def language_list(self, inter:disnake.CommandInteraction):
     """
     Lists all available languages this bot can be translated to
     """
@@ -66,7 +66,7 @@ class Language(commands.Cog):
     await inter.send(embed=embed)
 
   @language.sub_command(name='get')
-  async def language_get(self, inter:disnake.ApplicationCommandInteraction):
+  async def language_get(self, inter:disnake.CommandInteraction):
     """
     Get the language the bot is using with you right now and the reason why it was selected
     """
@@ -94,7 +94,7 @@ class Language(commands.Cog):
   @language.sub_command(name='set')
   async def language_set(
     self,
-    inter:disnake.ApplicationCommandInteraction,
+    inter:disnake.CommandInteraction,
     language:str
   ):
     """

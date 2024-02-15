@@ -52,9 +52,9 @@ class Premium(commands.Cog):
     bot.add_check(self.check_premium_command)
     bot.add_app_command_check(self.check_premium_slash_command, slash_commands=True)
 
-  #TODO: cache premium guild and roles on_connect
   @commands.Cog.listener('on_connect')
   async def cache_role(self):
+    """ Fetches guild and member list on connect to decrease first response time """
     self.premiumguild = self.bot.get_guild(self.bot.config.getint('premium', 'premium_role_guild'))
     self.premiumroles = [
       self.premiumguild.get_role(int(i)) for i in self.bot.config.get('premium', 'premium_roles')

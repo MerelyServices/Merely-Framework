@@ -57,13 +57,13 @@ class Auth(commands.Cog):
       return True
     raise self.AuthError(self.bot.babel(msg, 'auth', 'not_mod'))
 
-  def superusers(self, msg:Union[disnake.Message, disnake.ApplicationCommandInteraction]):
+  def superusers(self, msg:Union[disnake.Message, disnake.CommandInteraction]):
     """ Verify this user is a superuser """
     if str(msg.author.id) in self.bot.config['auth']['superusers']:
       return True
     raise self.AuthError(self.bot.babel(msg, 'auth', 'not_superuser'))
 
-  def authusers(self, msg:Union[disnake.Message, disnake.ApplicationCommandInteraction]):
+  def authusers(self, msg:Union[disnake.Message, disnake.CommandInteraction]):
     """ Verify this user is an authuser """
     if str(msg.author.id) in self.bot.config['auth']['superusers'] or\
        str(msg.author.id) in self.bot.config['auth']['authusers']:

@@ -19,7 +19,7 @@ class Emoji(commands.Cog):
     self.bot = bot
 
   @commands.slash_command()
-  async def emoji(self, inter:disnake.ApplicationCommandInteraction, search:str):
+  async def emoji(self, inter:disnake.CommandInteraction, search:str):
     """
     Searches emojis from all servers merely is a part of for one to use
 
@@ -45,7 +45,7 @@ class Emoji(commands.Cog):
       await inter.send(self.bot.babel(inter, 'emoji', 'not_found'))
 
   @emoji.autocomplete('search')
-  def ac_emoji(self, _:disnake.ApplicationCommandInteraction, search:str):
+  def ac_emoji(self, _:disnake.CommandInteraction, search:str):
     """ Autocomplete for emoji search """
     results = [
       f':{e.name}: ({e.guild_id})'

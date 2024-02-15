@@ -26,7 +26,7 @@ class Example(commands.Cog):
     print(f"{member.name} has joined!")
 
   @commands.slash_command()
-  async def example(self, inter:disnake.ApplicationCommandInteraction, echo:str):
+  async def example(self, inter:disnake.CommandInteraction, echo:str):
     """ Just a simple echo command """
     await inter.send(echo, ephemeral=True)
 

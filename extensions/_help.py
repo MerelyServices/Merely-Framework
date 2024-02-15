@@ -75,7 +75,7 @@ class Help(commands.Cog):
         return cmd
     return None
 
-  def get_docs(self, ctx:Union[commands.Context, disnake.ApplicationCommandInteraction], cmd:str):
+  def get_docs(self, ctx:Union[commands.Context, disnake.CommandInteraction], cmd:str):
     """ find documentation for this command in babel """
     matchedcommand = self.find_command(cmd)
     # return usage information for a specific command
@@ -104,7 +104,7 @@ class Help(commands.Cog):
 
   @commands.slash_command(name='help')
   async def slash_help(
-    self, inter:disnake.ApplicationCommandInteraction, command:Optional[str] = None
+    self, inter:disnake.CommandInteraction, command:Optional[str] = None
   ):
     """
     Learn how to use this bot
@@ -118,7 +118,7 @@ class Help(commands.Cog):
   @commands.command(aliases=['?','??'])
   async def help(
     self,
-    ctx:Union[commands.Context, disnake.ApplicationCommandInteraction],
+    ctx:Union[commands.Context, disnake.CommandInteraction],
     command:Optional[str] = None,
     **kwargs
   ):
@@ -200,7 +200,7 @@ class Help(commands.Cog):
       )
 
   @slash_help.autocomplete('command')
-  def ac_command(self, _:disnake.ApplicationCommandInteraction, command:str):
+  def ac_command(self, _:disnake.CommandInteraction, command:str):
     """ find any commands that contain the provided string """
     matches = []
     hide = self.bot.config.get('help', 'hidden_commands', fallback='').split(', ')
@@ -217,7 +217,7 @@ class Help(commands.Cog):
     return matches[0:25]
 
   @commands.slash_command()
-  async def about(self, inter:disnake.ApplicationCommandInteraction):
+  async def about(self, inter:disnake.CommandInteraction):
     """
     General information about this bot, including an invite link
     """
@@ -292,7 +292,7 @@ class Help(commands.Cog):
     )
 
   @commands.slash_command()
-  async def changes(self, inter:disnake.ApplicationCommandInteraction, search:Optional[str] = None):
+  async def changes(self, inter:disnake.CommandInteraction, search:Optional[str] = None):
     """
     See what's changed in recent updates
 
@@ -340,7 +340,7 @@ class Help(commands.Cog):
     )
 
   @changes.autocomplete('search')
-  def ac_version(self, _:disnake.ApplicationCommandInteraction, search:str):
+  def ac_version(self, _:disnake.CommandInteraction, search:str):
     """ find any matching versions """
     matches = []
     iver = '0'

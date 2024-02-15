@@ -19,7 +19,7 @@ class Dice(commands.Cog):
     self.bot = bot
 
   @commands.slash_command()
-  async def dice(self, inter:disnake.ApplicationCommandInteraction, sides:str = 6):
+  async def dice(self, inter:disnake.CommandInteraction, sides:str = 6):
     """
     Roll an n-sided dice
 

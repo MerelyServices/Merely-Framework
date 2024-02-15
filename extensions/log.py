@@ -73,7 +73,7 @@ class Log(commands.Cog):
       )
 
   @commands.Cog.listener('on_application_command')
-  async def log_slash_command(self, inter:disnake.ApplicationCommandInteraction):
+  async def log_slash_command(self, inter:disnake.CommandInteraction):
     """ Record slash command calls """
     options = [f"{opt.name}:{self.truncate(str(opt.value), 30)}" for opt in inter.data.options]
     logentry = self.wrap(
