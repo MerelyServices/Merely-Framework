@@ -187,7 +187,7 @@ class Help(commands.Cog):
           else:
             hcmds.append(hcmd+'❌')
         embed.add_field(
-          name=section, value='```'+self.bot.babel.string_list(hcmds)+'```', inline=False
+          name=section, value='```'+self.bot.babel.string_list(ctx, hcmds)+'```', inline=False
         )
 
       embed.set_footer(text=self.bot.babel(ctx, 'help', 'creator_footer'),

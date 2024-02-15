@@ -182,7 +182,7 @@ class Babel():
         continue
 
     if match is None:
-      variables = self.string_list([k+'={'+k+'}' for k in values])
+      variables = self.string_list(target, [k+'={'+k+'}' for k in values])
       match = "{" + key.upper() + (': '+variables if variables else '') + "}"
 
     # Fill in variables in the string

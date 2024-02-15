@@ -74,7 +74,7 @@ class Premium(commands.Cog):
     if ctx.command.name in self.bot.config['premium']['restricted_commands'].split(' '):
       if await self.check_premium(ctx.author):
         return True # user is premium
-      rolelist = self.bot.babel.string_list([r.name for r in self.premiumroles])
+      rolelist = self.bot.babel.string_list(ctx, [r.name for r in self.premiumroles])
       embed = disnake.Embed(
         title=self.bot.babel(ctx, 'premium', 'required_title'),
         description=self.bot.babel(ctx, 'premium', 'required_error', role=rolelist)
@@ -94,7 +94,7 @@ class Premium(commands.Cog):
     if inter.application_command.name in restricted:
       if await self.check_premium(inter.author):
         return True # user is premium
-      rolelist = self.bot.babel.string_list([r.name for r in self.premiumroles])
+      rolelist = self.bot.babel.string_list(inter, [r.name for r in self.premiumroles])
       embed = disnake.Embed(
         title=self.bot.babel(inter, 'premium', 'required_title'),
         description=self.bot.babel(inter, 'premium', 'required_error', role=rolelist)
