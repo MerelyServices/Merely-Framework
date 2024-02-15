@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 
 class Premium(commands.Cog):
+  premiumguild: disnake.Guild
   premiumroles: list[disnake.Role]
 
   def __init__(self, bot:MerelyBot):
@@ -45,21 +46,25 @@ class Premium(commands.Cog):
         "config[help][serverinv]!"
       )
 
+    self.premiumguild = None
+    self.premiumroles = []
+
     bot.add_check(self.check_premium_command)
     bot.add_app_command_check(self.check_premium_slash_command, slash_commands=True)
 
   #TODO: cache premium guild and roles on_connect
-
-  async def check_premium(self, user:disnake.User):
-    premiumguild = self.bot.get_guild(self.bot.config.getint('premium', 'premium_role_guild'))
+  @commands.Cog.listener('on_connect')
+  async def cache_role(self):
+    self.premiumguild = self.bot.get_guild(self.bot.config.getint('premium', 'premium_role_guild'))
     self.premiumroles = [
-      premiumguild.get_role(int(i)) for i in self.bot.config.get('premium', 'premium_roles')
+      self.premiumguild.get_role(int(i)) for i in self.bot.config.get('premium', 'premium_roles')
       .split(' ')
     ]
     if not self.premiumroles:
       raise Exception("The designated premium role was not found!")
 
-    member = await premiumguild.fetch_member(user.id)
+  async def check_premium(self, user:disnake.User):
+    member = await self.premiumguild.fetch_member(user.id)
     if isinstance(member, disnake.Member):
       return list(set(self.premiumroles) & set(member.roles))
     else:
@@ -69,7 +74,7 @@ class Premium(commands.Cog):
     if ctx.command.name in self.bot.config['premium']['restricted_commands'].split(' '):
       if await self.check_premium(ctx.author):
         return True # user is premium
-      rolelist = ', '.join([r.name for r in self.premiumroles])
+      rolelist = self.bot.babel.string_list([r.name for r in self.premiumroles])
       embed = disnake.Embed(
         title=self.bot.babel(ctx, 'premium', 'required_title'),
         description=self.bot.babel(ctx, 'premium', 'required_error', role=rolelist)
@@ -89,7 +94,7 @@ class Premium(commands.Cog):
     if inter.application_command.name in restricted:
       if await self.check_premium(inter.author):
         return True # user is premium
-      rolelist = ', '.join([r.name for r in self.premiumroles])
+      rolelist = self.bot.babel.string_list([r.name for r in self.premiumroles])
       embed = disnake.Embed(
         title=self.bot.babel(inter, 'premium', 'required_title'),
         description=self.bot.babel(inter, 'premium', 'required_error', role=rolelist)

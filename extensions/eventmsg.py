@@ -231,7 +231,9 @@ class EventMsg(commands.Cog):
     if f"{member.guild.id}_welcome" in self.bot.config['eventmsg']:
       data = self.bot.config['eventmsg'][f"{member.guild.id}_welcome"].split(', ')
       channel = member.guild.get_channel(int(data[0]))
-      await channel.send(', '.join(data[1:]).format(member.mention, member.guild.name))
+      await channel.send(
+        self.bot.babel.string_list(data[1:]).format(member.mention, member.guild.name)
+      )
 
   @commands.Cog.listener("on_raw_member_leave")
   async def on_farewell(self, payload:disnake.RawGuildMemberRemoveEvent):
@@ -240,7 +242,7 @@ class EventMsg(commands.Cog):
       data = self.bot.config['eventmsg'][f"{payload.guild_id}_farewell"].split(', ')
       guild = self.bot.get_guild(payload.guild_id)
       channel = guild.get_channel(int(data[0]))
-      await channel.send(', '.join(data[1:])
+      await channel.send(self.bot.babel.string_list(data[1:])
                          .format(f"{payload.user.name}#{payload.user.discriminator}", guild.name))
 
   class CallbackButton(disnake.ui.Button):
@@ -466,7 +468,7 @@ class EventMsg(commands.Cog):
         'eventmsg',
         'greeting_preview',
         channel=ctx.guild.get_channel(int(data[0])).mention,
-        message=', '.join(data[1:]).format('@USER', ctx.guild.name)
+        message=self.bot.babel.string_list(data[1:]).format('@USER', ctx.guild.name)
       ))
     else:
       await self.welcome_set(ctx)
@@ -507,7 +509,7 @@ class EventMsg(commands.Cog):
         'eventmsg',
         'greeting_preview',
         channel=ctx.guild.get_channel(int(data[0])).mention,
-        message=', '.join(data[1:]).format('USER#1234', ctx.guild.name)
+        message=self.bot.babel.string_list(data[1:]).format('USER#1234', ctx.guild.name)
       ))
     else:
       await self.farewell_set(ctx)

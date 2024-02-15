@@ -74,18 +74,6 @@ class LivePoll():
     if save:
       self.bot.config.save()
 
-  def babel_list(self, guild:disnake.Guild, items:list[str]) -> str:
-    """ Takes list items, and joins them together in a regionally correct way """
-    CONJUNCTION = self.bot.babel(guild, 'poll', 'list_conjunction').replace('_', ' ')
-    CONJUNCTIONLAST = self.bot.babel(guild, 'poll', 'list_last_conjunction').replace('_', ' ')
-
-    iter = 1
-    while iter < len(items):
-      items.insert(iter, CONJUNCTIONLAST if iter < len(items) - 1 else CONJUNCTION)
-      iter += 2
-
-    return ''.join(items)
-
   def expiry_to_time(self, guild:disnake.Guild, precisionlimit:int = 1) -> str:
     """ Converts countdown seconds into a nicely formatted sentence """
     # Import current locale strings
@@ -120,7 +108,7 @@ class LivePoll():
       if ni >= precisionlimit:
         break
 
-    timelist = self.babel_list(guild, times)
+    timelist = self.bot.babel.string_list(guild, times)
     if timelist == '':
       return self.bot.babel(guild, 'poll', 'near_past' if self.counter < 0 else 'near_future')
     else:
@@ -213,9 +201,7 @@ class LivePoll():
         reference=self.message
       )
     else:
-      if len(winners) > 2:
-        winners.insert(len(winners)-1, 'and')
-      winnerstring = self.babel_list(self.message.guild, winners)
+      winnerstring = self.bot.babel.string_list(self.message.guild, winners)
       await self.message.channel.send(
         self.bot.babel(
           self.message.guild,

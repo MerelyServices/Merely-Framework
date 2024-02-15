@@ -71,8 +71,8 @@ class Language(commands.Cog):
     Get the language the bot is using with you right now and the reason why it was selected
     """
     langs, origins = self.bot.babel.resolve_lang(
-      user=inter.author,
-      guild=inter.guild,
+      user_id=inter.author.id,
+      guild_id=inter.guild.id,
       inter=inter,
       debug=True
     )

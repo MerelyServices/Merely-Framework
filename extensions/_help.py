@@ -81,7 +81,7 @@ class Help(commands.Cog):
     # return usage information for a specific command
     if matchedcommand:
       reslang = self.bot.babel.resolve_lang(
-        ctx.author, ctx.guild, ctx if isinstance(ctx, disnake.Interaction) else None
+        ctx.author.id, ctx.guild.id, ctx if isinstance(ctx, disnake.Interaction) else None
       )
       for reflang in reslang:
         reflang = self.bot.babel.langs[reflang]
@@ -186,7 +186,9 @@ class Help(commands.Cog):
             hcmds.append(hcmd)
           else:
             hcmds.append(hcmd+'❌')
-        embed.add_field(name=section, value='```'+', '.join(hcmds)+'```', inline=False)
+        embed.add_field(
+          name=section, value='```'+self.bot.babel.string_list(hcmds)+'```', inline=False
+        )
 
       embed.set_footer(text=self.bot.babel(ctx, 'help', 'creator_footer'),
                        icon_url=self.bot.user.avatar.url)

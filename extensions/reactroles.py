@@ -76,8 +76,8 @@ class ReactRoles(commands.Cog):
           member,
           'reactroles',
           'role_change',
-          taken=', '.join((role.name for role in take)) if take else False,
-          given=', '.join((role.name for role in give)) if give else False,
+          taken=self.bot.babel.string_list([role.name for role in take]) if take else False,
+          given=self.bot.babel.string_list([role.name for role in give]) if give else False,
           server=member.guild.name
         ))
     except disnake.HTTPException:
