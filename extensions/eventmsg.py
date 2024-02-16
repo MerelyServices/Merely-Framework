@@ -192,10 +192,6 @@ class EventMsg(commands.Cog):
   """ Setup custom messages to send on an event """
   def __init__(self, bot:MerelyBot):
     self.bot = bot
-    if not bot.config.getboolean('extensions', 'auth', fallback=False):
-      raise AssertionError("'auth' must be enabled to use 'eventmsg'")
-    if not bot.config.getboolean('extensions', 'help', fallback=False):
-      print(Warning("'help' is a recommended extension for 'eventmsg'"))
     # ensure config file has required data
     if not bot.config.has_section('eventmsg'):
       bot.config.add_section('eventmsg')
@@ -454,7 +450,7 @@ class EventMsg(commands.Cog):
   #TODO: add slash command support to welcome/farewell
   @commands.guild_only()
   @commands.slash_command()
-  @commands.default_member_permissions(moderate_members=True)
+  @commands.default_member_permissions(administrator=True)
   async def welcome(self, _):
     """ An automation that posts a message whenever a member joins """
 
@@ -488,7 +484,6 @@ class EventMsg(commands.Cog):
       ----------
       message: The message that will be sent when a member joins.
     """
-    self.bot.cogs['Auth'].admins(inter)
     self.bot.config['eventmsg'][f'{inter.guild.id}_welcome'] = f"{inter.channel.id}, {message}"
     self.bot.config.save()
     await inter.response.send_message(
@@ -499,7 +494,6 @@ class EventMsg(commands.Cog):
   @welcome.sub_command(name='clear')
   async def welcome_clear(self, inter:disnake.CommandInteraction):
     """ Clears the welcome message """
-    self.bot.cogs['Auth'].admins(inter)
     if f'{inter.guild.id}_welcome' in self.bot.config['eventmsg']:
       self.bot.config.remove_option('eventmsg', f'{inter.guild.id}_welcome')
       self.bot.config.save()
@@ -515,7 +509,7 @@ class EventMsg(commands.Cog):
 
   @commands.guild_only()
   @commands.slash_command()
-  @commands.default_member_permissions(moderate_members=True)
+  @commands.default_member_permissions(administrator=True)
   async def farewell(self, _):
     """ An automation that posts a message whenever a user leaves """
 
@@ -549,7 +543,6 @@ class EventMsg(commands.Cog):
       ----------
       message: The message that will be sent when a member joins.
     """
-    self.bot.cogs['Auth'].admins(inter)
     self.bot.config['eventmsg'][f'{inter.guild.id}_farewell'] = f"{inter.channel.id}, {message}"
     self.bot.config.save()
     await inter.response.send_message(self.bot.babel(inter, 'greeter', 'farewell_set_success'))
@@ -557,7 +550,6 @@ class EventMsg(commands.Cog):
   @farewell.sub_command(name='clear')
   async def farewell_clear(self, inter:disnake.CommandInteraction):
     """ Clears the farewell message """
-    self.bot.cogs['Auth'].admins(inter)
     if f'{inter.guild.id}_farewell' in self.bot.config['eventmsg']:
       self.bot.config.remove_option('eventmsg', f'{inter.guild.id}_farewell')
       self.bot.config.save()
