@@ -9,15 +9,17 @@ import os, re
 from configparser import ConfigParser
 from typing import Optional
 from config import Config
+from glob import glob
 import disnake
 from disnake.ext import commands
 
 
 class Babel():
   """ Stores language data and resolves and formats it for use in Cogs """
-  PATH = 'babel'
+  path:str
+  backup_path:Optional[str] = None
   config: Config
-  langs: dict
+  langs: dict[str, ConfigParser]
   scope_key_cache: dict
 
   # Regex patterns
@@ -40,8 +42,11 @@ class Babel():
     """ The default bot prefix """
     return self.config.get('language', 'prefix', fallback='')
 
-  def __init__(self, config:Config):
+  def __init__(self, config:Config, path='babel'):
     """ Called once on import """
+    self.path = path
+    if path != 'babel':
+      self.backup_path = 'babel'
     self.config = config
     self.filter_conditional = re.compile(r'{([a-z]*?)\?(.*?)\|(.*?)}')
     self.filter_configreference = re.compile(r'{c\:([a-z_]*?)\/([a-z_]*?)}')
@@ -54,28 +59,27 @@ class Babel():
     self.langs = {}
     self.scope_key_cache = {}
 
-    if os.path.isfile(self.PATH):
-      os.remove(self.PATH)
     if (
-      not os.path.exists(self.PATH) or
-      not os.path.exists(os.path.join(self.PATH, self.defaultlang+'.ini'))
+      (
+        not os.path.exists(self.path) or
+        not os.path.exists(os.path.join(self.path, self.defaultlang+'.ini'))
+      ) and
+      (self.backup_path and (
+        not os.path.exists(self.backup_path) or
+        not os.path.exists(os.path.join(self.backup_path, self.defaultlang+'.ini'))
+      ))
     ):
       raise FileNotFoundError(
-        f"The path {self.PATH} must exist and contain a complete {self.defaultlang}.ini."
+        f"The path {self.path} must exist and contain a complete {self.defaultlang}.ini."
       )
 
-    for langfile in os.scandir(self.PATH):
-      langfile = langfile.name
-      if langfile[-4:] == '.ini':
-        langname = langfile[:-4]
-        self.langs[langname] = ConfigParser(comment_prefixes='@', allow_no_value=True)
-        # create a Config that should preserve comments
-        self.langs[langname].read(os.path.join(self.PATH, langfile), encoding='utf-8')
-        if 'meta' not in self.langs[langname]:
-          self.langs[langname].add_section('meta')
-        self.langs[langname].set('meta', 'language', langname)
-        with open(os.path.join(self.PATH, langfile), 'w', encoding='utf-8') as file:
-          self.langs[langname].write(file)
+    for langpath in (glob(self.path + os.path.sep + '*.ini') +
+                     (glob(self.backup_path + os.path.sep + '*.ini') if self.backup_path else [])):
+      langfile = re.sub(r'^(babel[/\\]|overlay[/\\]babel[/\\])', '', langpath)
+      langname = langfile[:-4]
+      self.langs[langname] = ConfigParser(comment_prefixes='@', allow_no_value=True)
+      # create a Config that should preserve comments
+      self.langs[langname].read(langpath, encoding='utf-8')
 
     # baselang is the root language file that should be considered the most complete.
     self.baselang = self.defaultlang

@@ -42,7 +42,10 @@ Merely is a highly customizable and extensible framework for discord bots. throu
 ### Code structure
 Extensions should operate entirely independant of each other and should rarely need to communicate with each other. Extensions must inherit from the [disnake.ext.commands.Cog](https://docs.disnake.dev/en/latest/ext/commands/api.html#cog) class and bind themselves on import. Effort should be made to avoid clashes with existing commands. [extensions/example.py](extensions/example.py) should demonstrate all of this.
 
-For major extensions that create an entirely different category of bot (like my own ConfessionBot), an overlay system will soon be implemented so it's easier to update the framework without affecting overrides.
+#### Writing a different bot using the framework
+If you would like to make a bot that changes functionality of existing commands or strings, you may want to use an overlay. Create a folder named 'overlay' in this directory, refer to the [source code for ConfessionBot](https://github.com/yiays/ConfessionBot/tree/beta) to see an example of how an overlay is structured. *Note that babel is given a language file prefix so Merely Language files can still be inherited from.*
+
+This overlay system allows for improvements to the framework to be easily shared upstream and downstream.
 
 #### Strings
 As the Babel language framework is being used, there's no need to provide strings for your code. Myself and the volunteer translators can add strings later. In place of strings, simply invent a meaningful key, for example;

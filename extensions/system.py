@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from enum import Enum
 from glob import glob
-import asyncio, os
+import asyncio, os, re
 from typing import Optional, TYPE_CHECKING
 import disnake
 from disnake.ext import commands
@@ -63,9 +63,10 @@ class System(commands.Cog):
       return
 
     active_extensions = [
-      e.replace('extensions.','').strip('_') for e in self.bot.extensions.keys()
+      re.sub(r'^(extensions\.|overlay\.extensions\.)', '', e).strip('_')
+      for e in self.bot.extensions.keys()
     ] + ['config', 'babel']
-    if module is None:
+    if module is None or action == Actions.list:
       await inter.send(
         self.bot.babel(inter, 'main', 'extensions_list', list='\n'.join(active_extensions)),
         ephemeral=True
@@ -73,7 +74,7 @@ class System(commands.Cog):
       return
     module = module.lower()
 
-    ext = None
+    module_match = None
     if module in active_extensions or action == Actions.load:
       if module == 'config':
         self.bot.config.reload()
@@ -91,18 +92,24 @@ class System(commands.Cog):
         return
 
       if action == Actions.load:
-        for f in glob(os.path.join('extensions', '*.py')):
-          if f[11:-3].strip('_') == module:
-            ext = f[:-3].replace(os.path.sep,'.')
+        base_ext_files = glob(os.path.join('extensions', '*.py'))
+        ovl_ext_files = glob(
+          os.path.join('overlay', 'extensions', '*.py')
+        ) if self.bot.overlay else []
+        # Prioritise overlay extensions over built-in extensions
+        for f in ovl_ext_files + base_ext_files:
+          if re.sub(r'^(extensions[/\\]|overlay[/\\]extensions[/\\])', '', f).strip('_') == module:
+            module_match = f[:-3].replace(os.path.sep,'.')
+            break
       else:
-        extcandidate = [
+        module_candidate = [
           ext for ext in self.bot.extensions.keys()
-          if ext.replace('extensions.','').strip('_') == module
+          if re.sub(r'^(extensions\.|overlay\.extensions\.)', '', ext).strip('_') == module
         ]
-        if extcandidate:
-          ext = extcandidate[0]
+        if module_candidate:
+          module_match = module_candidate[0]
 
-      if ext:
+      if module_match:
         if action == Actions.enable:
           self.bot.config['extensions'][module] = 'True'
           self.bot.config.save()
@@ -118,19 +125,19 @@ class System(commands.Cog):
             ephemeral=True
           )
         elif action == Actions.load:
-          self.bot.load_extension(ext)
+          self.bot.load_extension(module_match)
           await inter.send(
             self.bot.babel(inter, 'main', 'extension_load_success', extension=module),
             ephemeral=True
           )
         elif action == Actions.unload:
-          self.bot.unload_extension(ext)
+          self.bot.unload_extension(module_match)
           await inter.send(
             self.bot.babel(inter, 'main', 'extension_unload_success', extension=module),
             ephemeral=True
           )
         elif action == Actions.reload:
-          self.bot.reload_extension(ext)
+          self.bot.reload_extension(module_match)
           await inter.send(
             self.bot.babel(inter, 'main', 'extension_reload_success', extension=module),
             ephemeral=True
@@ -161,7 +168,14 @@ class System(commands.Cog):
       elif inter.filled_options['action'] == Actions.list:
         return []
     if extension_list is None:
-      extension_list = (f[11:-3].strip('_') for f in glob(os.path.join('extensions', '*.py')))
+      stock_extensions = glob(os.path.join('extensions', '*.py'))
+      overlay_extensions = (
+        glob(os.path.join('overlay', 'extensions', '*.py')) if self.bot.overlay else []
+      )
+      extension_list = set(
+        re.sub(r'^(extensions[/\\]|overlay[/\\]extensions[/\\])', '', f).strip('_')
+        for f in (overlay_extensions + stock_extensions)
+      )
     return (
       [x for x in extension_list if search in x] +
       [e for e in ['config', 'babel'] if search in e]
