@@ -98,7 +98,9 @@ class System(commands.Cog):
         ) if self.bot.overlay else []
         # Prioritise overlay extensions over built-in extensions
         for f in ovl_ext_files + base_ext_files:
-          if re.sub(r'^(extensions[/\\]|overlay[/\\]extensions[/\\])', '', f).strip('_') == module:
+          if (
+            re.sub(r'^(extensions[/\\]|overlay[/\\]extensions[/\\])', '', f).strip('_')[:-3] == module
+          ):
             module_match = f[:-3].replace(os.path.sep,'.')
             break
       else:
@@ -173,7 +175,7 @@ class System(commands.Cog):
         glob(os.path.join('overlay', 'extensions', '*.py')) if self.bot.overlay else []
       )
       extension_list = set(
-        re.sub(r'^(extensions[/\\]|overlay[/\\]extensions[/\\])', '', f).strip('_')
+        re.sub(r'^(extensions[/\\]|overlay[/\\]extensions[/\\])', '', f).strip('_')[:-3]
         for f in (overlay_extensions + stock_extensions)
       )
     return (

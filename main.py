@@ -132,7 +132,7 @@ class MerelyBot(commands.AutoShardedBot):
     extsearch = os.path.join('extensions', '*.py')
     extoverlaysearch = os.path.join('overlay', 'extensions', '*.py')
     overlay_extensions = []
-    if os.path.exists(extoverlaysearch):
+    if os.path.exists(os.path.join('overlay', 'extensions')):
       print("Using 'overlay/extensions/'")
       overlay_extensions = glob(extoverlaysearch)
     for extpath in sorted(
