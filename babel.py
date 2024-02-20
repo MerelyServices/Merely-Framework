@@ -196,6 +196,9 @@ class Babel():
     # Fill in prefixes
     prefixqueries = self.filter_prefixreference.findall(match)
     for prefixquery in prefixqueries:
+      # Prefixes are simplified if message commands are disabled
+      if not self.config.getboolean('intents', 'message_content'):
+        match.replace('{p:' + prefixquery + '}', '/')
       if prefixquery == 'local' and guild_id:
         match = match.replace(
           '{p:'+prefixquery+'}',
