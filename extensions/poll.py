@@ -14,6 +14,7 @@ from disnake.ext import tasks, commands
 
 if TYPE_CHECKING:
   from ..main import MerelyBot
+  from ..babel import Resolvable
 
 
 class LivePoll():
@@ -22,7 +23,7 @@ class LivePoll():
 
     An ongoing poll is defined as any poll which is occasionally updating on Discord.
   """
-  bot:MerelyBot
+  parent:Poll
   title:str
   answers:list[str]
   votes:list[int]
@@ -32,8 +33,8 @@ class LivePoll():
 
   EMOJIS = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟']
 
-  def __init__(self, bot:MerelyBot):
-    self.bot = bot
+  def __init__(self, parent:Poll):
+    self.parent = parent
 
   @property
   def counter(self) -> int:
@@ -41,10 +42,10 @@ class LivePoll():
 
   def get_expiry(self):
     configkey = f'{self.message.channel.id}_{self.message.id}_expiry'
-    if configkey in self.bot.config['poll']:
-      self.expiry = self.bot.config.getint('poll', configkey)
+    if configkey in self.parent.config:
+      self.expiry = int(self.parent.config[configkey])
     else:
-      self.expiry = self.bot.config.getint('poll', configkey+'_expired')
+      self.expiry = int(self.parent.config[configkey+'_expired'])
       self.expired = True
 
   def create(self, title:str, answers:list[str], votes:list[int], expiry:int):
@@ -58,8 +59,8 @@ class LivePoll():
     """ Writes poll to config and stores message in memory """
     self.message = message
     configkey = f'{message.channel.id}_{message.id}_expiry'+('_expired' if self.expired else '')
-    self.bot.config['poll'][configkey] = str(self.expiry)
-    self.bot.config.save()
+    self.parent.config[configkey] = str(self.expiry)
+    self.parent.bot.config.save()
 
   def load(self, message:disnake.Message):
     """ Loads poll from config and stores message in memory """
@@ -70,22 +71,22 @@ class LivePoll():
     """ Clears poll from config - from here, this object can safely be dereferenced """
     configkey = f'{self.message.channel.id}_{self.message.id}_expiry' +\
                 ('_expired' if self.expired else '')
-    self.bot.config.remove_option('poll', configkey)
+    self.parent.bot.config.remove_option(self.parent.SCOPE, configkey)
     if save:
-      self.bot.config.save()
+      self.parent.bot.config.save()
 
   def expiry_to_time(self, guild:disnake.Guild, precisionlimit:int = 1) -> str:
     """ Converts countdown seconds into a nicely formatted sentence """
     # Import current locale strings
-    TIMENAMES = self.bot.babel(guild, 'poll', 'timenames').split(',')
+    TIMENAMES = self.parent.babel(guild, 'timenames').split(',')
     assert len(TIMENAMES) == 7
-    TIMEPLURALS = self.bot.babel(guild, 'poll', 'timeplurals').split(',')
+    TIMEPLURALS = self.parent.babel(guild, 'timeplurals').split(',')
     assert len(TIMEPLURALS) == 7
-    TIMENUMFORMAT = self.bot.babel(guild, 'poll', 'time_number_format')
+    TIMENUMFORMAT = self.parent.babel(guild, 'time_number_format')
     assert TIMENUMFORMAT.find('{number}') >= 0 and TIMENUMFORMAT.find('{name}') >= 0
 
     if self.counter == 0:
-      return self.bot.babel(guild, 'poll', 'present')
+      return self.parent.babel(guild, 'present')
 
     MULTIPLIERS = [31449600, 2419200, 604800, 86400, 3600, 60,    1]
     #              year      month    week    day    hour  minute second
@@ -108,13 +109,12 @@ class LivePoll():
       if ni >= precisionlimit:
         break
 
-    timelist = self.bot.babel.string_list(guild, times)
+    timelist = self.parent.bot.babel.string_list(guild, times)
     if timelist == '':
-      return self.bot.babel(guild, 'poll', 'near_past' if self.counter < 0 else 'near_future')
+      return self.parent.babel(guild, 'near_past' if self.counter < 0 else 'near_future')
     else:
-      return self.bot.babel(
+      return self.parent.babel(
         guild,
-        'poll',
         'far_past' if self.counter < 0 else 'far_future',
         timelist=timelist
       )
@@ -138,7 +138,7 @@ class LivePoll():
         embed.description = f"⌛ {self.expiry_to_time(guild, 6)}" # 6 = count seconds
     elif self.counter <= -604800:
       # Expired
-      embed.description = f"⌛ {self.bot.babel(guild, 'poll', 'inf_past')}"
+      embed.description = f"⌛ {self.parent.babel(guild, 'inf_past')}"
     else:
       # Poll has finished, counting time since
       embed.description = f"⌛ {self.expiry_to_time(guild, 4 if self.counter > -86400 else 2)}"
@@ -153,7 +153,7 @@ class LivePoll():
       )
       index += 1
     if not self.expired:
-      embed.set_footer(text=self.bot.babel(guild, 'poll', 'vote_cta', multichoice=True))
+      embed.set_footer(text=self.parent.babel(guild, 'vote_cta', multichoice=True))
     return embed
 
   async def add_reacts(self):
@@ -192,20 +192,19 @@ class LivePoll():
 
     if len(winners) == 0:
       await self.message.channel.send(
-        self.bot.babel(self.message.guild, 'poll', 'no_winner', title=self.title),
+        self.parent.babel(self.message.guild, 'no_winner', title=self.title),
         reference=self.message
       )
     elif len(winners) == 1:
       await self.message.channel.send(
-        self.bot.babel(self.message.guild, 'poll', 'one_winner', title=self.title, winner=winners[0]),
+        self.parent.babel(self.message.guild, 'one_winner', title=self.title, winner=winners[0]),
         reference=self.message
       )
     else:
-      winnerstring = self.bot.babel.string_list(self.message.guild, winners)
+      winnerstring = self.parent.bot.babel.string_list(self.message.guild, winners)
       await self.message.channel.send(
-        self.bot.babel(
+        self.parent.babel(
           self.message.guild,
-          'poll',
           'multiple_winners',
           title=self.title,
           num=len(winners),
@@ -222,6 +221,16 @@ class Poll(commands.Cog):
     This improved poll handles votes even if the bot goes offline
     Also keeps the countdown timer up to date for a week after expiry
   """
+  SCOPE = 'poll'
+
+  @property
+  def config(self) -> dict[str, str]:
+    """ Shorthand for self.bot.config[scope] """
+    return self.bot.config[self.SCOPE]
+
+  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> list[str]:
+    """ Shorthand for self.bot.babel(scope, key, **values) """
+    return self.bot.babel(target, self.SCOPE, key, **values)
 
   livepolls: dict[int, LivePoll] = {}
   poll_tick_timer: tasks.Loop
@@ -233,8 +242,8 @@ class Poll(commands.Cog):
     self.bot = bot
 
     # ensure config file has required data
-    if not bot.config.has_section('poll'):
-      bot.config.add_section('poll')
+    if not bot.config.has_section(self.SCOPE):
+      bot.config.add_section(self.SCOPE)
 
   def cog_unload(self) -> None:
     # stop timers, otherwise old code continues running
@@ -247,7 +256,7 @@ class Poll(commands.Cog):
   @commands.Cog.listener('on_connect')
   async def validate_cache(self):
     save = False
-    for key in self.bot.config['poll']:
+    for key in self.config:
       keysplit = key.split('_')
       if len(keysplit) >= 2:
         channel_id, message_id = (int(k) for k in keysplit[:2])
@@ -256,11 +265,11 @@ class Poll(commands.Cog):
             channel = await self.bot.fetch_channel(channel_id)
             message = await channel.fetch_message(message_id)
           except (disnake.NotFound, disnake.Forbidden):
-            self.bot.config.remove_option('poll', key)
+            self.bot.config.remove_option(self.SCOPE, key)
             save = True
             continue
 
-          self.livepolls[message_id] = LivePoll(self.bot)
+          self.livepolls[message_id] = LivePoll(self)
           self.livepolls[message_id].load(message)
           await self.livepolls[message_id].redraw()
     if save:
@@ -413,11 +422,11 @@ class Poll(commands.Cog):
     expiry = expiry_seconds + (expiry_minutes * 60) + (expiry_hours * 3600) + (expiry_days * 86400)
     if expiry == 0:
       expiry = 300
-    poll = LivePoll(self.bot)
+    poll = LivePoll(self)
     poll.create(title, answers, [0]*len(answers), time() + expiry)
 
     embed = poll.generate_embed(inter.guild)
-    announce = self.bot.babel(inter.guild, 'poll', 'poll_created', author=inter.user.mention)
+    announce = self.babel(inter.guild, 'poll_created', author=inter.user.mention)
     await inter.response.send_message(announce, embed=embed)
     message = await inter.original_response()
 

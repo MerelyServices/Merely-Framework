@@ -13,39 +13,51 @@ from disnake.ext import commands
 
 if TYPE_CHECKING:
   from ..main import MerelyBot
+  from ..babel import Resolvable
 
 
 class Help(commands.Cog):
-  """the user-friendly documentation core"""
+  """ User friendly, semi-automated, documentation """
+  SCOPE = 'help'
+
+  @property
+  def config(self) -> dict[str, str]:
+    """ Shorthand for self.bot.config[scope] """
+    return self.bot.config[self.SCOPE]
+
+  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> list[str]:
+    """ Shorthand for self.bot.babel(scope, key, **values) """
+    return self.bot.babel(target, self.SCOPE, key, **values)
+
   def __init__(self, bot:MerelyBot):
     self.bot = bot
     # ensure config file has required data
-    if not bot.config.has_section('help'):
-      bot.config.add_section('help')
-    if 'customstatus' not in bot.config['help']:
-      bot.config['help']['customstatus'] = ''
-    if 'helpurl' not in bot.config['help']:
-      bot.config['help']['helpurl'] = ''
-    if 'codeurl' not in bot.config['help']:
-      bot.config['help']['codeurl'] = ''
-    if 'helpurlvideoexamples' not in bot.config['help']:
-      bot.config['help']['helpurlvideoexamples'] = ''
-    if 'serverinv' not in bot.config['help']:
-      bot.config['help']['serverinv'] = ''
-    if 'feedbackchannel' not in bot.config['help']:
-      bot.config['help']['feedbackchannel'] = ''
-    if 'highlight_sections' not in bot.config['help']:
-      bot.config['help']['highlight_sections'] = '💡 learn'
-    if 'learn_highlights' not in bot.config['help']:
-      bot.config['help']['learn_highlights'] = 'help'
-    if 'future_commands' not in bot.config['help']:
-      bot.config['help']['future_commands'] = ''
-    if 'obsolete_commands' not in bot.config['help']:
-      bot.config['help']['obsolete_commands'] = ''
-    if 'hidden_commands' not in bot.config['help']:
-      bot.config['help']['hidden_commands'] = ''
-    if 'changelog' not in bot.config['help']:
-      bot.config['help']['changes'] = '> '+bot.config['main']['ver']+'\n- No changes yet!'
+    if not bot.config.has_section(self.SCOPE):
+      bot.config.add_section(self.SCOPE)
+    if 'customstatus' not in self.config:
+      self.config['customstatus'] = ''
+    if 'helpurl' not in self.config:
+      self.config['helpurl'] = ''
+    if 'codeurl' not in self.config:
+      self.config['codeurl'] = ''
+    if 'helpurlvideoexamples' not in self.config:
+      self.config['helpurlvideoexamples'] = ''
+    if 'serverinv' not in self.config:
+      self.config['serverinv'] = ''
+    if 'feedbackchannel' not in self.config:
+      self.config['feedbackchannel'] = ''
+    if 'highlight_sections' not in self.config:
+      self.config['highlight_sections'] = '💡 learn'
+    if 'learn_highlights' not in self.config:
+      self.config['learn_highlights'] = self.SCOPE
+    if 'future_commands' not in self.config:
+      self.config['future_commands'] = ''
+    if 'obsolete_commands' not in self.config:
+      self.config['obsolete_commands'] = ''
+    if 'hidden_commands' not in self.config:
+      self.config['hidden_commands'] = ''
+    if 'changelog' not in self.config:
+      self.config['changes'] = '> '+bot.config['main']['ver']+'\n- No changes yet!'
 
   @commands.Cog.listener('on_connect')
   async def on_starting(self):
@@ -57,8 +69,8 @@ class Help(commands.Cog):
   async def set_status(self, status:disnake.Status = None, message:str = None):
     """ appear online and add help command information to the status """
     if message is None:
-      if self.bot.config['help']['customstatus']:
-        message = self.bot.config['help']['customstatus']
+      if self.config['customstatus']:
+        message = self.config['customstatus']
       else:
         message = self.bot.config['main']['prefix_short']+'help'
     status = disnake.Status.online if status is None else status
@@ -132,32 +144,29 @@ class Help(commands.Cog):
         await ctx.send(docs, **kwargs)
       elif self.find_command(command) is not None:
         # the command definitely exists, but there's no documentation
-        await ctx.send(self.bot.babel(ctx, 'help', 'no_docs'), **kwargs)
+        await ctx.send(self.babel(ctx, 'no_docs'), **kwargs)
       else:
         # the command doesn't exist right now, figure out why.
-        if command in self.bot.config['help']['future_commands'].split(', '):
+        if command in self.config['future_commands'].split(', '):
           # this command will be coming soon according to config
-          await ctx.send(self.bot.babel(ctx, 'help', 'future_command'), **kwargs)
-        elif command in self.bot.config['help']['obsolete_commands'].split(', '):
+          await ctx.send(self.babel(ctx, 'future_command'), **kwargs)
+        elif command in self.config['obsolete_commands'].split(', '):
           # this command is obsolete according to config
-          await ctx.send(self.bot.babel(ctx, 'help', 'obsolete_command'), **kwargs)
-        elif command in re.split(r', |>', self.bot.config['help']['moved_commands']):
+          await ctx.send(self.babel(ctx, 'obsolete_command'), **kwargs)
+        elif command in re.split(r', |>', self.config['moved_commands']):
           # this command has been renamed and requires a new syntax
-          moves = re.split(r', |>', self.bot.config['help']['moved_commands'])
+          moves = re.split(r', |>', self.config['moved_commands'])
           target = moves.index(command)
           if target % 2 == 0:
-            await ctx.send(
-              self.bot.babel(ctx, 'help', 'moved_command', cmd=moves[target + 1]),
-              **kwargs
-            )
+            await ctx.send(self.babel(ctx, 'moved_command', cmd=moves[target + 1]), **kwargs)
           else:
             print(
               "WARNING: bad config. in help/moved_command:\n"
               f"{moves[target-1]} is now {moves[target]} but {moves[target]} doesn't exist."
             )
-            await ctx.send(self.bot.babel(ctx, 'help', 'no_command'), **kwargs)
+            await ctx.send(self.babel(ctx, 'no_command'), **kwargs)
         else:
-          await ctx.send(self.bot.babel(ctx, 'help', 'no_command'), **kwargs)
+          await ctx.send(self.babel(ctx, 'no_command'), **kwargs)
 
     else:
       # show the generic help embed with a variety of featured commands
@@ -168,20 +177,20 @@ class Help(commands.Cog):
           len(self.bot.config['prefix'][str(ctx.channel.guild.id)]):
           longprefix = None
       embed = disnake.Embed(
-        title=self.bot.babel(ctx, 'help', 'title'),
-        description=self.bot.babel(
-          ctx, 'help', 'introduction',
+        title=self.babel(ctx, 'title'),
+        description=self.babel(
+          ctx, 'introduction',
           longprefix=longprefix,
-          videoexamples=self.bot.config.getboolean('help','helpurlvideoexamples'),
-          serverinv=self.bot.config['help']['serverinv']
+          videoexamples=bool(self.config['helpurlvideoexamples']),
+          serverinv=self.config['serverinv']
         ),
         color=int(self.bot.config['main']['themecolor'], 16),
-        url=self.bot.config['help']['helpurl'] if self.bot.config['help']['helpurl'] else '')
+        url=self.config['helpurl'] if self.config['helpurl'] else '')
 
-      sections = self.bot.config['help']['highlight_sections'].split(', ')
+      sections = self.config['highlight_sections'].split(', ')
       for section in sections:
         hcmds = []
-        for hcmd in self.bot.config['help'][section.split()[1]+'_highlights'].split(', '):
+        for hcmd in self.config[section.split()[1]+'_highlights'].split(', '):
           if self.find_command(hcmd):
             hcmds.append(hcmd)
           else:
@@ -190,11 +199,11 @@ class Help(commands.Cog):
           name=section, value='```'+self.bot.babel.string_list(ctx, hcmds)+'```', inline=False
         )
 
-      embed.set_footer(text=self.bot.babel(ctx, 'help', 'creator_footer'),
+      embed.set_footer(text=self.babel(ctx, 'creator_footer'),
                        icon_url=self.bot.user.avatar.url)
 
       await ctx.send(
-        self.bot.babel(ctx, 'help', 'helpurl_cta') if self.bot.config['help']['helpurl'] else "",
+        self.babel(ctx, 'helpurl_cta') if self.config['helpurl'] else "",
         embed=embed,
         **kwargs
       )
@@ -203,7 +212,7 @@ class Help(commands.Cog):
   def ac_command(self, _:disnake.CommandInteraction, command:str):
     """ find any commands that contain the provided string """
     matches = []
-    hide = self.bot.config.get('help', 'hidden_commands', fallback='').split(', ')
+    hide = self.bot.config.get(self.SCOPE, 'hidden_commands', fallback='').split(', ')
     for cmd in self.bot.slash_commands:
       if command in cmd.name and cmd.name not in matches and cmd.name not in hide:
         matches.append(cmd.name)
@@ -223,17 +232,16 @@ class Help(commands.Cog):
     """
 
     embed = disnake.Embed(
-      title=self.bot.babel(inter, 'help', 'about_title'),
-      description=self.bot.babel(inter, 'help', 'bot_description'),
+      title=self.babel(inter, 'about_title'),
+      description=self.babel(inter, 'bot_description'),
       color=int(self.bot.config['main']['themecolor'], 16),
-      url=self.bot.config['help']['helpurl'] if self.bot.config['help']['helpurl'] else ''
+      url=self.config['helpurl'] if self.config['helpurl'] else ''
     )
 
     embed.add_field(
-      name=self.bot.babel(inter, 'help', 'about_field1_title'),
-      value=self.bot.babel(
+      name=self.babel(inter, 'about_field1_title'),
+      value=self.babel(
         inter,
-        'help',
         'about_field1_value',
         cmds=len(self.bot.application_commands),
         guilds=len(self.bot.guilds)
@@ -241,40 +249,37 @@ class Help(commands.Cog):
       inline=False
     )
     embed.add_field(
-      name=self.bot.babel(inter, 'help', 'about_field2_title'),
-      value=self.bot.babel(
+      name=self.babel(inter, 'about_field2_title'),
+      value=self.babel(
         inter,
-        'help',
         'about_field2_value',
         longprefix=self.bot.config['main']['prefix_long']
       ),
       inline=False
     )
     embed.add_field(
-      name=self.bot.babel(inter, 'help', 'about_field3_title'),
-      value=self.bot.babel(
+      name=self.babel(inter, 'about_field3_title'),
+      value=self.babel(
         inter,
-        'help',
         'about_field3_value',
-        videoexamples=self.bot.config.getboolean('help','helpurlvideoexamples'),
-        serverinv=self.bot.config['help']['serverinv']
+        videoexamples=bool(self.config['helpurlvideoexamples']),
+        serverinv=self.config['serverinv']
       ),
       inline=False
     )
     embed.add_field(
-      name=self.bot.babel(inter, 'help', 'about_field4_title'),
-      value=self.bot.babel(inter, 'help', 'about_field4_value'),
+      name=self.babel(inter, 'about_field4_title'),
+      value=self.babel(inter, 'about_field4_value'),
       inline=False
     )
     embed.add_field(
-      name=self.bot.babel(inter, 'help', 'about_field5_title'),
-      value=self.bot.babel(
+      name=self.babel(inter, 'about_field5_title'),
+      value=self.babel(
         inter,
-        'help',
         'about_field5_value',
         invite=(
           'https://discord.com/oauth2/authorize?client_id=' +
-          self.bot.user.id +
+          str(self.bot.user.id) +
           '&scope=bot%20applications.commands&permissions=0'
         )
       ),
@@ -282,12 +287,12 @@ class Help(commands.Cog):
     )
 
     embed.set_footer(
-      text=self.bot.babel(inter, 'help', 'creator_footer'),
+      text=self.babel(inter, 'creator_footer'),
       icon_url=self.bot.user.avatar.url
     )
 
     await inter.send(
-      self.bot.babel(inter, 'help', 'helpurl_cta') if self.bot.config['help']['helpurl'] else "",
+      self.babel(inter, 'helpurl_cta') if self.config['helpurl'] else "",
       embed=embed
     )
 
@@ -300,7 +305,7 @@ class Help(commands.Cog):
     ----------
     search: Find the version a change occured in, or search for a version number
     """
-    changes = self.bot.config['help']['changelog'].splitlines()
+    changes = self.config['changelog'].splitlines()
     fchanges = ["**"+i.replace('> ','')+"**" if i.startswith('> ') else i for i in changes]
     versions = {v.replace('> ',''):i for i,v in enumerate(changes) if v.startswith('> ')}
     versionlist = list(versions.keys())
@@ -316,26 +321,25 @@ class Help(commands.Cog):
       changelog += "\n..."
 
     logurl = (
-      self.bot.config['help']['helpurl']+"changes.html#"+search.replace('.','')
-      if self.bot.config['help']['helpurl'] else ''
+      self.config['helpurl']+"changes.html#"+search.replace('.','') if self.config['helpurl'] else ''
     )
 
     embed = disnake.Embed(
-      title=self.bot.babel(inter, 'help', 'changelog_title'),
+      title=self.babel(inter, 'changelog_title'),
       description=(
-        self.bot.babel(inter, 'help', 'changelog_description', ver=search) +
+        self.babel(inter, 'changelog_description', ver=search) +
         '\n\n' + changelog
       ),
       color=int(self.bot.config['main']['themecolor'], 16),
       url=logurl
     )
     embed.set_footer(
-      text=self.bot.babel(inter, 'help', 'creator_footer'),
+      text=self.babel(inter, 'creator_footer'),
       icon_url=self.bot.user.avatar.url
     )
 
     await inter.send(
-      self.bot.babel(inter, 'help', 'changelog_cta', logurl=logurl) if logurl else None,
+      self.babel(inter, 'changelog_cta', logurl=logurl) if logurl else None,
       embed=embed
     )
 
@@ -344,7 +348,7 @@ class Help(commands.Cog):
     """ find any matching versions """
     matches = []
     iver = '0'
-    for line in self.bot.config['help']['changelog'].splitlines():
+    for line in self.config['changelog'].splitlines():
       if line.startswith('> '):
         iver = line[2:]
       if search.lower() in line.lower() and iver not in matches:

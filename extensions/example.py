@@ -10,20 +10,34 @@ from disnake.ext import commands
 
 if TYPE_CHECKING:
   from ..main import MerelyBot
+  from ..babel import Resolvable
 
 
 class Example(commands.Cog):
   """ Adds an echo command and logs new members """
+  SCOPE = 'example'
+
+  @property
+  def config(self) -> dict[str, str]:
+    """ Shorthand for self.bot.config[scope] """
+    return self.bot.config[self.SCOPE]
+
+  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> list[str]:
+    """ Shorthand for self.bot.babel(scope, key, **values) """
+    return self.bot.babel(target, self.SCOPE, key, **values)
+
   def __init__(self, bot:MerelyBot):
     self.bot = bot
     # ensure config file has required data
-    if not bot.config.has_section('example'):
-      bot.config.add_section('example')
+    if not bot.config.has_section(self.SCOPE):
+      bot.config.add_section(self.SCOPE)
 
   @commands.Cog.listener()
   async def on_member_join(self, member:disnake.Member):
     """ Record to log when a member joins """
-    print(f"{member.name} has joined!")
+    # Using the guild as the language target. Usually you just use inter instead.
+    print(self.babel(member.guild, 'joined', user=member.name))
+    # babel will return "{JOINED: user=member.name}" until a string is added to en.ini
 
   @commands.slash_command()
   async def example(self, inter:disnake.CommandInteraction, echo:str):

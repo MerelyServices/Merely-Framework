@@ -12,10 +12,22 @@ from disnake.ext import commands
 
 if TYPE_CHECKING:
   from ..main import MerelyBot
+  from ..babel import Resolvable
 
 
 class Error(commands.Cog):
-  """user-friendly error reporting"""
+  """ Catches errors and provides users with a response """
+  SCOPE = 'error'
+
+  @property
+  def config(self) -> dict[str, str]:
+    """ Shorthand for self.bot.config[scope] """
+    return self.bot.config[self.SCOPE]
+
+  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> list[str]:
+    """ Shorthand for self.bot.babel(scope, key, **values) """
+    return self.bot.babel(target, self.SCOPE, key, **values)
+
   def __init__(self, bot:MerelyBot):
     self.bot = bot
 
@@ -33,7 +45,7 @@ class Error(commands.Cog):
     if isinstance(error, commands.CommandOnCooldown):
       if error.cooldown.get_retry_after() > 5:
         await ctx.send(
-          self.bot.babel(ctx, 'error', 'cooldown', t=int(error.cooldown.get_retry_after())),
+          self.babel(ctx, 'cooldown', t=int(error.cooldown.get_retry_after())),
           ephemeral=True
         )
         return
@@ -51,22 +63,17 @@ class Error(commands.Cog):
         ):
           # Catch when people try to use prefixed commands and nudge them in the right direction
           embed = disnake.Embed(
-            title=self.bot.babel(ctx, 'error', 'slash_migration_title'),
-            description=self.bot.babel(ctx, 'error', 'slash_migration'),
+            title=self.babel(ctx, 'slash_migration_title'),
+            description=self.babel(ctx, 'slash_migration'),
             color=int(self.bot.config['main']['themecolor'], 16)
           )
           embed.add_field(
-            name=self.bot.babel(ctx, 'error', 'slash_migration_problems_title'),
-            value=self.bot.babel(
-              ctx,
-              'error',
-              'slash_migration_problems',
-              invite=(
-                'https://discord.com/oauth2/authorize?client_id=' +
-                self.bot.user.id +
-                '&scope=bot%20applications.commands&permissions=0'
-              )
-            )
+            name=self.babel(ctx, 'slash_migration_problems_title'),
+            value=self.babel(ctx, 'slash_migration_problems', invite=(
+              'https://discord.com/oauth2/authorize?client_id=' +
+              self.bot.user.id +
+              '&scope=bot%20applications.commands&permissions=0'
+            ))
           )
           try:
             await ctx.send(embed=embed)
@@ -86,20 +93,20 @@ class Error(commands.Cog):
             **kwargs
           )
       else:
-        await ctx.send(self.bot.babel(ctx, 'error', 'missingrequiredargument'), **kwargs)
+        await ctx.send(self.babel(ctx, 'missingrequiredargument'), **kwargs)
       return
     if isinstance(error, commands.NoPrivateMessage):
-      await ctx.send(self.bot.babel(ctx, 'error', 'noprivatemessage'), **kwargs)
+      await ctx.send(self.babel(ctx, 'noprivatemessage'), **kwargs)
       return
     if isinstance(error, commands.PrivateMessageOnly):
-      await ctx.send(self.bot.babel(ctx, 'error', 'privatemessageonly'), **kwargs)
+      await ctx.send(self.babel(ctx, 'privatemessageonly'), **kwargs)
       return
     if isinstance(error, commands.CommandInvokeError):
       if 'Auth' in self.bot.cogs and isinstance(error.original, self.bot.cogs['Auth'].AuthError):
         await ctx.send(str(error.original), **kwargs)
         return
       await ctx.send(
-        self.bot.babel(ctx, 'error', 'commanderror', error=str(error.original)),
+        self.babel(ctx, 'commanderror', error=str(error.original)),
         **kwargs
       )
       raise error

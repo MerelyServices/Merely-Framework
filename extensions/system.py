@@ -14,6 +14,7 @@ from disnake.ext import commands
 
 if TYPE_CHECKING:
   from ..main import MerelyBot
+  from ..babel import Resolvable
 
 
 class Actions(int, Enum):
@@ -28,6 +29,17 @@ class Actions(int, Enum):
 
 class System(commands.Cog):
   """commands involved in working with a discord bot"""
+  SCOPE = 'main' # for legacy reasons, this module has no local scope
+
+  @property
+  def config(self) -> dict[str, str]:
+    """ Shorthand for self.bot.config[scope] """
+    return self.bot.config[self.SCOPE]
+
+  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> list[str]:
+    """ Shorthand for self.bot.babel(scope, key, **values) """
+    return self.bot.babel(target, self.SCOPE, key, **values)
+
   def __init__(self, bot:MerelyBot):
     self.bot = bot
     if not bot.config.getboolean('extensions', 'auth', fallback=False):
@@ -58,35 +70,35 @@ class System(commands.Cog):
 
     self.bot.cogs['Auth'].superusers(inter)
 
-    if not self.bot.config.getboolean('extensions', 'allow_reloading'):
-      await inter.send("Reloading of cogs has been disabled in the config.", ephemeral=True)
-      return
-
     active_extensions = [
       re.sub(r'^(extensions\.|overlay\.extensions\.)', '', e).strip('_')
       for e in self.bot.extensions.keys()
     ] + ['config', 'babel']
     if module is None or action == Actions.list:
       await inter.send(
-        self.bot.babel(inter, 'main', 'extensions_list', list='\n'.join(active_extensions)),
+        self.babel(inter, 'extensions_list', list='\n'.join(active_extensions)),
         ephemeral=True
       )
       return
-    module = module.lower()
 
+    if not self.bot.config.getboolean('extensions', 'allow_reloading'):
+      await inter.send(self.babel('reloading_disabled'), ephemeral=True)
+      return
+
+    module = module.lower()
     module_match = None
     if module in active_extensions or action == Actions.load:
       if module == 'config':
         self.bot.config.reload()
         await inter.send(
-          self.bot.babel(inter, 'main', 'extension_reload_success', extension=module),
+          self.babel(inter, 'extension_reload_success', extension=module),
           ephemeral=True
         )
         return
       elif module == 'babel':
         self.bot.babel.load()
         await inter.send(
-          self.bot.babel(inter, 'main', 'extension_reload_success', extension=module),
+          self.babel(inter, 'extension_reload_success', extension=module),
           ephemeral=True
         )
         return
@@ -116,32 +128,32 @@ class System(commands.Cog):
           self.bot.config['extensions'][module] = 'True'
           self.bot.config.save()
           await inter.send(
-            self.bot.babel(inter, 'main', 'extension_enable_success', extension=module),
+            self.babel(inter, 'extension_enable_success', extension=module),
             ephemeral=True
           )
         elif action == Actions.disable:
           self.bot.config['extensions'][module] = 'False'
           self.bot.config.save()
           await inter.send(
-            self.bot.babel(inter, 'main', 'extension_disable_success', extension=module),
+            self.babel(inter, 'extension_disable_success', extension=module),
             ephemeral=True
           )
         elif action == Actions.load:
           self.bot.load_extension(module_match)
           await inter.send(
-            self.bot.babel(inter, 'main', 'extension_load_success', extension=module),
+            self.babel(inter, 'extension_load_success', extension=module),
             ephemeral=True
           )
         elif action == Actions.unload:
           self.bot.unload_extension(module_match)
           await inter.send(
-            self.bot.babel(inter, 'main', 'extension_unload_success', extension=module),
+            self.babel(inter, 'extension_unload_success', extension=module),
             ephemeral=True
           )
         elif action == Actions.reload:
           self.bot.reload_extension(module_match)
           await inter.send(
-            self.bot.babel(inter, 'main', 'extension_reload_success', extension=module),
+            self.babel(inter, 'extension_reload_success', extension=module),
             ephemeral=True
           )
         else:
@@ -154,9 +166,9 @@ class System(commands.Cog):
             elif listener[0] == 'on_ready':
               asyncio.ensure_future(listener[1]())
       else:
-        await inter.send(self.bot.babel(inter, 'main', 'extension_file_missing'), ephemeral=True)
+        await inter.send(self.babel(inter, 'extension_file_missing'), ephemeral=True)
     else:
-      await inter.send(self.bot.babel(inter, 'main', 'extension_not_found'), ephemeral=True)
+      await inter.send(self.babel(inter, 'extension_not_found'), ephemeral=True)
 
   @module.autocomplete('module')
   async def module_ac(self, inter:disnake.CommandInteraction, search:str):

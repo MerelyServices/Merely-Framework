@@ -13,24 +13,36 @@ from disnake.ext import commands
 
 if TYPE_CHECKING:
   from ..main import MerelyBot
+  from ..babel import Resolvable
 
 
 class Log(commands.Cog):
   """ Record messages, commands and errors to file or a discord channel """
+  SCOPE = 'log'
+
+  @property
+  def config(self) -> dict[str, str]:
+    """ Shorthand for self.bot.config[scope] """
+    return self.bot.config[self.SCOPE]
+
+  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> list[str]:
+    """ Shorthand for self.bot.babel(scope, key, **values) """
+    return self.bot.babel(target, self.SCOPE, key, **values)
+
   def __init__(self, bot:MerelyBot):
     self.bot = bot
     self.logchannel = None
     # ensure config file has required data
-    if not bot.config.has_section('log'):
-      bot.config.add_section('log')
-    if 'logchannel' not in bot.config['log']:
-      bot.config['log']['logchannel'] = ''
+    if not bot.config.has_section(self.SCOPE):
+      bot.config.add_section(self.SCOPE)
+    if 'logchannel' not in bot.config[self.SCOPE]:
+      bot.config[self.SCOPE]['logchannel'] = ''
 
   @commands.Cog.listener('on_ready')
   async def get_logchannel(self):
     """ Connect to the logging channel """
-    if self.bot.config['log']['logchannel'].isdigit():
-      self.logchannel = await self.bot.fetch_channel(int(self.bot.config['log']['logchannel']))
+    if self.config['logchannel'].isdigit():
+      self.logchannel = await self.bot.fetch_channel(int(self.config['logchannel']))
 
   def truncate(self, string:str, maxlen:int = 80):
     """ trim a long string and add ellipsis """

@@ -11,10 +11,22 @@ from disnake.ext import commands
 
 if TYPE_CHECKING:
   from ..main import MerelyBot
+  from ..babel import Resolvable
 
 
 class Emoji(commands.Cog):
   """ Emojis from guilds as commands """
+  SCOPE = 'emoji'
+
+  @property
+  def config(self) -> dict[str, str]:
+    """ Shorthand for self.bot.config[scope] """
+    return self.bot.config[self.SCOPE]
+
+  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> list[str]:
+    """ Shorthand for self.bot.babel(scope, key, **values) """
+    return self.bot.babel(target, self.SCOPE, key, **values)
+
   def __init__(self, bot:MerelyBot):
     self.bot = bot
 
@@ -42,7 +54,7 @@ class Emoji(commands.Cog):
     if matches:
       await inter.send(matches[0])
     else:
-      await inter.send(self.bot.babel(inter, 'emoji', 'not_found'))
+      await inter.send(self.babel(inter, 'not_found'))
 
   @emoji.autocomplete('search')
   def ac_emoji(self, _:disnake.CommandInteraction, search:str):

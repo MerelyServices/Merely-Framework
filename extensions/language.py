@@ -13,15 +13,27 @@ from disnake.ext import commands
 
 if TYPE_CHECKING:
   from ..main import MerelyBot
+  from ..babel import Resolvable
 
 
 class Language(commands.Cog):
   """ Enables per-user and per-guild string translation of the bot """
+  SCOPE = 'language'
+
+  @property
+  def config(self) -> dict[str, str]:
+    """ Shorthand for self.bot.config[scope] """
+    return self.bot.config[self.SCOPE]
+
+  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> list[str]:
+    """ Shorthand for self.bot.babel(scope, key, **values) """
+    return self.bot.babel(target, self.SCOPE, key, **values)
+
   def __init__(self, bot:MerelyBot):
     self.bot = bot
     # ensure config file has required data
-    if not bot.config.has_section('language'):
-      bot.config.add_section('language')
+    if not bot.config.has_section(self.SCOPE):
+      bot.config.add_section(self.SCOPE)
 
   @commands.slash_command()
   async def language(self, _:disnake.CommandInteraction):
@@ -35,17 +47,16 @@ class Language(commands.Cog):
     Lists all available languages this bot can be translated to
     """
     embed = disnake.Embed(
-      title=self.bot.babel(inter, 'language', 'list_title'),
-      description=self.bot.babel(inter, 'language', 'set_howto') +
+      title=self.babel(inter, 'list_title'),
+      description=self.babel(inter, 'set_howto') +
       '\n' + (
-        self.bot.babel(inter, 'language', 'contribute_cta') if
-        self.bot.config['language']['contribute_url'] else ''
+        self.babel(inter, 'contribute_cta') if self.config['contribute_url'] else ''
       ),
       color=int(self.bot.config['main']['themecolor'], 16)
     )
 
     for langcode,language in self.bot.babel.langs.items():
-      if prefix := self.bot.config['language']['prefix']:
+      if prefix := self.config['prefix']:
         if not langcode.startswith(prefix):
           continue
       embed.add_field(
@@ -53,14 +64,9 @@ class Language(commands.Cog):
         value=language.get(
           'meta',
           'contributors',
-          fallback=self.bot.babel(inter, 'language', 'unknown_contributors')
+          fallback=self.babel(inter, 'unknown_contributors')
         ) + '\n' +
-        self.bot.babel(
-          inter,
-          'language',
-          'coverage_label',
-          coverage=self.bot.babel.calculate_coverage(langcode)
-        )
+        self.babel(inter, 'coverage_label', coverage=self.bot.babel.calculate_coverage(langcode))
       )
 
     await inter.send(embed=embed)
@@ -84,7 +90,7 @@ class Language(commands.Cog):
         origin = 'inherit'
       embeds.append(disnake.Embed(
         title=f"{self.bot.babel.langs[lang].get('meta', 'name')} ({lang})",
-        description=self.bot.babel(inter, 'language', 'origin_reason_'+origin, backup=backup),
+        description=self.babel(inter, 'origin_reason_'+origin, backup=backup),
         color=int(self.bot.config['main']['themecolor'], 16)
       ))
       backup = True
@@ -105,30 +111,29 @@ class Language(commands.Cog):
     language: An ISO language code for your language and dialect
     """
     if not language == 'default' and re.match(r'[a-z]{2}(-[A-Z]{2})?$', language) is None:
-      await inter.send(self.bot.babel(inter, 'language', 'set_failed_invalid_pattern'))
+      await inter.send(self.babel(inter, 'set_failed_invalid_pattern'))
     else:
       if language != 'default':
-        language = self.bot.config.get('language', 'prefix', fallback='')+language
+        language = self.bot.config.get(self.SCOPE, 'prefix', fallback='')+language
       if (
         isinstance(inter.author, disnake.User) or
         not inter.author.guild_permissions.administrator
       ):
         usermode = True
         if language == 'default':
-          self.bot.config.remove_option('language', str(inter.author.id))
+          self.bot.config.remove_option(self.SCOPE, str(inter.author.id))
         else:
-          self.bot.config.set('language', str(inter.author.id), language)
+          self.config[str(inter.author.id)] = language
       else:
         usermode = False
         if language == 'default':
-          self.bot.config.remove_option('language', str(inter.guild.id))
+          self.bot.config.remove_option(self.SCOPE, str(inter.guild.id))
         else:
-          self.bot.config.set('language', str(inter.guild.id), language)
+          self.config[str(inter.guild.id)] = language
       self.bot.config.save()
       if language == 'default' or language in self.bot.babel.langs.keys():
-        await inter.send(self.bot.babel(
+        await inter.send(self.babel(
           inter,
-          'language',
           'unset_success' if language == 'default' else 'set_success',
           language=(
             self.bot.babel.langs[self.bot.babel.defaultlang].get('meta', 'name')
@@ -139,15 +144,15 @@ class Language(commands.Cog):
         )
       else:
         await inter.send(
-          self.bot.babel(inter, 'language', 'set_warning_no_match')+'\n' +
-          self.bot.babel(inter, 'language', 'contribute_cta')
+          self.babel(inter, 'set_warning_no_match')+'\n' +
+          self.babel(inter, 'contribute_cta')
         )
 
   @language_set.autocomplete('language')
   def language_set_ac(self, _:disnake.MessageCommandInteraction, search:str):
     """ Suggests languages that are already available """
     matches = []
-    prefix = self.bot.config['language']['prefix']
+    prefix = self.config['prefix']
     for lang in self.bot.babel.langs.keys():
       if lang.startswith(prefix) and search in lang:
         matches.append(lang.replace(prefix, ''))

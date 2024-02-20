@@ -13,6 +13,11 @@ from glob import glob
 import disnake
 from disnake.ext import commands
 
+Resolvable = (
+  commands.Context | disnake.Interaction | disnake.Message | disnake.User | disnake.Member
+  | disnake.Guild | tuple
+)
+
 
 class Babel():
   """ Stores language data and resolves and formats it for use in Cogs """
@@ -26,11 +31,6 @@ class Babel():
   filter_conditional: re.Pattern
   filter_configreference: re.Pattern
   filter_prefixreference: re.Pattern
-
-  Resolvable = (
-    commands.Context | disnake.Interaction | disnake.Message | disnake.User | disnake.Member
-    | disnake.Guild | tuple
-  )
 
   @property
   def defaultlang(self) -> str:
@@ -154,7 +154,7 @@ class Babel():
     scope:str,
     key:str,
     **values: dict[str, str | bool]
-  ):
+  ) -> str:
     """ Determine the locale and resolve the closest translated string """
     inter = None
     if isinstance(target, (commands.Context, disnake.Interaction, disnake.Message)):
@@ -247,7 +247,7 @@ class Babel():
 
     return ''.join(items)
 
-  def list_scope_key_pairs(self, lang):
+  def list_scope_key_pairs(self, lang) -> set[str]:
     """ Breaks down the structure of a babel file for evaluation """
     # Check cache first
     if lang in self.scope_key_cache:
@@ -269,7 +269,7 @@ class Babel():
     self.scope_key_cache[lang] = pairs
     return pairs
 
-  def calculate_coverage(self, lang:str):
+  def calculate_coverage(self, lang:str) -> int:
     """ Compares the number of strings between a language and the baselang """
     langvals = self.list_scope_key_pairs(lang)
     basevals = self.list_scope_key_pairs(self.defaultlang)

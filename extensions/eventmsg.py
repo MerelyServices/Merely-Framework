@@ -14,6 +14,7 @@ from disnake.ext import commands
 
 if TYPE_CHECKING:
   from ..main import MerelyBot
+  from ..babel import Resolvable
 
 getdatecomponent = [
   {
@@ -190,11 +191,22 @@ class Date(datetime):
 
 class EventMsg(commands.Cog):
   """ Setup custom messages to send on an event """
+  SCOPE = 'eventmsg'
+
+  @property
+  def config(self) -> dict[str, str]:
+    """ Shorthand for self.bot.config[scope] """
+    return self.bot.config[self.SCOPE]
+
+  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> list[str]:
+    """ Shorthand for self.bot.babel(scope, key, **values) """
+    return self.bot.babel(target, self.SCOPE, key, **values)
+
   def __init__(self, bot:MerelyBot):
     self.bot = bot
     # ensure config file has required data
-    if not bot.config.has_section('eventmsg'):
-      bot.config.add_section('eventmsg')
+    if not bot.config.has_section(self.SCOPE):
+      bot.config.add_section(self.SCOPE)
 
   def pop_msg_var(self, event:Event, message:str, **kwargs) -> str:
     """ Goes through allowed variables for this event and fills the string """
@@ -224,8 +236,8 @@ class EventMsg(commands.Cog):
   @commands.Cog.listener("on_raw_member_join")
   async def on_welcome(self, member:disnake.Member):
     """welcome service, shows a custom welcome message to new users"""
-    if f"{member.guild.id}_welcome" in self.bot.config['eventmsg']:
-      data = self.bot.config['eventmsg'][f"{member.guild.id}_welcome"].split(', ')
+    if f"{member.guild.id}_welcome" in self.config:
+      data = self.config[f"{member.guild.id}_welcome"].split(', ')
       channel = member.guild.get_channel(int(data[0]))
       await channel.send(
         ', '.join(data[1:]).format(member.mention, member.guild.name)
@@ -234,8 +246,8 @@ class EventMsg(commands.Cog):
   @commands.Cog.listener("on_raw_member_leave")
   async def on_farewell(self, payload:disnake.RawGuildMemberRemoveEvent):
     """farewell service, shows a custom farewell message whenever someone leaves"""
-    if f"{payload.guild_id}_farewell" in self.bot.config['eventmsg']:
-      data = self.bot.config['eventmsg'][f"{payload.guild_id}_farewell"].split(', ')
+    if f"{payload.guild_id}_farewell" in self.config:
+      data = self.config[f"{payload.guild_id}_farewell"].split(', ')
       guild = self.bot.get_guild(payload.guild_id)
       channel = guild.get_channel(int(data[0]))
       await channel.send(', '.join(data[1:])
@@ -347,9 +359,8 @@ class EventMsg(commands.Cog):
 
     async def update(self, inter:disnake.ModalInteraction):
       """ Refresh the view, reflecting any changes made to variables """
-      state = self.parent.bot.babel(
+      state = self.parent.babel(
         inter,
-        'eventmsg',
         'event_controlpanel',
         message=self.message,
         channel=self.channel.mention,
@@ -431,9 +442,8 @@ class EventMsg(commands.Cog):
     else:
       raise AssertionError(f"Unhandled action '{action.name}'!")
 
-    state = self.bot.babel(
+    state = self.babel(
       inter,
-      'eventmsg',
       'event_controlpanel',
       message=message,
       channel=channel.mention,
@@ -457,8 +467,8 @@ class EventMsg(commands.Cog):
   @welcome.sub_command(name='get')
   async def welcome_get(self, inter:disnake.CommandInteraction):
     """ Gets the current welcome message. Otherwise, gives instructions on how to set one """
-    if f'{inter.guild.id}_welcome' in self.bot.config['eventmsg']:
-      data = self.bot.config['eventmsg'][f"{inter.guild.id}_welcome"].split(', ')
+    if f'{inter.guild.id}_welcome' in self.config:
+      data = self.config[f"{inter.guild.id}_welcome"].split(', ')
       await inter.response.send_message(
           self.bot.babel(
             inter,
@@ -484,7 +494,7 @@ class EventMsg(commands.Cog):
       ----------
       message: The message that will be sent when a member joins.
     """
-    self.bot.config['eventmsg'][f'{inter.guild.id}_welcome'] = f"{inter.channel.id}, {message}"
+    self.config[f'{inter.guild.id}_welcome'] = f"{inter.channel.id}, {message}"
     self.bot.config.save()
     await inter.response.send_message(
       self.bot.babel(inter, 'greeter', 'welcome_set_success'),
@@ -494,8 +504,8 @@ class EventMsg(commands.Cog):
   @welcome.sub_command(name='clear')
   async def welcome_clear(self, inter:disnake.CommandInteraction):
     """ Clears the welcome message """
-    if f'{inter.guild.id}_welcome' in self.bot.config['eventmsg']:
-      self.bot.config.remove_option('eventmsg', f'{inter.guild.id}_welcome')
+    if f'{inter.guild.id}_welcome' in self.config:
+      self.bot.config.remove_option(self.SCOPE, f'{inter.guild.id}_welcome')
       self.bot.config.save()
       await inter.response.send_message(
         self.bot.babel(inter, 'greeter', 'welcome_clear_success'),
@@ -516,8 +526,8 @@ class EventMsg(commands.Cog):
   @farewell.sub_command(name='get')
   async def farewell_get(self, inter:disnake.CommandInteraction):
     """ Gets the current farewell message. Otherwise, gives instructions on how to set one """
-    if f'{inter.guild.id}_farewell' in self.bot.config['eventmsg']:
-      data = self.bot.config['eventmsg'][f"{inter.guild.id}_farewell"].split(', ')
+    if f'{inter.guild.id}_farewell' in self.config:
+      data = self.config[f"{inter.guild.id}_farewell"].split(', ')
       await inter.response.send_message(
         self.bot.babel(
           inter,
@@ -543,15 +553,15 @@ class EventMsg(commands.Cog):
       ----------
       message: The message that will be sent when a member joins.
     """
-    self.bot.config['eventmsg'][f'{inter.guild.id}_farewell'] = f"{inter.channel.id}, {message}"
+    self.config[f'{inter.guild.id}_farewell'] = f"{inter.channel.id}, {message}"
     self.bot.config.save()
     await inter.response.send_message(self.bot.babel(inter, 'greeter', 'farewell_set_success'))
 
   @farewell.sub_command(name='clear')
   async def farewell_clear(self, inter:disnake.CommandInteraction):
     """ Clears the farewell message """
-    if f'{inter.guild.id}_farewell' in self.bot.config['eventmsg']:
-      self.bot.config.remove_option('eventmsg', f'{inter.guild.id}_farewell')
+    if f'{inter.guild.id}_farewell' in self.config:
+      self.bot.config.remove_option(self.SCOPE, f'{inter.guild.id}_farewell')
       self.bot.config.save()
       await inter.response.send_message(self.bot.babel(inter, 'greeter', 'farewell_clear_success'))
     else:

@@ -183,7 +183,7 @@ class Logger(object):
       log.write(message)
 
   def flush(self):
-    """ This is here just to keep the writable requirement of stdout and stderr happy """
+    """ Flushes the terminal, but not the log file """
     self.terminal.flush()
     return self
 

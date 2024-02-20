@@ -16,7 +16,7 @@ class Config(ConfigParser):
     Custom init for merelybot configparser
     will always return a valid config object, even if the filesystem is broken
     """
-    ConfigParser.__init__(self)
+    super().__init__()
 
     self.path = path
     self.file = os.path.join(self.path, "config.ini")

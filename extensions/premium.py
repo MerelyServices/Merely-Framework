@@ -12,31 +12,44 @@ from disnake.ext import commands
 
 if TYPE_CHECKING:
   from ..main import MerelyBot
+  from ..babel import Resolvable
 
 
 class Premium(commands.Cog):
+  """ Commands can be restricted to premium in the config, this extension enforces it """
+  SCOPE = 'premium'
+
+  @property
+  def config(self) -> dict[str, str]:
+    """ Shorthand for self.bot.config[scope] """
+    return self.bot.config[self.SCOPE]
+
+  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> list[str]:
+    """ Shorthand for self.bot.babel(scope, key, **values) """
+    return self.bot.babel(target, self.SCOPE, key, **values)
+
   premiumguild: disnake.Guild
   premiumroles: list[disnake.Role]
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
     # ensure config file has required data
-    if not bot.config.has_section('premium'):
-      bot.config.add_section('premium')
-    if 'icon' not in bot.config['premium']:
-      bot.config['premium']['icon'] = ''
-    if 'patreon' not in bot.config['premium']:
-      bot.config['premium']['patreon'] = ''
-    if 'other' not in bot.config['premium']:
-      bot.config['premium']['other'] = ''
-    if 'restricted_commands' not in bot.config['premium']:
-      bot.config['premium']['restricted_commands'] = ''
-    if 'premium_role_guild' not in bot.config['premium'] or\
-       not bot.config['premium']['premium_role_guild'] or\
-       'premium_roles' not in bot.config['premium'] or\
-       not bot.config['premium']['premium_roles']:
-      bot.config['premium']['premium_role_guild'] = ''
-      bot.config['premium']['premium_roles'] = ''
+    if not bot.config.has_section(self.SCOPE):
+      bot.config.add_section(self.SCOPE)
+    if 'icon' not in self.config:
+      self.config['icon'] = ''
+    if 'patreon' not in self.config:
+      self.config['patreon'] = ''
+    if 'other' not in self.config:
+      self.config['other'] = ''
+    if 'restricted_commands' not in self.config:
+      self.config['restricted_commands'] = ''
+    if 'premium_role_guild' not in self.config or\
+       not self.config['premium_role_guild'] or\
+       'premium_roles' not in self.config or\
+       not self.config['premium_roles']:
+      self.config['premium_role_guild'] = ''
+      self.config['premium_roles'] = ''
       raise Exception(
         "You must provide a reference to a guild and at least one role in order for premium to work!"
       )
@@ -55,10 +68,9 @@ class Premium(commands.Cog):
   @commands.Cog.listener('on_connect')
   async def cache_role(self):
     """ Fetches guild and member list on connect to decrease first response time """
-    self.premiumguild = self.bot.get_guild(self.bot.config.getint('premium', 'premium_role_guild'))
+    self.premiumguild = self.bot.get_guild(int(self.config['premium_role_guild']))
     self.premiumroles = [
-      self.premiumguild.get_role(int(i)) for i in self.bot.config.get('premium', 'premium_roles')
-      .split(' ')
+      self.premiumguild.get_role(int(i)) for i in self.config['premium_roles'].split(' ')
     ]
     if not self.premiumroles:
       raise Exception("The designated premium role was not found!")
@@ -71,39 +83,39 @@ class Premium(commands.Cog):
       return False
 
   async def check_premium_command(self, ctx:commands.Context):
-    if ctx.command.name in self.bot.config['premium']['restricted_commands'].split(' '):
+    if ctx.command.name in self.config['restricted_commands'].split(' '):
       if await self.check_premium(ctx.author):
         return True # user is premium
       rolelist = self.bot.babel.string_list(ctx, [r.name for r in self.premiumroles])
       embed = disnake.Embed(
-        title=self.bot.babel(ctx, 'premium', 'required_title'),
-        description=self.bot.babel(ctx, 'premium', 'required_error', role=rolelist)
+        title=self.babel(ctx, 'required_title'),
+        description=self.babel(ctx, 'required_error', role=rolelist)
       )
       embed.url = (
-        self.bot.config['premium']['patreon'] if self.bot.config['premium']['patreon']
-        else self.bot.config['premium']['other']
+        self.config['patreon'] if self.config['patreon']
+        else self.config['other']
       )
-      embed.set_thumbnail(url=self.bot.config['premium']['icon'])
+      embed.set_thumbnail(url=self.config['icon'])
 
       await ctx.reply(embed=embed)
       return False # user is not premium
     return True # command is not restricted
 
   async def check_premium_slash_command(self, inter:disnake.CommandInteraction):
-    restricted = self.bot.config['premium']['restricted_commands'].split(' ')
+    restricted = self.config['restricted_commands'].split(' ')
     if inter.application_command.name in restricted:
       if await self.check_premium(inter.author):
         return True # user is premium
       rolelist = self.bot.babel.string_list(inter, [r.name for r in self.premiumroles])
       embed = disnake.Embed(
-        title=self.bot.babel(inter, 'premium', 'required_title'),
-        description=self.bot.babel(inter, 'premium', 'required_error', role=rolelist)
+        title=self.babel(inter, 'required_title'),
+        description=self.babel(inter, 'required_error', role=rolelist)
       )
       embed.url = (
-        self.bot.config['premium']['patreon'] if self.bot.config['premium']['patreon']
-        else self.bot.config['premium']['other']
+        self.config['patreon'] if self.config['patreon']
+        else self.config['other']
       )
-      embed.set_thumbnail(url=self.bot.config['premium']['icon'])
+      embed.set_thumbnail(url=self.config['icon'])
 
       await inter.response.send_message(embed=embed, ephemeral=True)
       return False # user is not premium
@@ -114,29 +126,27 @@ class Premium(commands.Cog):
     """
       Learn more about premium.
     """
-    embed = disnake.Embed(title=self.bot.babel(inter, 'premium', 'name'),
-                          description=self.bot.babel(inter, 'premium', 'desc'))
+    embed = disnake.Embed(title=self.babel(inter, 'name'), description=self.babel(inter, 'desc'))
 
     embed.url = (
-      self.bot.config['premium']['patreon'] if self.bot.config['premium']['patreon']
-      else self.bot.config['premium']['other']
+      self.config['patreon'] if self.config['patreon']
+      else self.config['other']
     )
-    embed.set_thumbnail(url=self.bot.config['premium']['icon'])
+    embed.set_thumbnail(url=self.config['icon'])
 
     i = 1
-    while f'feature_{i}' in self.bot.babel.langs[self.bot.babel.baselang]['premium']:
-      if self.bot.babel(inter, 'premium', f'feature_{i}') == '':
+    while f'feature_{i}' in self.bot.babel.langs[self.bot.babel.baselang][self.SCOPE]:
+      if self.babel(inter, f'feature_{i}') == '':
+        i += 1
         continue
-      embed.add_field(name=self.bot.babel(inter, 'premium', f'feature_{i}'),
-                      value=self.bot.babel(inter, 'premium', f'feature_{i}_desc'),
+      embed.add_field(name=self.babel(inter, f'feature_{i}'),
+                      value=self.babel(inter, f'feature_{i}_desc'),
                       inline=False)
       i += 1
 
-    embed.set_footer(text=self.bot.babel(inter, 'premium', 'fine_print'))
+    embed.set_footer(text=self.babel(inter, 'fine_print'))
 
-    await inter.response.send_message(
-      self.bot.babel(inter, 'premium', 'cta', link=embed.url), embed=embed
-    )
+    await inter.response.send_message(self.babel(inter, 'cta', link=embed.url), embed=embed)
 
 
 def setup(bot:MerelyBot):

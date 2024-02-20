@@ -14,6 +14,7 @@ from disnake.ext import commands
 
 if TYPE_CHECKING:
   from ..main import MerelyBot
+  from ..babel import Resolvable
 
 
 class JanitorMode(int, Enum):
@@ -25,11 +26,22 @@ class JanitorMode(int, Enum):
 
 class Admin(commands.Cog):
   """ Admin tools """
+  SCOPE = 'admin'
+
+  @property
+  def config(self) -> dict[str, str]:
+    """ Shorthand for self.bot.config[scope] """
+    return self.bot.config[self.SCOPE]
+
+  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> list[str]:
+    """ Shorthand for self.bot.babel(scope, key, **values) """
+    return self.bot.babel(target, self.SCOPE, key, **values)
+
   def __init__(self, bot:MerelyBot):
     self.bot = bot
     # ensure config file has required data
-    if not bot.config.has_section('admin'):
-      bot.config.add_section('admin')
+    if not bot.config.has_section(self.SCOPE):
+      bot.config.add_section(self.SCOPE)
 
   def check_delete(self, message:disnake.Message, strict:bool = False):
     """ Criteria for message deletion """
@@ -48,8 +60,8 @@ class Admin(commands.Cog):
   @commands.Cog.listener("on_message")
   async def janitor_autodelete(self, message:disnake.Message):
     """janitor service, deletes messages after 30 seconds"""
-    if f"{message.channel.id}_janitor" in self.bot.config['admin']:
-      strict = self.bot.config.getint('admin', f"{message.channel.id}_janitor")
+    if f"{message.channel.id}_janitor" in self.config:
+      strict = self.bot.config.getint(self.SCOPE, f"{message.channel.id}_janitor")
       if self.check_delete(message, strict):
         await asyncio.sleep(30)
         await message.delete()
@@ -67,13 +79,13 @@ class Admin(commands.Cog):
       mode: Choose whether to have janitor enabled or disabled in this channel
     """
     if mode != JanitorMode.DISABLED:
-      self.bot.config['admin'][f'{inter.channel.id}_janitor'] = str(int(mode))
+      self.config[f'{inter.channel.id}_janitor'] = str(int(mode))
       self.bot.config.save()
-      await inter.send(self.bot.babel(inter, 'admin', 'janitor_set_success'))
+      await inter.send(self.babel(inter, 'janitor_set_success'))
     else:
-      self.bot.config.remove_option('admin', f'{inter.channel.id}_janitor')
+      self.bot.config.remove_option(self.SCOPE, f'{inter.channel.id}_janitor')
       self.bot.config.save()
-      await inter.send(self.bot.babel(inter, 'admin', 'janitor_unset_success'))
+      await inter.send(self.babel(inter, 'janitor_unset_success'))
 
   @commands.slash_command()
   @commands.default_member_permissions(moderate_members=True)
@@ -108,9 +120,9 @@ class Admin(commands.Cog):
           check=lambda m: self.check_delete(m, strict),
           before=await inter.original_message()
         )
-      await inter.send(self.bot.babel(inter, 'admin', 'clean_success', n=len(deleted)))
+      await inter.send(self.babel(inter, 'clean_success', n=len(deleted)))
     except disnake.errors.Forbidden:
-      await inter.send(self.bot.babel(inter, 'admin', 'clean_failed'))
+      await inter.send(self.babel(inter, 'clean_failed'))
 
 
 def setup(bot:MerelyBot):

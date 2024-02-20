@@ -11,10 +11,22 @@ from disnake.ext import commands
 
 if TYPE_CHECKING:
   from ..main import MerelyBot
+  from ..babel import Resolvable
 
 
 class Dice(commands.Cog):
-  """simple dice rolling command extension, could be treated like another example"""
+  """ Rolls dice and shares the result """
+  SCOPE = 'dice'
+
+  @property
+  def config(self) -> dict[str, str]:
+    """ Shorthand for self.bot.config[scope] """
+    return self.bot.config[self.SCOPE]
+
+  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> list[str]:
+    """ Shorthand for self.bot.babel(scope, key, **values) """
+    return self.bot.babel(target, self.SCOPE, key, **values)
+
   def __init__(self, bot:MerelyBot):
     self.bot = bot
 
@@ -32,10 +44,10 @@ class Dice(commands.Cog):
     for i, n in enumerate(sides.split(',')):
       try:
         result.append(
-          self.bot.babel(inter, 'dice', 'roll_result', i=i+1, r=random.choice(range(1, int(n) + 1)))
+          self.babel(inter, 'roll_result', i=i+1, r=random.choice(range(1, int(n) + 1)))
         )
       except (ValueError, IndexError):
-        return await inter.send(self.bot.babel(inter, 'dice', 'roll_error'))
+        return await inter.send(self.babel(inter, 'roll_error'))
 
     await inter.send('\n'.join(result))
 
