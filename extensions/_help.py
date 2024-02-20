@@ -99,13 +99,14 @@ class Help(commands.Cog):
         reflang = self.bot.babel.langs[reflang]
         for key in reflang.keys():
           if f'command_{matchedcommand.name}_help' in reflang[key]:
-            docsrc = self.bot.babel(
-              ctx,
-              key,
-              f'command_{matchedcommand.name}_help',
-              cmd=cmd
-            ).splitlines()
-            docs = '**'+docsrc[0]+'**'
+            docsrc = (
+              self.bot.babel(ctx, key, f'command_{matchedcommand.name}_help', cmd=cmd)
+              .splitlines()
+            )
+            if isinstance(matchedcommand, commands.InvokableSlashCommand):
+              docs = f"**{docsrc[0].replace(self.bot.config['main']['prefix_short'], '/')}**"
+            else:
+              docs = f'**{docsrc[0]}**'
             if len(docsrc) > 1:
               docs += '\n'+docsrc[1]
             if len(docsrc) > 2:
