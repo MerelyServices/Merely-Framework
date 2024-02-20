@@ -215,7 +215,10 @@ class Help(commands.Cog):
     matches = []
     hide = self.bot.config.get(self.SCOPE, 'hidden_commands', fallback='').split(', ')
     for cmd in self.bot.slash_commands:
-      if command in cmd.name and cmd.name not in matches and cmd.name not in hide:
+      if (
+        command in cmd.name and cmd.name not in matches and cmd.name not in hide
+        and cmd.guild_ids is None
+      ):
         matches.append(cmd.name)
     for cmd in self.bot.commands:
       if command in cmd.name and cmd.name not in matches and cmd.name not in hide:
