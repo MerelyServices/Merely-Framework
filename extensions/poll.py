@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from time import time
 import re
-from typing import Union, Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 import disnake
 from disnake.ext import tasks, commands
 
@@ -284,9 +284,14 @@ class Poll(commands.Cog):
   @commands.Cog.listener('on_raw_reaction_add')
   @commands.Cog.listener('on_raw_reaction_remove')
   @commands.Cog.listener('on_raw_reaction_clear')
+  @commands.Cog.listener('on_raw_reaction_clear_emoji')
   async def poll_react(
     self,
-    e:Union[disnake.RawReactionActionEvent, disnake.RawReactionClearEvent]
+    e:(
+      disnake.RawReactionActionEvent |
+      disnake.RawReactionClearEvent |
+      disnake.RawReactionClearEmojiEvent
+    )
   ):
     """ Handle changes to the reaction list of a poll """
     if e.message_id in self.livepolls and\
@@ -295,6 +300,8 @@ class Poll(commands.Cog):
       if poll.expiry > time():
         if isinstance(e, disnake.RawReactionActionEvent):
           poll.votes[poll.EMOJIS.index(str(e.emoji))] += 1 if e.event_type == 'REACTION_ADD' else -1
+        elif isinstance(e, disnake.RawReactionClearEmojiEvent):
+          poll.votes[poll.EMOJIS.index(str(e.emoji))] = 0
         else:
           poll.votes = [0 for _ in poll.answers]
           await poll.add_reacts()
