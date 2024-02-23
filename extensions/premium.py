@@ -69,9 +69,11 @@ class Premium(commands.Cog):
   async def cache_role(self):
     """ Fetches guild and member list on connect to decrease first response time """
     self.premiumguild = self.bot.get_guild(int(self.config['premium_role_guild']))
-    self.premiumroles = [
-      self.premiumguild.get_role(int(i)) for i in self.config['premium_roles'].split(' ')
-    ]
+    targets = self.config['premium_roles'].split(' ')
+    for role in await self.premiumguild.fetch_roles():
+      if str(role.id) in targets:
+        self.premiumroles.append(role)
+
     if not self.premiumroles:
       raise Exception("The designated premium role was not found!")
 
@@ -86,7 +88,7 @@ class Premium(commands.Cog):
     if ctx.command.name in self.config['restricted_commands'].split(' '):
       if await self.check_premium(ctx.author):
         return True # user is premium
-      rolelist = self.bot.babel.string_list(ctx, [r.name for r in self.premiumroles])
+      rolelist = self.bot.babel.string_list(ctx, [r.name for r in self.premiumroles], True)
       embed = disnake.Embed(
         title=self.babel(ctx, 'required_title'),
         description=self.babel(ctx, 'required_error', role=rolelist)
