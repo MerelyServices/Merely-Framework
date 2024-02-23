@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING
 import disnake
 from disnake.ext import commands
 
+from .controlpanel import Toggleable, Selectable, Stringable
+
 if TYPE_CHECKING:
   from ..main import MerelyBot
   from ..babel import Resolvable
@@ -37,6 +39,12 @@ class Prefix(commands.Cog):
       bot.config.add_section(self.SCOPE)
     self.fallback_prefix = bot.command_prefix
     bot.command_prefix = self.check_prefix
+
+  def controlpanel_settings(self) -> list[Toggleable | Selectable | Stringable]:
+    # ControlPanel integration
+    return [
+      Stringable("Prefix", self.bot.config, self.SCOPE, '{g}')
+    ]
 
   def check_prefix(self, bot, message:disnake.Message):
     if isinstance(message.channel, disnake.TextChannel):

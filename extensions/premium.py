@@ -123,6 +123,8 @@ class Premium(commands.Cog):
       return False # user is not premium
     return True # command is not restricted
 
+  #TODO: Add a check for controlpanel
+
   @commands.slash_command()
   async def premium(self, inter:disnake.CommandInteraction):
     """

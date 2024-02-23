@@ -11,6 +11,8 @@ import re
 import disnake
 from disnake.ext import commands
 
+from .controlpanel import Toggleable, Selectable, Stringable
+
 if TYPE_CHECKING:
   from ..main import MerelyBot
   from ..babel import Resolvable
@@ -34,6 +36,14 @@ class Language(commands.Cog):
     # ensure config file has required data
     if not bot.config.has_section(self.SCOPE):
       bot.config.add_section(self.SCOPE)
+
+  def controlpanel_settings(self) -> list[Toggleable | Selectable | Stringable]:
+    # ControlPanel integration
+    langlist = list(self.bot.babel.langs.keys())
+    return [
+      Selectable("Language (personal)", self.bot.config, self.SCOPE, '{u}', langlist),
+      Selectable("Language (server-wide)", self.bot.config, self.SCOPE, '{g}', langlist)
+    ]
 
   @commands.slash_command()
   async def language(self, _:disnake.CommandInteraction):
