@@ -272,6 +272,7 @@ class ReactRoles(commands.Cog):
       self.save_button.label = parent.babel(inter, 'save_button')
 
     async def add_reactroles(self, emoji:disnake.Emoji | str, roles:list[disnake.Role]):
+      self.timeout = 300
       self.react_roles[emoji] = roles
       await self.msg.add_reaction(emoji)
       if self.save_button.disabled:
@@ -279,6 +280,7 @@ class ReactRoles(commands.Cog):
         await self.msg.edit(view=self)
 
     async def remove_reactroles(self, emoji:disnake.Emoji | str):
+      self.timeout = 300
       self.react_roles.pop(emoji)
       await self.msg.reply(self.parent.babel(self.msg.guild, 'emoji_removed', emoji=emoji))
       if len(self.react_roles) < 1:
@@ -286,6 +288,7 @@ class ReactRoles(commands.Cog):
         await self.msg.edit(view=self)
 
     async def reset_reactroles(self):
+      self.timeout = 300
       elist = self.parent.bot.babel.string_list(self.msg.guild, [str(e) for e in self.react_roles])
       self.react_roles = {}
       await self.msg.reply(self.parent.babel(self.msg.guild, 'emoji_removed', emoji=elist))
@@ -320,6 +323,11 @@ class ReactRoles(commands.Cog):
       self.parent.bot.config.save()
       self.parent.watching[self.msg.id] = self.msg
       self.parent.drafts.pop(inter.channel_id)
+
+    async def on_timeout(self):
+      self.save_button.disabled = True
+      self.add_reaction_button.disabled = True
+      await self.msg.edit(self.parent.bot.babel(self.msg.guild, 'error', 'timeoutview'))
 
   # Commands
 

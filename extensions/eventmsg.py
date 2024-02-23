@@ -397,6 +397,12 @@ class EventMsg(commands.Cog):
       else:
         raise AssertionError(f"Unhandled click event '{inter.component.custom_id}'")
 
+    async def on_timeout(self) -> None:
+      for item in self.children:
+        if 'disabled' in item:
+          item.disabled = True
+      #await self.msg.edit(self.parent.bot.babel(self.msg.guild, 'error', 'timeoutview'))
+
   @commands.slash_command()
   @commands.default_member_permissions(moderate_members=True)
   async def eventmessage(
