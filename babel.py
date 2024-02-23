@@ -235,11 +235,15 @@ class Babel():
 
     return match
 
-  def string_list(self, target:Resolvable, items:list[str]) -> str:
+  def string_list(self, target:Resolvable, items:list[str], or_mode:bool = False) -> str:
     """ Takes list items, and joins them together in a regionally correct way """
     CONJUNCTION = self(target, 'main', 'list_conjunction').replace('_', ' ')
-    CONJUNCTION_2 = self(target, 'main', 'list_conjunction_2').replace('_', ' ')
-    CONJUNCTIONLAST = self(target, 'main', 'list_last_conjunction').replace('_', ' ')
+    if or_mode:
+      CONJUNCTION_2 = self(target, 'main', 'list_conjunction_2_or').replace('_', ' ')
+      CONJUNCTIONLAST = self(target, 'main', 'list_last_conjunction_or').replace('_', ' ')
+    else:
+      CONJUNCTION_2 = self(target, 'main', 'list_conjunction_2').replace('_', ' ')
+      CONJUNCTIONLAST = self(target, 'main', 'list_last_conjunction').replace('_', ' ')
 
     items = list(items)
     if len(items) > 2:
