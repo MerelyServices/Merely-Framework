@@ -13,8 +13,8 @@ import emoji as ej
 import re
 
 if TYPE_CHECKING:
-  from ..main import MerelyBot
-  from ..babel import Resolvable
+  from main import MerelyBot
+  from babel import Resolvable
 
 
 class ReactRoles(commands.Cog):

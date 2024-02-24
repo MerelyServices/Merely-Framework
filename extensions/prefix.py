@@ -13,8 +13,8 @@ from disnake.ext import commands
 from .controlpanel import Toggleable, Selectable, Stringable
 
 if TYPE_CHECKING:
-  from ..main import MerelyBot
-  from ..babel import Resolvable
+  from main import MerelyBot
+  from babel import Resolvable
 
 
 class Prefix(commands.Cog):

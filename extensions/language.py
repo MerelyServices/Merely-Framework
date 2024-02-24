@@ -11,11 +11,11 @@ import re
 import disnake
 from disnake.ext import commands
 
-from .controlpanel import Toggleable, Selectable, Stringable
+from extensions.controlpanel import Toggleable, Selectable, Stringable
 
 if TYPE_CHECKING:
-  from ..main import MerelyBot
-  from ..babel import Resolvable
+  from main import MerelyBot
+  from babel import Resolvable
 
 
 class Language(commands.Cog):

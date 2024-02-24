@@ -8,9 +8,11 @@ from typing import TYPE_CHECKING
 import disnake
 from disnake.ext import commands
 
+from .controlpanel import Toggleable, Selectable, Stringable
+
 if TYPE_CHECKING:
-  from ..main import MerelyBot
-  from ..babel import Resolvable
+  from main import MerelyBot
+  from babel import Resolvable
 
 
 class Example(commands.Cog):

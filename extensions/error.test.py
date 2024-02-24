@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from disnake.ext import commands
 
 if TYPE_CHECKING:
-  from ..main import MerelyBot
+  from main import MerelyBot
 
 
 class ErrorTest(commands.Cog):

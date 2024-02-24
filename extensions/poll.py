@@ -13,8 +13,8 @@ import disnake
 from disnake.ext import tasks, commands
 
 if TYPE_CHECKING:
-  from ..main import MerelyBot
-  from ..babel import Resolvable
+  from main import MerelyBot
+  from babel import Resolvable
 
 
 class LivePoll():

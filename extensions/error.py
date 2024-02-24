@@ -11,8 +11,8 @@ import disnake
 from disnake.ext import commands
 
 if TYPE_CHECKING:
-  from ..main import MerelyBot
-  from ..babel import Resolvable
+  from main import MerelyBot
+  from babel import Resolvable
 
 
 class Error(commands.Cog):

@@ -13,8 +13,8 @@ import disnake
 from disnake.ext import commands
 
 if TYPE_CHECKING:
-  from ..main import MerelyBot
-  from ..babel import Resolvable
+  from main import MerelyBot
+  from babel import Resolvable
 
 
 class Actions(int, Enum):
@@ -177,7 +177,8 @@ class System(commands.Cog):
     if 'action' in inter.filled_options:
       if inter.filled_options['action'] in [Actions.reload, Actions.unload]:
         extension_list = (
-          e.replace('extensions.','').strip('_') for e in self.bot.extensions.keys()
+          e.replace('extensions.','').replace('overlay.','').strip('_')
+          for e in self.bot.extensions.keys()
         )
       elif inter.filled_options['action'] == Actions.list:
         return []

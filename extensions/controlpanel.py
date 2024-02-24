@@ -10,9 +10,9 @@ import disnake
 from disnake.ext import commands
 
 if TYPE_CHECKING:
-  from ..main import MerelyBot
-  from ..babel import Resolvable
-  from ..config import Config
+  from main import MerelyBot
+  from babel import Resolvable
+  from config import Config
 
 # Models
 
