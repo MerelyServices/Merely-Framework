@@ -186,6 +186,7 @@ class Babel():
         continue
 
     if match is None:
+      # Placeholder string when no strings are found
       variables = self.string_list(target, [k+'={'+k+'}' for k in values])
       match = "{" + key.upper() + (': '+variables if variables else '') + "}"
 
@@ -198,8 +199,8 @@ class Babel():
     for prefixquery in prefixqueries:
       # Prefixes are simplified if message commands are disabled
       if not self.config.getboolean('intents', 'message_content'):
-        match.replace('{p:' + prefixquery + '}', '/')
-      if prefixquery == 'local' and guild_id:
+        match = match.replace('{p:' + prefixquery + '}', '/')
+      elif prefixquery == 'local' and guild_id:
         match = match.replace(
           '{p:'+prefixquery+'}',
           self.config.get('prefix', str(guild_id), fallback=self.config['main']['prefix_short'])
