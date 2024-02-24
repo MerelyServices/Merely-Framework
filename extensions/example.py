@@ -32,6 +32,18 @@ class Example(commands.Cog):
     if not bot.config.has_section(self.SCOPE):
       bot.config.add_section(self.SCOPE)
 
+  def controlpanel_settings(self) -> list[Toggleable | Selectable | Stringable]:
+    # ControlPanel integration - use this when you want to allow users / guilds to change preferences
+    return [
+      Toggleable("Example toggleable", self.bot.config, self.SCOPE, 'toggle'),
+      Selectable("Example selectable", self.bot.config, self.SCOPE, 'select', ['a', 'b', 'c']),
+      Stringable("Example stringable", self.bot.config, self.SCOPE, 'string')
+    ]
+
+  def controlpanel_theme(self) -> tuple[str, disnake.ButtonStyle]:
+    # Controlpanel custom theme for buttons
+    return (self.SCOPE, disnake.ButtonStyle.gray)
+
   @commands.Cog.listener()
   async def on_member_join(self, member:disnake.Member):
     """ Record to log when a member joins """

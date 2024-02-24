@@ -116,9 +116,7 @@ class ControlPanel(commands.Cog):
     if not bot.config.getboolean('extensions', 'auth', fallback=False):
       raise Exception("'auth' must be enabled to use 'controlpanel'")
     self.settings:list[Toggleable | Selectable | Stringable] = []
-    self.section_styles:dict[str, disnake.ButtonStyle] = {
-      'example': disnake.ButtonStyle.gray
-    }
+    self.section_styles:dict[str, disnake.ButtonStyle] = {}
     self.panels = {}
     # ensure config file has required data
     #if not bot.config.has_section(self.SCOPE):
@@ -134,6 +132,12 @@ class ControlPanel(commands.Cog):
         self.settings += attr()
         if self.bot.verbose:
           print(f"Loaded controlpanel settings from '{cog}'")
+      attr = getattr(self.bot.cogs[cog], 'controlpanel_theme', None)
+      if callable(attr):
+        data:tuple[str, disnake.ButtonStyle] = attr()
+        self.section_styles[data[0]] = data[1]
+        if self.bot.verbose:
+          print(f"Loaded controlpanel theme from '{cog}'")
 
   @commands.Cog.listener('on_message_interaction')
   async def on_panel_interaction(self, inter:disnake.MessageInteraction):
@@ -185,15 +189,15 @@ class ControlPanel(commands.Cog):
       rowcap:dict[int, int] = {}
 
       for setting in settings:
-        buttonstyle = disnake.ButtonStyle.primary
-        if setting.scope in self.parent.section_styles:
-          buttonstyle = self.parent.section_styles[setting.scope]
+        buttonstyle = parent.section_styles.get(setting.scope, disnake.ButtonStyle.primary)
         if setting.scope not in sections:
           sections.append(setting.scope)
         sectionnumber = sections.index(setting.scope)
 
         # Automatically shift components until they fit within size constraints
-        if isinstance(setting, Selectable):
+        # Type checking has to be relaxed a bit here because of issues with importing these types in
+        # other modules
+        if type(setting).__name__ == Selectable.__name__:
           # Selections take up a full row
           pos = sectionnumber
           while rowcap.get(pos, 0) > 0:
@@ -223,18 +227,34 @@ class ControlPanel(commands.Cog):
     async def callback_all(self, inter:disnake.MessageInteraction | disnake.ModalInteraction):
       id = inter.data.custom_id
       if id in self.settings:
-        self.parent.bot.cogs['Auth'].admins(inter)
         setting = self.settings[id]
+
+        # Verify an admin pressed the button
+        self.parent.bot.cogs['Auth'].admins(inter)
+        # Check with premium before continuing
+        generickey = (
+          setting.scope + '/' +
+          setting.key.replace(str(inter.guild_id), '{g}').replace(str(inter.user.id), '{u}')
+        )
+        print(self.parent.bot.cogs)
+        if (
+          generickey in self.parent.bot.config['premium']['restricted_config'].split()
+          and 'Premium' in self.parent.bot.cogs
+        ):
+          if not await self.parent.bot.cogs['Premium'].check_premium(inter.user):
+            embed = self.parent.bot.cogs['Premium'].error_embed(inter)
+            await inter.response.send_message(embed=embed, ephemeral=True)
+
         if isinstance(inter, disnake.ModalInteraction):
           # Callback from string edit modal
           setting.set(inter.text_values['value'])
-        elif isinstance(setting, Toggleable):
+        elif type(setting).__name__ == Toggleable.__name__:
           # Toggle button was pressed
           setting.toggle()
-        elif isinstance(setting, Selectable):
+        elif type(setting).__name__ == Selectable.__name__:
           # Selection was made
           setting.set(inter.data.values[0])
-        elif isinstance(setting, Stringable):
+        elif type(setting).__name__ == Stringable.__name__:
           # String edit button was pressed
           await inter.response.send_modal(self.parent.StringEditModal(self, setting))
           return
