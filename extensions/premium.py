@@ -44,6 +44,8 @@ class Premium(commands.Cog):
       self.config['other'] = ''
     if 'restricted_commands' not in self.config:
       self.config['restricted_commands'] = ''
+    if 'restricted_config' not in self.config:
+      self.config['restricted_config'] = ''
     if 'premium_role_guild' not in self.config or\
        not self.config['premium_role_guild'] or\
        'premium_roles' not in self.config or\
@@ -84,22 +86,25 @@ class Premium(commands.Cog):
     else:
       return False
 
+  def error_embed(self, ctx: commands.Context | disnake.Interaction) -> disnake.Embed:
+    rolelist = self.bot.babel.string_list(ctx, [r.name for r in self.premiumroles], True)
+    embed = disnake.Embed(
+      title=self.babel(ctx, 'required_title'),
+      description=self.babel(ctx, 'required_error', role=rolelist)
+    )
+    embed.url = (
+      self.config['patreon'] if self.config['patreon']
+      else self.config['other']
+    )
+    embed.set_thumbnail(url=self.config['icon'])
+    return embed
+
   async def check_premium_command(self, ctx:commands.Context):
     if ctx.command.name in self.config['restricted_commands'].split(' '):
       if await self.check_premium(ctx.author):
         return True # user is premium
-      rolelist = self.bot.babel.string_list(ctx, [r.name for r in self.premiumroles], True)
-      embed = disnake.Embed(
-        title=self.babel(ctx, 'required_title'),
-        description=self.babel(ctx, 'required_error', role=rolelist)
-      )
-      embed.url = (
-        self.config['patreon'] if self.config['patreon']
-        else self.config['other']
-      )
-      embed.set_thumbnail(url=self.config['icon'])
 
-      await ctx.reply(embed=embed)
+      await ctx.reply(embed=self.error_embed(ctx))
       return False # user is not premium
     return True # command is not restricted
 
@@ -108,22 +113,10 @@ class Premium(commands.Cog):
     if inter.application_command.name in restricted:
       if await self.check_premium(inter.author):
         return True # user is premium
-      rolelist = self.bot.babel.string_list(inter, [r.name for r in self.premiumroles])
-      embed = disnake.Embed(
-        title=self.babel(inter, 'required_title'),
-        description=self.babel(inter, 'required_error', role=rolelist)
-      )
-      embed.url = (
-        self.config['patreon'] if self.config['patreon']
-        else self.config['other']
-      )
-      embed.set_thumbnail(url=self.config['icon'])
 
-      await inter.response.send_message(embed=embed, ephemeral=True)
+      await inter.response.send_message(embed=self.error_embed(inter), ephemeral=True)
       return False # user is not premium
     return True # command is not restricted
-
-  #TODO: Add a check for controlpanel
 
   @commands.slash_command()
   async def premium(self, inter:disnake.CommandInteraction):
