@@ -31,15 +31,18 @@ class Setting():
     self.scope = scope
     self.key = key
 
+  def get(self, fallback=None):
+    return self.config.get(self.scope, self.key, fallback=fallback)
+
   def set(self, value:str):
     self.config.set(self.scope, self.key, value)
     self.config.save()
 
-  def get(self, fallback=None):
-    return self.config.get(self.scope, self.key, fallback=fallback)
+  def reset(self):
+    self.config.remove_option(self.scope, self.key)
 
-  def generate_component(self) -> disnake.ui.Item:
-    raise Exception("Setting.generate_component() must be overriden.")
+  def generate_components(self) -> list[disnake.ui.Item]:
+    raise Exception("Setting.generate_components() must be overriden.")
 
 
 class Toggleable(Setting):
@@ -53,17 +56,24 @@ class Toggleable(Setting):
     value = self.get(False)
     self.set(str(not value))
 
-  def generate_component(self) -> disnake.ui.Item:
+  def generate_components(self) -> list[disnake.ui.Item]:
     """ Toggle button for settings which can only be true or false """
     value = self.get('*unset*')
-    button = disnake.ui.Button(
+    b1 = disnake.ui.Button(
       style=self.buttonstyle,
       label=f'{self.label}: {value}',
       custom_id=self.id,
-      emoji='🟢' if value else '⭕',
+      emoji='⚪' if value == '*unset*' else ('🟢' if value else '⭕'),
       row=self.pos
     )
-    return button
+    b2 = disnake.ui.Button(
+      style=self.buttonstyle,
+      label='',
+      custom_id=self.id+'_reset',
+      emoji="🔁",
+      row=self.pos
+    )
+    return [b1, b2]
 
 
 class Selectable(Setting):
@@ -71,7 +81,7 @@ class Selectable(Setting):
     super().__init__(label, config, scope, key)
     self.possible_values = possible_values
 
-  def generate_component(self) -> disnake.ui.Item:
+  def generate_components(self) -> list[disnake.ui.Item]:
     """ Select button for settings which can only have pre-determined values """
     value = self.get('*unset*')
     select = disnake.ui.Select(
@@ -79,22 +89,29 @@ class Selectable(Setting):
       placeholder=f'{self.label}: {value}',
       min_values=1,
       max_values=1,
-      options=self.possible_values
+      options=['*unset*'] + self.possible_values
     )
-    return select
+    return [select]
 
 
 class Stringable(Setting):
-  def generate_component(self) -> disnake.ui.Item:
+  def generate_components(self) -> list[disnake.ui.Item]:
     value = self.get('*unset*')
-    button = disnake.ui.Button(
+    b1 = disnake.ui.Button(
       style=self.buttonstyle,
       label=f'{self.label}: {value}',
       custom_id=self.id,
       emoji='✏️',
       row=self.pos
     )
-    return button
+    b2 = disnake.ui.Button(
+      style=self.buttonstyle,
+      label='',
+      custom_id=self.id+'_reset',
+      emoji="🔁",
+      row=self.pos
+    )
+    return [b1, b2]
 
 
 class ControlPanel(commands.Cog):
@@ -183,7 +200,6 @@ class ControlPanel(commands.Cog):
 
       self.msg = None
       self.parent = parent
-      self.components:dict[str, disnake.ui.Item] = {}
       self.settings:dict[str, Toggleable | Selectable | Stringable] = {}
       sections:list[str] = []
       rowcap:dict[int, int] = {}
@@ -206,9 +222,9 @@ class ControlPanel(commands.Cog):
         else:
           # Buttons take up a 5th of a row (?)
           pos = sectionnumber
-          while rowcap.get(pos, 0) > 4:
+          while rowcap.get(pos, 0) > 3:
             pos += 1
-          rowcap[pos] = rowcap.get(pos, 0) + 1
+          rowcap[pos] = rowcap.get(pos, 0) + 2
 
         # Dereference setting from the Cog so command-specific changes can be made
         localsetting = copy.copy(setting)
@@ -219,60 +235,74 @@ class ControlPanel(commands.Cog):
         )
         localsetting.buttonstyle = buttonstyle
         localsetting.pos = pos
-        item = localsetting.generate_component()
-        self.components[localsetting.id] = (item)
+        items = localsetting.generate_components()
         self.settings[localsetting.id] = localsetting
-        self.add_item(item)
+        for item in items:
+          self.add_item(item)
 
     async def callback_all(self, inter:disnake.MessageInteraction | disnake.ModalInteraction):
       id = inter.data.custom_id
-      if id in self.settings:
+      reset = False
+      if id.endswith('_reset') and id[0:-len('_reset')] in self.settings:
+        reset = True
+        setting = self.settings[id[0:-len('_reset')]]
+      elif id in self.settings:
         setting = self.settings[id]
+      else:
+        return
 
-        # Verify an admin pressed the button
-        self.parent.bot.cogs['Auth'].admins(inter)
-        # Check with premium before continuing
-        generickey = (
-          setting.scope + '/' +
-          setting.key.replace(str(inter.guild_id), '{g}').replace(str(inter.user.id), '{u}')
-        )
-        print(self.parent.bot.cogs)
-        if (
-          generickey in self.parent.bot.config['premium']['restricted_config'].split()
-          and 'Premium' in self.parent.bot.cogs
-        ):
-          if not await self.parent.bot.cogs['Premium'].check_premium(inter.user):
-            embed = self.parent.bot.cogs['Premium'].error_embed(inter)
-            await inter.response.send_message(embed=embed, ephemeral=True)
+      # Verify an admin pressed the button
+      self.parent.bot.cogs['Auth'].admins(inter)
 
-        if isinstance(inter, disnake.ModalInteraction):
-          # Callback from string edit modal
-          setting.set(inter.text_values['value'])
-        elif type(setting).__name__ == Toggleable.__name__:
-          # Toggle button was pressed
-          setting.toggle()
-        elif type(setting).__name__ == Selectable.__name__:
-          # Selection was made
-          setting.set(inter.data.values[0])
-        elif type(setting).__name__ == Stringable.__name__:
-          # String edit button was pressed
-          await inter.response.send_modal(self.parent.StringEditModal(self, setting))
-          return
+      # Check for premium before continuing
+      generickey = (
+        setting.scope + '/' +
+        setting.key.replace(str(inter.guild_id), '{g}').replace(str(inter.user.id), '{u}')
+      )
+      if (
+        generickey in self.parent.bot.config['premium']['restricted_config'].split()
+        and 'Premium' in self.parent.bot.cogs
+      ):
+        if not await self.parent.bot.cogs['Premium'].check_premium(inter.user):
+          embed = self.parent.bot.cogs['Premium'].error_embed(inter)
+          await inter.response.send_message(embed=embed, ephemeral=True)
+
+      if reset:
+        setting.reset()
+      elif isinstance(inter, disnake.ModalInteraction):
+        # Callback from string edit modal
+        setting.set(inter.text_values['value'])
+      elif type(setting).__name__ == Toggleable.__name__:
+        # Toggle button was pressed
+        setting.toggle()
+      elif type(setting).__name__ == Selectable.__name__:
+        # Selection was made
+        if inter.data.values[0] == '*unset*':
+          setting.reset()
         else:
-          raise TypeError(setting)
+          setting.set(inter.data.values[0])
+      elif type(setting).__name__ == Stringable.__name__:
+        # String edit button was pressed
+        await inter.response.send_modal(self.parent.StringEditModal(self, setting))
+        return
+      else:
+        raise TypeError(setting)
 
-        comp = setting.generate_component()
+      comps = setting.generate_components()
+      for comp in comps:
         oldcompindex = [
           i for i,c in enumerate(self.children)
-          if isinstance(c, (disnake.ui.Button, disnake.ui.Select)) and c.custom_id == id
+          if (
+            isinstance(c, (disnake.ui.Button, disnake.ui.Select)) and c.custom_id == comp.custom_id
+          )
         ][0]
         if isinstance(self.children[oldcompindex], disnake.ui.Button):
           self.children[oldcompindex].label = comp.label
           self.children[oldcompindex].emoji = comp.emoji
         elif isinstance(self.children[oldcompindex], disnake.ui.Select):
           self.children[oldcompindex].placeholder = comp.placeholder
-        self.timeout = 300
-        await inter.response.edit_message(view=self)
+      self.timeout = 300
+      await inter.response.edit_message(view=self)
 
     async def on_timeout(self) -> None:
       if self.msg:
