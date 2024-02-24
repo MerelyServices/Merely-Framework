@@ -117,7 +117,7 @@ class Help(commands.Cog):
 
   @commands.slash_command(name='help')
   async def slash_help(
-    self, inter:disnake.CommandInteraction, command:Optional[str] = None
+    self, inter:disnake.CommandInteraction, command:Optional[str] = None, **kwargs
   ):
     """
     Learn how to use this bot
@@ -126,7 +126,7 @@ class Help(commands.Cog):
     ----------
     command: Search for a specific command's documentation
     """
-    await self.help(inter, command)
+    await self.help(inter, command, **kwargs)
 
   @commands.command(aliases=['?','??'])
   async def help(
@@ -143,9 +143,6 @@ class Help(commands.Cog):
       if docs is not None:
         # we found the documentation
         await ctx.send(docs, **kwargs)
-      elif self.find_command(command) is not None:
-        # the command definitely exists, but there's no documentation
-        await ctx.send(self.babel(ctx, 'no_docs'), **kwargs)
       else:
         # the command doesn't exist right now, figure out why.
         if command in self.config['future_commands'].split(', '):
@@ -166,6 +163,9 @@ class Help(commands.Cog):
               f"{moves[target-1]} is now {moves[target]} but {moves[target]} doesn't exist."
             )
             await ctx.send(self.babel(ctx, 'no_command'), **kwargs)
+        elif self.find_command(command) is not None:
+          # the command definitely exists, but there's no documentation
+          await ctx.send(self.babel(ctx, 'no_docs'), **kwargs)
         else:
           await ctx.send(self.babel(ctx, 'no_command'), **kwargs)
 
