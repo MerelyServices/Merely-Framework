@@ -84,7 +84,6 @@ If you wish to provide strings, add them to `babel/en.ini`.
 | [eventmsg](extensions/eventmsg.py) | `eventmsg` - automated messages in response to user actions | 1.0 |
 | [poll](extensions/poll.py) | `poll` - adds polls to discord with an interactive poll builder and countdown timers | 1.0 |
 | [reactroles](extensions/reactroles.py) | `reactrole` - adds reaction roles to discord with an interactive setup | 1.0 |
-| [prefix](extensions/prefix.py) | `prefix` - allows guilds to have a custom prefix to use when this bot | 1.0 |
 | [system](extensions/system.py) | `module, die` - modify behaviour of the bot while it's running | 1.2 |
 | [premium](extensions/premium.py) | `premium` - locks select features behind a paywall, using a premium role to check | 1.0 |
 | ------ | ----------- | ----- |

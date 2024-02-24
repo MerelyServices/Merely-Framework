@@ -30,7 +30,7 @@ class Babel():
   # Regex patterns
   filter_conditional: re.Pattern
   filter_configreference: re.Pattern
-  filter_prefixreference: re.Pattern
+  filter_commandreference: re.Pattern
 
   @property
   def defaultlang(self) -> str:
@@ -50,7 +50,7 @@ class Babel():
     self.config = config
     self.filter_conditional = re.compile(r'{([a-z]*?)\?(.*?)\|(.*?)}')
     self.filter_configreference = re.compile(r'{c\:([a-z_]*?)\/([a-z_]*?)}')
-    self.filter_prefixreference = re.compile(r'{p\:(local|global)}')
+    self.filter_commandreference = re.compile(r'{p\:([a-z_ ]*?)}')
     self.load()
 
   def load(self):
@@ -194,19 +194,28 @@ class Babel():
     for varname,varval in values.items():
       match = match.replace('{'+varname+'}', str(varval))
 
-    # Fill in prefixes
-    prefixqueries = self.filter_prefixreference.findall(match)
-    for prefixquery in prefixqueries:
+    # Fill in command queries
+    commandqueries = self.filter_commandreference.findall(match)
+    for commandquery in commandqueries:
       # Prefixes are simplified if message commands are disabled
       if not self.config.getboolean('intents', 'message_content'):
-        match = match.replace('{p:' + prefixquery + '}', '/')
-      elif prefixquery == 'local' and guild_id:
+        if hasattr(target, 'bot'):
+          cmd = target.bot.get_global_command_named(commandquery)
+          if isinstance(cmd, disnake.APISlashCommand):
+            match = match.replace('{p:'+commandquery+'}', '</'+cmd.name+':'+str(cmd.id)+'>')
+        match = match.replace('{p:'+commandquery+'}', '/'+commandquery)
+      elif guild_id:
+        guildprefix = self.config.get(
+          'prefix', str(guild_id), fallback=self.config['main']['prefix_short']
+        )
         match = match.replace(
-          '{p:'+prefixquery+'}',
-          self.config.get('prefix', str(guild_id), fallback=self.config['main']['prefix_short'])
+          '{p:'+commandquery+'}',
+          guildprefix + commandquery
         )
       else:
-        match = match.replace('{p:'+prefixquery+'}', self.config['main']['prefix_short'])
+        match = match.replace(
+          '{p:'+commandquery+'}', self.config['main']['prefix_short'] + commandquery
+        )
 
     # Fill in conditionals
     conditionalqueries = self.filter_conditional.findall(match)
