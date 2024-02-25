@@ -197,21 +197,17 @@ class Babel():
     # Fill in command queries
     commandqueries = self.filter_commandreference.findall(match)
     for commandquery in commandqueries:
-      # Prefixes are simplified if message commands are disabled
-      if not self.config.getboolean('intents', 'message_content'):
-        if hasattr(target, 'bot'):
-          cmd = target.bot.get_global_command_named(commandquery)
-          if isinstance(cmd, disnake.APISlashCommand):
-            match = match.replace('{p:'+commandquery+'}', '</'+cmd.name+':'+str(cmd.id)+'>')
+      # Pre-fetch the slash command (if it exists)
+      cmd = None
+      if hasattr(target, 'bot'):
+        cmd = target.bot.get_global_command_named(commandquery)
+
+      if isinstance(cmd, disnake.APISlashCommand):
+        # Use slash command references if they can be found
+        match = match.replace('{p:'+commandquery+'}', '</'+cmd.name+':'+str(cmd.id)+'>')
+      elif not self.config.getboolean('intents', 'message_content'):
+        # If the text prefix can't be seen, assume this is a missing slash command
         match = match.replace('{p:'+commandquery+'}', '/'+commandquery)
-      elif guild_id:
-        guildprefix = self.config.get(
-          'prefix', str(guild_id), fallback=self.config['main']['prefix_short']
-        )
-        match = match.replace(
-          '{p:'+commandquery+'}',
-          guildprefix + commandquery
-        )
       else:
         match = match.replace(
           '{p:'+commandquery+'}', self.config['main']['prefix_short'] + commandquery

@@ -171,17 +171,10 @@ class Help(commands.Cog):
 
     else:
       # show the generic help embed with a variety of featured commands
-      longprefix = self.bot.config['main']['prefix_long']
-      if 'Prefix' in self.bot.cogs:
-        if isinstance(ctx.channel, disnake.TextChannel) and\
-          str(ctx.channel.guild.id) in self.bot.config['prefix'] and\
-          len(self.bot.config['prefix'][str(ctx.channel.guild.id)]):
-          longprefix = None
       embed = disnake.Embed(
         title=self.babel(ctx, 'title'),
         description=self.babel(
           ctx, 'introduction',
-          longprefix=longprefix,
           videoexamples=bool(self.config['helpurlvideoexamples']),
           serverinv=self.config['serverinv']
         ),
@@ -254,11 +247,7 @@ class Help(commands.Cog):
     )
     embed.add_field(
       name=self.babel(inter, 'about_field2_title'),
-      value=self.babel(
-        inter,
-        'about_field2_value',
-        longprefix=self.bot.config['main']['prefix_long']
-      ),
+      value=self.babel(inter, 'about_field2_value'),
       inline=False
     )
     embed.add_field(
