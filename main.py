@@ -118,11 +118,6 @@ class MerelyBot(commands.AutoShardedBot):
           msg.content[0: len(self.config['main']['prefix_short'])] + ' '
         ]
       )
-    if (
-      self.config['main']['prefix_long'] and
-      msg.content.lower().startswith(self.config['main']['prefix_long'].lower())
-    ):
-      return msg.content[0:len(self.config['main']['prefix_long'])] + ' '
     return commands.when_mentioned(self, msg)
 
   def autoload_extensions(self):

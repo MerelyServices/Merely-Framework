@@ -64,9 +64,7 @@ class Config(ConfigParser):
     if 'token' not in self['main']:
       self['main']['token'] = ''
     if 'prefix_short' not in self['main']:
-      self['main']['prefix_short'] = 'm/'
-    if 'prefix_long' not in self['main']:
-      self['main']['prefix_long'] = ''
+      self['main']['prefix_short'] = '/'
     if 'botname' not in self['main']:
       self['main']['botname'] = 'merely framework bot'
     if 'themecolor' not in self['main']:
