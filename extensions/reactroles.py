@@ -327,7 +327,10 @@ class ReactRoles(commands.Cog):
     async def on_timeout(self):
       self.save_button.disabled = True
       self.add_reaction_button.disabled = True
-      await self.msg.edit(self.parent.bot.babel(self.msg.guild, 'error', 'timeoutview'))
+      try:
+        await self.msg.edit(self.parent.bot.babel(self.msg.guild, 'error', 'timeoutview'))
+      except disnake.HTTPException:
+        pass
 
   # Commands
 

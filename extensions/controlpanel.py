@@ -306,7 +306,10 @@ class ControlPanel(commands.Cog):
 
     async def on_timeout(self) -> None:
       if self.msg:
-        await self.msg.delete()
+        try:
+          await self.msg.delete()
+        except disnake.HTTPException:
+          pass
       else:
         for component in self.children:
           if isinstance(component, (disnake.ui.Button, disnake.ui.Select)):

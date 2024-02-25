@@ -48,8 +48,8 @@ class Help(commands.Cog):
       self.config['feedbackchannel'] = ''
     if 'highlight_sections' not in self.config:
       self.config['highlight_sections'] = '💡 learn'
-    if 'learn_highlights' not in self.config:
-      self.config['learn_highlights'] = self.SCOPE
+      if 'learn_highlights' not in self.config:
+        self.config['learn_highlights'] = self.SCOPE
     if 'future_commands' not in self.config:
       self.config['future_commands'] = ''
     if 'obsolete_commands' not in self.config:
