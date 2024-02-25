@@ -1,44 +1,86 @@
-from configparser import ConfigParser
-from typing import Optional, Union
-from disnake import Guild, Message, Interaction, User, Member
-from disnake.ext.commands import Context
+"""
+  Babel - a translation system for discord bots
+  Babel reads and formats strings from language files in the babel folder.
+  You can find a language editor at https://github.com/yiays/Babel-Translator
+  Recommended cogs: Language
+"""
+
 import os, re
+from configparser import ConfigParser
+from typing import Optional
+from config import Config
+from glob import glob
+import disnake
+from disnake.ext import commands
+
+Resolvable = (
+  commands.Context | disnake.Interaction | disnake.Message | disnake.User | disnake.Member
+  | disnake.Guild | tuple
+)
+
 
 class Babel():
-  """babel is a translation system for discord bots
-  babel gets strings from language files in the babel folder.
-  to create a new language, follow the format."""
-  path = 'babel/'
-  langs = {}
+  """ Stores language data and resolves and formats it for use in Cogs """
+  path:str
+  backup_path:Optional[str] = None
+  config: Config
+  langs: dict[str, ConfigParser]
+  scope_key_cache: dict
 
-  def __init__(self, config:ConfigParser):
+  # Regex patterns
+  filter_conditional: re.Pattern
+  filter_configreference: re.Pattern
+  filter_commandreference: re.Pattern
+
+  @property
+  def defaultlang(self) -> str:
+    """ The default language which should have all strings """
+    return self.config.get('language', 'default', fallback='en')
+
+  @property
+  def prefix(self) -> str:
+    """ The default bot prefix """
+    return self.config.get('language', 'prefix', fallback='')
+
+  def __init__(self, config:Config, path='babel'):
+    """ Called once on import """
+    self.path = path
+    if path != 'babel':
+      self.backup_path = 'babel'
     self.config = config
-    self.conditional = re.compile(r'{([a-z]*?)\?(.*?)\|(.*?)}')
-    self.configreference = re.compile(r'{c\:([a-z_]*?)\/([a-z_]*?)}')
-    self.prefixreference = re.compile(r'{p\:(local|global)}')
+    self.filter_conditional = re.compile(r'{([a-z]*?)\?(.*?)\|(.*?)}')
+    self.filter_configreference = re.compile(r'{c\:([a-z_]*?)\/([a-z_]*?)}')
+    self.filter_commandreference = re.compile(r'{p\:([a-z_ ]*?)}')
     self.load()
-  
-  def load(self):
-    self.defaultlang = self.config.get('language', 'default', fallback='en')
-    # defaultlang is the requested language to default new users to
 
-    if os.path.isfile(self.path):
-      os.remove(self.path)
-    if not os.path.exists(self.path) or not os.path.exists(self.path+self.defaultlang+'.ini'):
-      raise Exception(f"The path {self.path} must exist and contain a complete {self.defaultlang}.ini.")
-    
-    for langfile in os.scandir(self.path):
-      langfile = langfile.name
-      if langfile[-4:] == '.ini':
-        langname = langfile[:-4]
-        self.langs[langname] = ConfigParser(comment_prefixes='@', allow_no_value=True) # create a configparser that should preserve comments
-        self.langs[langname].read(self.path+langfile)
-        if 'meta' not in self.langs[langname]:
-          self.langs[langname].add_section('meta')
-        self.langs[langname].set('meta', 'language', langname)
-        with open(self.path+langfile, 'w', encoding='utf-8') as f:
-          self.langs[langname].write(f)
-    
+  def load(self):
+    """ Load data from config and babel files, called upon reload """
+    # Reset cache
+    self.langs = {}
+    self.scope_key_cache = {}
+
+    if (
+      (
+        not os.path.exists(self.path) or
+        not os.path.exists(os.path.join(self.path, self.defaultlang+'.ini'))
+      ) and
+      (self.backup_path and (
+        not os.path.exists(self.backup_path) or
+        not os.path.exists(os.path.join(self.backup_path, self.defaultlang+'.ini'))
+      ))
+    ):
+      raise FileNotFoundError(
+        f"The path {self.path} must exist and contain a complete {self.defaultlang}.ini."
+      )
+
+    for langpath in (glob(self.path + os.path.sep + '*.ini') +
+                     (glob(self.backup_path + os.path.sep + '*.ini') if self.backup_path else [])):
+      langfile = re.sub(r'^(babel[/\\]|overlay[/\\]babel[/\\])', '', langpath)
+      langname = langfile[:-4]
+      self.langs[langname] = ConfigParser(comment_prefixes='@', allow_no_value=True)
+      # create a Config that should preserve comments
+      self.langs[langname].read(langpath, encoding='utf-8')
+
     # baselang is the root language file that should be considered the most complete.
     self.baselang = self.defaultlang
     while self.langs[self.baselang].get('meta', 'inherit', fallback=''):
@@ -47,129 +89,205 @@ class Babel():
         self.baselang = newbaselang
       else:
         print("WARNING: unable to resolve language dependancy chain.")
-  
-  def reload(self):
-    self.langs = {}
-    self.load()
 
-  def resolve_lang(self, author_id:int, guild_id:Optional[int]=None, debug=False):
+  def localeconv(self, locale:disnake.Locale) -> str:
+    """ Converts a Discord API locale to a babel locale """
+    return self.prefix + str(locale).replace('-US', '').replace('-UK', '')
+
+  def resolve_lang(
+    self,
+    user_id:Optional[int] = None,
+    guild_id:Optional[int] = None,
+    inter:Optional[disnake.Interaction] = None,
+    debug:bool = False
+  ) -> tuple[list]:
+    """ Creates a priority list of languages and reasons why they apply to this user or guild """
     langs = []
     dbg_origins = []
-    
-    if str(author_id) in self.config['language']:
-      nl = self.config.get('language', str(author_id))
-      if nl not in self.langs and '_' in nl:
-        # guess that the non-superset version of the language is what it would've inherited from
-        nl = nl.split('_')[1]
-      if nl in self.langs:
-        langs.append(nl)
-        if debug: dbg_origins.append('author')
-        nl = self.langs[langs[-1]].get('meta', 'inherit', fallback=None)
-        while nl and nl not in langs and nl in self.langs:
-          langs.append(nl)
-          if debug: dbg_origins.append('inherit author')
-          nl = self.langs[langs[-1]].get('meta', 'inherit', fallback=None)
+
+    def resolv(locale:str, origin:str):
+      """ Find the specific babel lang struct for this locale """
+      if locale not in self.langs and '_' in locale:
+        # Guess that the non-superset version of the language is what it would've inherited from
+        locale = locale.split('_')[0]
+      if locale in self.langs:
+        # A language file was found
+        langs.append(locale)
+        if debug:
+          dbg_origins.append(origin)
+        # Follow the inheritance chain
+        locale = self.langs[langs[-1]].get('meta', 'inherit', fallback=None)
+        # Loop interrupts if this chain has been followed before
+        while locale and locale not in langs and locale in self.langs:
+          langs.append(locale)
+          if debug:
+            dbg_origins.append('inherit '+origin)
+          locale = self.langs[langs[-1]].get('meta', 'inherit', fallback=None)
+
+    # Manually set language for user
+    if user_id and str(user_id) in self.config['language']:
+      locale = self.config.get('language', str(user_id))
+      resolv(locale, 'author')
+    # User locale
+    if inter:
+      locale = self.localeconv(inter.locale)
+      resolv(locale, 'author_locale')
+    # Manually set language for guild
     if guild_id and str(guild_id) in self.config['language']:
-      nl = self.config.get('language', str(guild_id))
-      if nl not in self.langs and '_' in nl:
-        nl = nl.split('_')[1]
-      if nl not in langs and nl in self.langs:
-        langs.append(nl)
-        if debug: dbg_origins.append('guild')
-        nl = self.langs[langs[-1]].get('meta', 'inherit', fallback=None)
-        while nl and nl not in langs and nl in self.langs:
-          langs.append(nl)
-          if debug: dbg_origins.append('inherit guild')
-          nl = self.langs[langs[-1]].get('meta', 'inherit', fallback=None)
-    
+      locale = self.config.get('language', str(guild_id))
+      resolv(locale, 'guild')
+    # Guild locale (if it has been set manually)
+    if inter and inter.guild and 'COMMUNITY' in inter.guild.features:
+      locale = self.localeconv(inter.guild_locale)
+      resolv(locale, 'guild_locale')
+    # Default language
     if self.defaultlang not in langs:
-      langs.append(self.defaultlang)
-      if debug: dbg_origins.append('default')
-    if self.baselang not in langs:
-      langs.append(self.baselang)
-      if debug: dbg_origins.append('default')
+      resolv(self.defaultlang, 'default')
 
     if not debug:
       return langs
-    else:
-      return langs, dbg_origins
+    return langs, dbg_origins
 
-  def __call__(self, target:Union[Context, Interaction, Message, User, Member, Guild, tuple], scope:str, key:str, **values):
-    if isinstance(target, (Context, Interaction, Message)):
+  def __call__(
+    self,
+    target:Resolvable,
+    scope:str,
+    key:str,
+    **values: dict[str, str | bool]
+  ) -> str:
+    """ Determine the locale and resolve the closest translated string """
+    inter = None
+    if isinstance(target, (commands.Context, disnake.Interaction, disnake.Message)):
       author_id = target.author.id
       guild_id = target.guild.id if hasattr(target, 'guild') and target.guild else None
-    elif isinstance(target, User):
+      if isinstance(target, disnake.Interaction):
+        inter = target
+    elif isinstance(target, disnake.User):
       author_id = target.id
       guild_id = None
-    elif isinstance(target, Member):
+    elif isinstance(target, disnake.Member):
       author_id = target.id
       guild_id = target.guild.id
-    elif isinstance(target, Guild):
+    elif isinstance(target, disnake.Guild):
       author_id = None
       guild_id = target.id
     else:
       author_id = target[0]
-      guild_id = target[1] if len(target)>1 else None
-    
-    reqlangs = self.resolve_lang(author_id, guild_id)
+      guild_id = target[1] if len(target) > 1 else None
 
-    match = None
+    reqlangs = self.resolve_lang(author_id, guild_id, inter)
+
+    match: Optional[str] = None
     for reqlang in reqlangs:
-      if reqlang in self.langs:
-        if scope in self.langs[reqlang]:
-          if key in self.langs[reqlang][scope]:
-            if len(self.langs[reqlang][scope][key]) > 0:
-              match = self.langs[reqlang][scope][key]
-              break
-    
+      try:
+        match = self.langs[reqlang][scope][key]
+        break
+      except (ValueError, KeyError):
+        continue
+
     if match is None:
-      return "{MISSING STRING}"
-    
-    # Fill in values in the string
-    for k,v in values.items():
-      match = match.replace('{'+k+'}', str(v))
-    
-    # Fill in prefixes
-    prefixqueries = self.prefixreference.findall(match)
-    for prefixquery in prefixqueries:
-      if prefixquery == 'local' and guild_id:
-        match = match.replace('{p:'+prefixquery+'}', self.config.get('prefix', str(guild_id), fallback=self.config['main']['prefix_short']))
+      # Placeholder string when no strings are found
+      variables = self.string_list(target, [k+'={'+k+'}' for k in values])
+      match = "{" + key.upper() + (': '+variables if variables else '') + "}"
+
+    # Fill in variables in the string
+    for varname,varval in values.items():
+      match = match.replace('{'+varname+'}', str(varval))
+
+    # Fill in command queries
+    commandqueries = self.filter_commandreference.findall(match)
+    for commandquery in commandqueries:
+      # Pre-fetch the slash command (if it exists)
+      cmd = None
+      if hasattr(target, 'bot'):
+        cmd = target.bot.get_global_command_named(commandquery)
+
+      if isinstance(cmd, disnake.APISlashCommand):
+        # Use slash command references if they can be found
+        match = match.replace('{p:'+commandquery+'}', '</'+cmd.name+':'+str(cmd.id)+'>')
+      elif not self.config.getboolean('intents', 'message_content'):
+        # If the text prefix can't be seen, assume this is a missing slash command
+        match = match.replace('{p:'+commandquery+'}', '/'+commandquery)
       else:
-        match = match.replace('{p:'+prefixquery+'}', self.config['main']['prefix_short'])
-    
+        match = match.replace(
+          '{p:'+commandquery+'}', self.config['main']['prefix_short'] + commandquery
+        )
+
     # Fill in conditionals
-    conditionalqueries = self.conditional.findall(match)
+    conditionalqueries = self.filter_conditional.findall(match)
     for conditionalquery in conditionalqueries:
       if conditionalquery[0] in values:
         if values[conditionalquery[0]]:
           replace = conditionalquery[1]
         else:
           replace = conditionalquery[2]
-        match=match.replace('{'+conditionalquery[0]+'?'+conditionalquery[1]+'|'+conditionalquery[2]+'}', replace)
+        match = match.replace(
+          '{'+conditionalquery[0]+'?'+conditionalquery[1]+'|'+conditionalquery[2]+'}',
+          replace
+        )
 
     # Fill in config queries
-    configqueries = self.configreference.findall(match)
+    configqueries = self.filter_configreference.findall(match)
     for configquery in configqueries:
       if configquery[0] in self.config:
         if configquery[1] in self.config[configquery[0]]:
-          match = match.replace('{c:'+configquery[0]+'/'+configquery[1]+'}', self.config[configquery[0]][configquery[1]])
+          match = match.replace(
+            '{c:'+configquery[0]+'/'+configquery[1]+'}',
+            self.config[configquery[0]][configquery[1]]
+          )
+
+    # Handle \n
+    match = match.replace('\\n', '\n')
 
     return match
-  
-  def list_scope_key_pairs(self, lang):
+
+  def string_list(self, target:Resolvable, items:list[str], or_mode:bool = False) -> str:
+    """ Takes list items, and joins them together in a regionally correct way """
+    CONJUNCTION = self(target, 'main', 'list_conjunction').replace('_', ' ')
+    if or_mode:
+      CONJUNCTION_2 = self(target, 'main', 'list_conjunction_2_or').replace('_', ' ')
+      CONJUNCTIONLAST = self(target, 'main', 'list_last_conjunction_or').replace('_', ' ')
+    else:
+      CONJUNCTION_2 = self(target, 'main', 'list_conjunction_2').replace('_', ' ')
+      CONJUNCTIONLAST = self(target, 'main', 'list_last_conjunction').replace('_', ' ')
+
+    items = list(items)
+    if len(items) > 2:
+      i = 0
+      for i in range(len(items) - 2):
+        items.insert(i * 2 + 1, CONJUNCTION)
+      i += 1
+      items.insert(i * 2 + 1, CONJUNCTIONLAST)
+    elif len(items) > 1:
+      items.insert(1, CONJUNCTION_2)
+
+    return ''.join(items)
+
+  def list_scope_key_pairs(self, lang) -> set[str]:
+    """ Breaks down the structure of a babel file for evaluation """
+    # Check cache first
+    if lang in self.scope_key_cache:
+      return self.scope_key_cache[lang]
+
+    # List all scope key pairs in this language and any it inherits from
     pairs = set()
     inheritlang = lang
     while inheritlang and inheritlang in self.langs:
       for scope in self.langs[inheritlang].keys():
-        if scope == 'meta': continue
+        if scope == 'meta':
+          continue
         for key, value in self.langs[inheritlang][scope].items():
           if value:
             pairs.add(f'{scope}/{key}')
       inheritlang = self.langs[inheritlang].get('meta', 'inherit', fallback='')
+
+    # Store result in cache
+    self.scope_key_cache[lang] = pairs
     return pairs
 
-  def calculate_coverage(self, lang:str):
+  def calculate_coverage(self, lang:str) -> int:
+    """ Compares the number of strings between a language and the baselang """
     langvals = self.list_scope_key_pairs(lang)
-    basevals = self.list_scope_key_pairs(self.defaultlang) #TODO: don't run this every time.
+    basevals = self.list_scope_key_pairs(self.defaultlang)
 
     return int((len(langvals) / max(len(basevals), 1)) * 100)

@@ -1,25 +1,57 @@
+"""
+  Dice - Random Number Generation
+"""
+
+from __future__ import annotations
+
+import random
+from typing import TYPE_CHECKING
 import disnake
 from disnake.ext import commands
-import random
+
+if TYPE_CHECKING:
+  from main import MerelyBot
+  from babel import Resolvable
+
 
 class Dice(commands.Cog):
-  """simple dice rolling command extension, could be treated like another example"""
-  def __init__(self, bot:commands.Bot):
+  """ Rolls dice and shares the result """
+  SCOPE = 'dice'
+
+  @property
+  def config(self) -> dict[str, str]:
+    """ Shorthand for self.bot.config[scope] """
+    return self.bot.config[self.SCOPE]
+
+  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> list[str]:
+    """ Shorthand for self.bot.babel(scope, key, **values) """
+    return self.bot.babel(target, self.SCOPE, key, **values)
+
+  def __init__(self, bot:MerelyBot):
     self.bot = bot
 
-  @commands.command(aliases=['roll'])
-  async def dice(self, ctx:commands.Context, *numbers):
-    """rolls one more many n-sided die"""
-    if len(numbers) == 0:
-      numbers = ['6']
-    elif len(numbers) > 8:
-      numbers = numbers[:8]
-    rolls = []
-    for i,n in enumerate(numbers):
-      if n.isdigit():
-        r = random.choice(range(1, int(n) + 1))
-        rolls.append(self.bot.babel(ctx, 'dice', 'roll_result', i=i + 1, r=r))
-    await ctx.reply('\n'.join(rolls))
+  @commands.slash_command()
+  async def dice(self, inter:disnake.CommandInteraction, sides:str = 6):
+    """
+    Roll an n-sided dice
 
-def setup(bot):
+    Parameters
+    ----------
+    sides: The number of sides on your dice, separate with commas for multiple dice
+    """
+
+    result = []
+    for i, n in enumerate(sides.split(',')):
+      try:
+        result.append(
+          self.babel(inter, 'roll_result', i=i+1, r=random.choice(range(1, int(n) + 1)))
+        )
+      except (ValueError, IndexError):
+        return await inter.send(self.babel(inter, 'roll_error'))
+
+    await inter.send('\n'.join(result))
+
+
+def setup(bot:MerelyBot):
+  """ Bind this cog to the bot """
   bot.add_cog(Dice(bot))
