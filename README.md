@@ -1,7 +1,7 @@
 ![Merely logo](profile.png)
 # Merelybot
 ![Python build status](https://github.com/yiays/merely/workflows/merelybot/badge.svg?branch=master)
-**Merelybot is an extended feature-set for python Discord bots. Adding features like live reloading of code, a feature rich help command, translation support, error handling, and paywalled commands.**
+**Merelybot is an extended feature-set framework for Disnake bots. Adding features like configuration-defined bots, hot-reloading of code, a feature rich help command, translation support, authorization, security, error handling, and paywalled commands.**
 
 ## Featured implementations
 You can test these implementations on my [official Discord server](https://discord.gg/wfKx24kDUR).
@@ -9,15 +9,15 @@ You can test these implementations on my [official Discord server](https://disco
  - [ConfessionBot](https://github.com/yiays/ConfessionBot-2.0) is an anonymous messaging system for Discord. ConfessionBot uses the help command, translation support, and module reloading features to speed up development and shares improvements to the framework back here.
 
 ## News
-Seven languages are now supported! English, German, French, Polish, Brazilian Portugese, Tagalog, and Chinese are all available to choose with `/language set` today, but most are incomplete. *MerelyBot now also follows your user and server language preferences by default.*
+**Seven languages are now supported!** English, German, French, Polish, Brazilian Portugese, Tagalog, and Chinese are all available to choose with `/language set` today, but most are incomplete. *MerelyBot now also follows your user and server language preferences by default.*
 > [See live translation stats and contribute >](https://translate.yiays.com)
 
-MerelyBot v1.2.0 has launched! This update marks the completed migration to slash commands, which comes with countless performance and usability improvements. Some highlights are the newly-polished `/poll` and ReactRoles now catch up after any interruptions.
+**MerelyBot v1.2.0 has launched!** This update marks the completed migration to slash commands, which comes with countless performance and usability improvements. Some highlights are the newly-polished `/poll` and ReactRoles now catch up after any interruptions.
 > [See the roadmap for future updates >](https://github.com/orgs/MerelyServices/projects/1)
 
 ## Usage
  - Clone the project to a folder
- - Install python <=3.10
+ - Install python >= 3.10
  - Install required python packages with `python3 -m pip install -r requirements.txt`
  - Create a discord bot in the [Discord Developer Portal](https://discordapp.com/developers/applications/), you will need the token to continue
  - Give MerelyBot the token by setting it in the [main] section of the config
@@ -73,7 +73,8 @@ If you wish to provide strings, add them to `babel/en.ini`.
 | [main](main.py)* | imports extensions, creates some global variables, establishes a log, and runs the main loop | N/A |
 | [config](config.py)* | reads configuration data and ensures that the config file is valid | 1.0 |
 | [babel](babel.py)* | provides translated and formatted strings that contributors can easily translate to more languages | 1.0 |
-| [auth](extensions/__auth.py)* | provides security checks for other commands which need authorization | 1.0 |
+| [auth](auth.py)* | provides security checks for other commands which need authorization | 1.0 |
+| [utilities](utilities.py) | provides useful functions and other shared code between extensions | 1.2.2 |
 | [error](extensions/error.py) | provides error handling for all other extensions so they don't have to | 1.0 |
 | [log](extensions/log.py) | allows for logging to file, or to a text channel in a rich format | 1.0 |
 | [help](extensions/help.py)** | `help, about` - lists featured commands and fetches translated usage instructions | 1.0 |

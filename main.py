@@ -11,6 +11,8 @@ import disnake
 from disnake.ext import commands
 from config import Config
 from babel import Babel
+from utilities import Utilities
+from auth import Auth
 
 
 class MerelyBot(commands.AutoShardedBot):
@@ -22,6 +24,8 @@ class MerelyBot(commands.AutoShardedBot):
   """
   config:Config
   babel:Babel
+  utilities:Utilities = Utilities()
+  auth:Auth
   verbose = False
   member_cache = True
   overlay = False
@@ -42,6 +46,8 @@ class MerelyBot(commands.AutoShardedBot):
     else:
       self.config = Config()
       self.babel = Babel(self.config)
+
+    self.auth = Auth(self)
 
     print(f"""
     merely framework{

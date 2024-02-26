@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from enum import Enum
 from glob import glob
-import asyncio, os, re
+import asyncio, os, re, importlib
 from typing import Optional, TYPE_CHECKING
 import disnake
 from disnake.ext import commands
@@ -30,6 +30,7 @@ class Actions(int, Enum):
 class System(commands.Cog):
   """commands involved in working with a discord bot"""
   SCOPE = 'main' # for legacy reasons, this module has no local scope
+  SPECIAL_MODULES = ['config', 'babel', 'utilities', 'auth']
 
   @property
   def config(self) -> dict[str, str]:
@@ -42,8 +43,6 @@ class System(commands.Cog):
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
-    if not bot.config.getboolean('extensions', 'auth', fallback=False):
-      raise Exception("'auth' must be enabled to use 'admin'")
 
     # Restrict usage of these commands to one guild
     guilds = bot.config['auth']['botadmin_guilds']
@@ -68,12 +67,12 @@ class System(commands.Cog):
     module: The target cog which will be affected, leave empty for a list of loaded Cogs
     """
 
-    self.bot.cogs['Auth'].superusers(inter)
+    self.bot.auth.superusers(inter)
 
     active_extensions = [
       re.sub(r'^(extensions\.|overlay\.extensions\.)', '', e).strip('_')
       for e in self.bot.extensions.keys()
-    ] + ['config', 'babel']
+    ] + self.SPECIAL_MODULES
     if module is None or action == Actions.list:
       await inter.send(
         self.babel(inter, 'extensions_list', list='\n'.join(active_extensions)),
@@ -97,6 +96,20 @@ class System(commands.Cog):
         return
       elif module == 'babel':
         self.bot.babel.load()
+        await inter.send(
+          self.babel(inter, 'extension_reload_success', extension=module),
+          ephemeral=True
+        )
+        return
+      elif module == 'utilities':
+        self.bot.utilities = importlib.import_module('utilities', 'main').Utilities()
+        await inter.send(
+          self.babel(inter, 'extension_reload_success', extension=module),
+          ephemeral=True
+        )
+        return
+      elif module == 'auth':
+        self.bot.auth = importlib.import_module('auth', 'main').Auth(self.bot)
         await inter.send(
           self.babel(inter, 'extension_reload_success', extension=module),
           ephemeral=True
@@ -193,7 +206,7 @@ class System(commands.Cog):
       )
     return (
       [x for x in extension_list if search in x] +
-      [e for e in ['config', 'babel'] if search in e]
+      [e for e in self.SPECIAL_MODULES if search in e]
     )
 
   @commands.slash_command()
@@ -204,7 +217,7 @@ class System(commands.Cog):
     message_id:str
   ):
     """ Deletes a message """
-    self.bot.cogs['Auth'].superusers(inter)
+    self.bot.auth.superusers(inter)
 
     try:
       channel = await self.bot.fetch_channel(int(channel_id))
@@ -234,7 +247,7 @@ class System(commands.Cog):
     ----------
     saveconfig: Write the last known state of the config file on shutdown
     """
-    self.bot.cogs['Auth'].superusers(inter)
+    self.bot.auth.superusers(inter)
     await inter.send(self.bot.babel(inter, 'admin', 'die_success'))
     if saveconfig:
       self.bot.config.save()

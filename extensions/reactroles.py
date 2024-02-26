@@ -33,8 +33,6 @@ class ReactRoles(commands.Cog):
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
-    if not bot.config.getboolean('extensions', 'auth', fallback=False):
-      raise AssertionError("'auth' must be enabled to use 'reactroles'")
     # ensure config file has required data
     if not bot.config.has_section(self.SCOPE):
       bot.config.add_section(self.SCOPE)
@@ -298,7 +296,7 @@ class ReactRoles(commands.Cog):
     @disnake.ui.button(style=disnake.ButtonStyle.green, emoji='❔')
     async def add_reaction_button(self, _:disnake.Button, inter:disnake.MessageInteraction):
       """ Sends the command needed to add a reaction (and associated roles) """
-      self.parent.bot.cogs['Auth'].admins(inter)
+      self.parent.bot.auth.admins(inter)
 
       await inter.response.send_message(
         self.parent.babel(inter, 'howto_add_reaction', cmd='/reactrole_add'),
@@ -308,7 +306,7 @@ class ReactRoles(commands.Cog):
     @disnake.ui.button(style=disnake.ButtonStyle.primary, emoji='💾', disabled=True)
     async def save_button(self, _:disnake.Button, inter:disnake.MessageInteraction):
       """ Saves the reactrole message to storage so it will start to take effect """
-      self.parent.bot.cogs['Auth'].admins(inter)
+      self.parent.bot.auth.admins(inter)
 
       await self.msg.edit(view=None)
 

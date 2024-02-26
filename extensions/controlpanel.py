@@ -1,5 +1,6 @@
 """
   ControlPanel - Reduce command clutter by making settings available through ControlPanel instead.
+  TODO: this module hardly uses babel
 """
 
 from __future__ import annotations
@@ -130,8 +131,6 @@ class ControlPanel(commands.Cog):
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
-    if not bot.config.getboolean('extensions', 'auth', fallback=False):
-      raise Exception("'auth' must be enabled to use 'controlpanel'")
     self.settings:list[Toggleable | Selectable | Stringable] = []
     self.section_styles:dict[str, disnake.ButtonStyle] = {}
     self.panels = {}
@@ -252,7 +251,7 @@ class ControlPanel(commands.Cog):
         return
 
       # Verify an admin pressed the button
-      self.parent.bot.cogs['Auth'].admins(inter)
+      self.parent.bot.auth.admins(inter)
 
       # Check for premium before continuing
       generickey = (
@@ -323,7 +322,7 @@ class ControlPanel(commands.Cog):
   @commands.slash_command()
   async def controlpanel(self, inter:disnake.CommandInteraction):
     """ Opens the control panel so you can change bot settings for this guild """
-    self.bot.cogs['Auth'].admins(inter)
+    self.bot.auth.admins(inter)
     if len(self.settings) < 1:
       inter.response.send_message(self.babel(inter, 'no_settings'))
       return

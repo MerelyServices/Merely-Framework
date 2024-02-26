@@ -119,14 +119,6 @@ class LivePoll():
         timelist=timelist
       )
 
-  def generate_line(self, value:int, maxval:int):
-    """ Create a progress bar using string manipulation """
-    width = round(((value/maxval)*40)) / 2
-    half = width % 1
-    if half:
-      width -= 0.5
-    return int(width)*'█' + ('▒' if half else '') + abs(int(width)-20)*'░'
-
   def generate_embed(self, guild:disnake.Guild):
     """ Generates a poll embed based on the object data """
     embed = disnake.Embed(title=self.title)
@@ -148,7 +140,7 @@ class LivePoll():
     for answer,vote in tuple(zip(self.answers,self.votes)):
       embed.add_field(
         name=f'{self.EMOJIS[index]} {answer}:',
-        value=f'{self.generate_line(vote,votemax)} ({vote})',
+        value=f'{self.parent.bot.utilities.progress_bar(vote,votemax)} ({vote})',
         inline=False
       )
       index += 1

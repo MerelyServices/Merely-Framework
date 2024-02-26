@@ -9,14 +9,13 @@ from __future__ import annotations
 
 from typing import Union, TYPE_CHECKING
 import disnake
-from disnake.ext import commands
 
 if TYPE_CHECKING:
   from main import MerelyBot
   from babel import Resolvable
 
 
-class Auth(commands.Cog):
+class Auth():
   """ Backup permissions/auth verification when guild permissions aren't in effect """
   SCOPE = 'auth'
 
@@ -81,8 +80,3 @@ class Auth(commands.Cog):
        str(msg.author.id) in self.config['authusers']:
       return True
     raise self.AuthError(self.babel(msg, 'not_authuser'))
-
-
-def setup(bot:MerelyBot):
-  """ Bind this cog to the bot """
-  bot.add_cog(Auth(bot))

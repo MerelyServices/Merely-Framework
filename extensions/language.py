@@ -69,6 +69,7 @@ class Language(commands.Cog):
       if prefix := self.config['prefix']:
         if not langcode.startswith(prefix):
           continue
+      coverage = self.bot.babel.calculate_coverage(langcode)
       embed.add_field(
         name=language.get('meta', 'name') + ' (' + langcode.replace(prefix, '') + ')',
         value=language.get(
@@ -76,7 +77,9 @@ class Language(commands.Cog):
           'contributors',
           fallback=self.babel(inter, 'unknown_contributors')
         ) + '\n' +
-        self.babel(inter, 'coverage_label', coverage=self.bot.babel.calculate_coverage(langcode))
+        self.babel(inter, 'coverage_label', coverage=coverage) + '\n' +
+        self.bot.utilities.progress_bar(coverage, 100) + '\n',
+        inline=False
       )
 
     await inter.send(embed=embed)

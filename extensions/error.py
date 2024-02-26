@@ -102,7 +102,7 @@ class Error(commands.Cog):
       await ctx.send(self.babel(ctx, 'privatemessageonly'), **kwargs)
       return
     if isinstance(error, commands.CommandInvokeError):
-      if 'Auth' in self.bot.cogs and isinstance(error.original, self.bot.cogs['Auth'].AuthError):
+      if isinstance(error.original, self.bot.auth.AuthError):
         await ctx.send(str(error.original), **kwargs)
         return
       await ctx.send(
