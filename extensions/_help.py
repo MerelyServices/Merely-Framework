@@ -38,6 +38,8 @@ class Help(commands.Cog):
       self.config['customstatus'] = ''
     if 'helpurl' not in self.config:
       self.config['helpurl'] = ''
+    if 'changelogurl' not in self.config:
+      self.config['changelogurl'] = ''
     if 'codeurl' not in self.config:
       self.config['codeurl'] = ''
     if 'helpurlvideoexamples' not in self.config:
@@ -314,7 +316,8 @@ class Help(commands.Cog):
       changelog += "\n..."
 
     logurl = (
-      self.config['helpurl']+"changes.html#"+search.replace('.','') if self.config['helpurl'] else ''
+      self.config['changelogurl']+"changes.html#"+search.replace('.','')
+      if self.config['changelogurl'] else ''
     )
 
     embed = disnake.Embed(
