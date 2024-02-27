@@ -42,8 +42,8 @@ class Language(commands.Cog):
     # ControlPanel integration
     langlist = list(self.bot.babel.langs.keys())
     return [
-      Selectable("Language (personal)", self.bot.config, self.SCOPE, '{u}', langlist),
-      Selectable("Language (server-wide)", self.bot.config, self.SCOPE, '{g}', langlist)
+      Selectable(self.SCOPE, '{u}', langlist),
+      Selectable(self.SCOPE, '{g}', langlist)
     ]
 
   @commands.slash_command()

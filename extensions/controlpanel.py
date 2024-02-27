@@ -12,7 +12,7 @@ from disnake.ext import commands
 
 if TYPE_CHECKING:
   from main import MerelyBot
-  from babel import Resolvable
+  from babel import Babel, Resolvable
   from config import Config
   from configparser import SectionProxy
 
@@ -27,68 +27,67 @@ class Setting():
   def id(self) -> str:
     return f'controlpanel_{self.scope}/{self.key}'
 
-  def __init__(self, label:str, config:Config, scope:str, key:str):
-    self.label = label
-    self.config = config
+  def __init__(self, scope:str, key:str):
     self.scope = scope
+    self.original_key = key
     self.key = key
 
-  def get(self, fallback=None):
-    return self.config.get(self.scope, self.key, fallback=fallback)
+  def label(self, target:Resolvable, babel:Babel) -> str:
+    return babel(target, self.scope, 'label_' + self.original_key)
 
-  def set(self, value:str):
-    self.config.set(self.scope, self.key, value)
-    self.config.save()
+  def get(self, config:Config, fallback=None):
+    return config.get(self.scope, self.key, fallback=fallback)
 
-  def reset(self):
-    self.config.remove_option(self.scope, self.key)
+  def set(self, config:Config, value:str | None):
+    if value is None:
+      config.remove_option(self.scope, self.key)
+    else:
+      config.set(self.scope, self.key, value)
+    config.save()
 
-  def generate_components(self) -> list[disnake.ui.Item]:
+  def generate_components(
+    self, config:Config, target:Resolvable, babel:Babel
+  ) -> list[disnake.ui.Item]:
     raise Exception("Setting.generate_components() must be overriden.")
 
 
 class Toggleable(Setting):
-  def get(self, fallback=None):
-    try:
-      return self.config.getboolean(self.scope, self.key)
-    except Exception:
-      return fallback
+  def get(self, config:Config, fallback=None):
+    return config.get(self.scope, self.key, fallback=fallback)
 
-  def toggle(self):
-    value = self.get(False)
-    self.set(str(not value))
+  def toggle(self, config:Config):
+    value = self.get(config, 'None')
+    # Cycle between true, false, and unset
+    self.set(config, {'True': 'False', 'False': None, 'None': 'True'}[value])
 
-  def generate_components(self) -> list[disnake.ui.Item]:
+  def generate_components(
+    self, config:Config, target:Resolvable, babel:Babel
+  ) -> list[disnake.ui.Item]:
     """ Toggle button for settings which can only be true or false """
-    value = self.get('*unset*')
+    value = self.get(config, '*unset*')
     b1 = disnake.ui.Button(
       style=self.buttonstyle,
-      label=f'{self.label}: {value}',
+      label=f'{self.label(target, babel)}: {value}',
       custom_id=self.id,
-      emoji='⚪' if value == '*unset*' else ('🟢' if value else '⭕'),
+      emoji='⚪' if value == '*unset*' else ('🟢' if value == 'True' else '⭕'),
       row=self.pos
     )
-    b2 = disnake.ui.Button(
-      style=self.buttonstyle,
-      label='',
-      custom_id=self.id+'_reset',
-      emoji="🔁",
-      row=self.pos
-    )
-    return [b1, b2]
+    return [b1]
 
 
 class Selectable(Setting):
-  def __init__(self, label:str, config:Config, scope:str, key:str, possible_values:list[str]):
-    super().__init__(label, config, scope, key)
+  def __init__(self, scope:str, key:str, possible_values:list[str]):
+    super().__init__(scope, key)
     self.possible_values = possible_values
 
-  def generate_components(self) -> list[disnake.ui.Item]:
+  def generate_components(
+    self, config:Config, target:Resolvable, babel:Babel
+  ) -> list[disnake.ui.Item]:
     """ Select button for settings which can only have pre-determined values """
-    value = self.get('*unset*')
+    value = self.get(config, '*unset*')
     select = disnake.ui.Select(
       custom_id=self.id,
-      placeholder=f'{self.label}: {value}',
+      placeholder=f'{self.label(target, babel)}: {value}',
       min_values=1,
       max_values=1,
       options=['*unset*'] + self.possible_values
@@ -97,11 +96,13 @@ class Selectable(Setting):
 
 
 class Stringable(Setting):
-  def generate_components(self) -> list[disnake.ui.Item]:
-    value = self.get('*unset*')
+  def generate_components(
+    self, config:Config, target:Resolvable, babel:Babel
+  ) -> list[disnake.ui.Item]:
+    value = self.get(config, '*unset*')
     b1 = disnake.ui.Button(
       style=self.buttonstyle,
-      label=f'{self.label}: {value}',
+      label=f'{self.label(target, babel)}: {value}',
       custom_id=self.id,
       emoji='✏️',
       row=self.pos
@@ -169,13 +170,13 @@ class ControlPanel(commands.Cog):
       self.parent = parent
 
       super().__init__(
-        title=setting.label,
+        title=setting.label(parent.msg, parent.parent.bot.babel),
         custom_id=setting.id,
         components=[disnake.ui.TextInput(
-          label=setting.label,
+          label=setting.label(parent.msg, parent.parent.bot.babel),
           custom_id='value',
-          placeholder=setting.get(''),
-          value=setting.get(''),
+          placeholder=setting.get(parent.parent.bot.config, ''),
+          value=setting.get(parent.parent.bot.config, ''),
           style=disnake.TextInputStyle.single_line,
           min_length=0
         )],
@@ -213,18 +214,21 @@ class ControlPanel(commands.Cog):
         # Automatically shift components until they fit within size constraints
         # Type checking has to be relaxed a bit here because of issues with importing these types in
         # other modules
+
+        # Toggle buttons take up one column
+        buttonwidth = 1
         if type(setting).__name__ == Selectable.__name__:
           # Selections take up a full row
-          pos = sectionnumber
-          while rowcap.get(pos, 0) > 0:
-            pos += 1
-          rowcap[pos] = 5
-        else:
-          # Buttons take up a 5th of a row (?)
-          pos = sectionnumber
-          while rowcap.get(pos, 0) > 3:
-            pos += 1
-          rowcap[pos] = rowcap.get(pos, 0) + 2
+          buttonwidth = 5
+        elif type(setting).__name__ == Stringable.__name__:
+          # String buttons take up two columns
+          buttonwidth = 2
+
+        # Calculate positioning of this component based on the space it will take up
+        pos = sectionnumber
+        while rowcap.get(pos, 0) > (5 - buttonwidth):
+          pos += 1
+        rowcap[pos] = rowcap.get(pos, 0) + buttonwidth
 
         # Dereference setting from the Cog so command-specific changes can be made
         localsetting = copy.copy(setting)
@@ -235,7 +239,9 @@ class ControlPanel(commands.Cog):
         )
         localsetting.buttonstyle = buttonstyle
         localsetting.pos = pos
-        items = localsetting.generate_components()
+        items = localsetting.generate_components(
+          self.parent.bot.config, inter, self.parent.bot.babel
+        )
         self.settings[localsetting.id] = localsetting
         for item in items:
           self.add_item(item)
@@ -257,7 +263,7 @@ class ControlPanel(commands.Cog):
       # Check for premium before continuing
       generickey = (
         setting.scope + '/' +
-        setting.key.replace(str(inter.guild_id), '{g}').replace(str(inter.user.id), '{u}')
+        setting.original_key
       )
       if (
         generickey in self.parent.bot.config['premium']['restricted_config'].split()
@@ -268,19 +274,19 @@ class ControlPanel(commands.Cog):
           await inter.response.send_message(embed=embed, ephemeral=True)
 
       if reset:
-        setting.reset()
+        setting.set(self.parent.bot.config, None)
       elif isinstance(inter, disnake.ModalInteraction):
         # Callback from string edit modal
-        setting.set(inter.text_values['value'])
+        setting.set(self.parent.bot.config, inter.text_values['value'])
       elif type(setting).__name__ == Toggleable.__name__:
         # Toggle button was pressed
-        setting.toggle()
+        setting.toggle(self.parent.bot.config)
       elif type(setting).__name__ == Selectable.__name__:
         # Selection was made
         if inter.data.values[0] == '*unset*':
-          setting.reset()
+          setting.set(self.parent.bot.config, None)
         else:
-          setting.set(inter.data.values[0])
+          setting.set(self.parent.bot.config, inter.data.values[0])
       elif type(setting).__name__ == Stringable.__name__:
         # String edit button was pressed
         await inter.response.send_modal(self.parent.StringEditModal(self, setting))
@@ -288,7 +294,7 @@ class ControlPanel(commands.Cog):
       else:
         raise TypeError(setting)
 
-      comps = setting.generate_components()
+      comps = setting.generate_components(self.parent.bot.config, inter, self.parent.bot.babel)
       for comp in comps:
         oldcompindex = [
           i for i,c in enumerate(self.children)
