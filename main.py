@@ -56,7 +56,7 @@ class MerelyBot(commands.AutoShardedBot):
     currently named {self.config['main']['botname']} by config, uses {
       self.config['main']['prefix_short']
     }
-    created by Yiays#5930. https://github.com/yiays/merelybot
+    created by Yiays. https://github.com/yiays/merelybot
     """)
 
     #stdout to file
