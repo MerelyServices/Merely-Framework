@@ -16,6 +16,7 @@ from extensions.controlpanel import Toggleable, Selectable, Stringable
 if TYPE_CHECKING:
   from main import MerelyBot
   from babel import Resolvable
+  from configparser import SectionProxy
 
 
 class Language(commands.Cog):
@@ -23,7 +24,7 @@ class Language(commands.Cog):
   SCOPE = 'language'
 
   @property
-  def config(self) -> dict[str, str]:
+  def config(self) -> SectionProxy:
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 
@@ -127,7 +128,7 @@ class Language(commands.Cog):
       await inter.send(self.babel(inter, 'set_failed_invalid_pattern'))
     else:
       if language != 'default':
-        language = self.bot.config.get(self.SCOPE, 'prefix', fallback='')+language
+        language = self.config.get('prefix', fallback='')+language
       if (
         isinstance(inter.author, disnake.User) or
         not inter.author.guild_permissions.administrator

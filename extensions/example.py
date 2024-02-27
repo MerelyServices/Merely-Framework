@@ -13,6 +13,7 @@ from .controlpanel import Toggleable, Selectable, Stringable
 if TYPE_CHECKING:
   from main import MerelyBot
   from babel import Resolvable
+  from configparser import SectionProxy
 
 
 class Example(commands.Cog):
@@ -20,7 +21,7 @@ class Example(commands.Cog):
   SCOPE = 'example'
 
   @property
-  def config(self) -> dict[str, str]:
+  def config(self) -> SectionProxy:
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 

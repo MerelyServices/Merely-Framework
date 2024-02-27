@@ -14,6 +14,7 @@ if TYPE_CHECKING:
   from main import MerelyBot
   from babel import Resolvable
   from config import Config
+  from configparser import SectionProxy
 
 # Models
 
@@ -121,7 +122,7 @@ class ControlPanel(commands.Cog):
   panels:dict[int, ControlPanelView]
 
   @property
-  def config(self) -> dict[str, str]:
+  def config(self) -> SectionProxy:
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 

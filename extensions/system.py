@@ -15,6 +15,7 @@ from disnake.ext import commands
 if TYPE_CHECKING:
   from main import MerelyBot
   from babel import Resolvable
+  from configparser import SectionProxy
 
 
 class Actions(int, Enum):
@@ -33,7 +34,7 @@ class System(commands.Cog):
   SPECIAL_MODULES = ['config', 'babel', 'utilities', 'auth']
 
   @property
-  def config(self) -> dict[str, str]:
+  def config(self) -> SectionProxy:
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 
@@ -80,7 +81,7 @@ class System(commands.Cog):
       )
       return
 
-    if not self.bot.config.getboolean('extensions', 'allow_reloading'):
+    if not bool(self.config.get('extensions', 'allow_reloading')):
       await inter.send(self.babel('reloading_disabled'), ephemeral=True)
       return
 

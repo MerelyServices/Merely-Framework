@@ -14,6 +14,7 @@ from disnake.ext import commands
 if TYPE_CHECKING:
   from main import MerelyBot
   from babel import Resolvable
+  from configparser import SectionProxy
 
 
 class Help(commands.Cog):
@@ -21,7 +22,7 @@ class Help(commands.Cog):
   SCOPE = 'help'
 
   @property
-  def config(self) -> dict[str, str]:
+  def config(self) -> SectionProxy:
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 
@@ -208,7 +209,7 @@ class Help(commands.Cog):
   def ac_command(self, _:disnake.CommandInteraction, command:str):
     """ find any commands that contain the provided string """
     matches = []
-    hide = self.bot.config.get(self.SCOPE, 'hidden_commands', fallback='').split(', ')
+    hide = self.config.get('hidden_commands', fallback='').split(', ')
     for cmd in self.bot.slash_commands:
       if (
         command in cmd.name and cmd.name not in matches and cmd.name not in hide

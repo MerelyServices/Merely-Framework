@@ -13,6 +13,7 @@ from disnake.ext import commands
 if TYPE_CHECKING:
   from main import MerelyBot
   from babel import Resolvable
+  from configparser import SectionProxy
 
 
 class Premium(commands.Cog):
@@ -20,7 +21,7 @@ class Premium(commands.Cog):
   SCOPE = 'premium'
 
   @property
-  def config(self) -> dict[str, str]:
+  def config(self) -> SectionProxy:
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 
@@ -55,7 +56,7 @@ class Premium(commands.Cog):
       raise Exception(
         "You must provide a reference to a guild and at least one role in order for premium to work!"
       )
-    if not bot.config.get('help', 'serverinv', fallback=''):
+    if not self.bot.config.get('help', 'serverinv', fallback=''):
       raise Exception(
         "You must have an invite to the support server with the supporter role in " +
         "config[help][serverinv]!"

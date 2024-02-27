@@ -15,6 +15,7 @@ from disnake.ext import commands
 if TYPE_CHECKING:
   from main import MerelyBot
   from babel import Resolvable
+  from configparser import SectionProxy
 
 
 class JanitorMode(int, Enum):
@@ -29,7 +30,7 @@ class Admin(commands.Cog):
   SCOPE = 'admin'
 
   @property
-  def config(self) -> dict[str, str]:
+  def config(self) -> SectionProxy:
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 
@@ -61,7 +62,7 @@ class Admin(commands.Cog):
   async def janitor_autodelete(self, message:disnake.Message):
     """janitor service, deletes messages after 30 seconds"""
     if f"{message.channel.id}_janitor" in self.config:
-      strict = self.bot.config.getint(self.SCOPE, f"{message.channel.id}_janitor")
+      strict = int(self.config.get(f"{message.channel.id}_janitor"))
       if self.check_delete(message, strict):
         await asyncio.sleep(30)
         await message.delete()

@@ -14,6 +14,7 @@ from disnake.ext import commands
 if TYPE_CHECKING:
   from main import MerelyBot
   from babel import Resolvable
+  from configparser import SectionProxy
 
 
 class Log(commands.Cog):
@@ -21,7 +22,7 @@ class Log(commands.Cog):
   SCOPE = 'log'
 
   @property
-  def config(self) -> dict[str, str]:
+  def config(self) -> SectionProxy:
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 

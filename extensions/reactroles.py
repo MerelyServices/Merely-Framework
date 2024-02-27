@@ -15,6 +15,7 @@ import re
 if TYPE_CHECKING:
   from main import MerelyBot
   from babel import Resolvable
+  from configparser import SectionProxy
 
 
 class ReactRoles(commands.Cog):
@@ -23,7 +24,7 @@ class ReactRoles(commands.Cog):
   drafts:dict[int, ReactRoleEditorView]
 
   @property
-  def config(self) -> dict[str, str]:
+  def config(self) -> SectionProxy:
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 
