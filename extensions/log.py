@@ -45,33 +45,31 @@ class Log(commands.Cog):
     if self.config['logchannel'].isdigit():
       self.logchannel = await self.bot.fetch_channel(int(self.config['logchannel']))
 
-  def truncate(self, string:str, maxlen:int = 80):
-    """ trim a long string and add ellipsis """
-    return string[:maxlen] + ('...' if len(string) > maxlen else '')
-
   def wrap(self, content:str, author:disnake.User, channel:disnake.abc.Messageable):
     """ Format log data consistently """
+    # Shorthand for truncate because it's used so many times
+    truncate = self.bot.utilities.truncate
     if isinstance(channel, disnake.TextChannel):
       return ' '.join((
-        f"[{self.truncate(channel.guild.name, 10)}#{self.truncate(channel.name, 20)}]",
-        f"{self.truncate(author.name, 10)}#{author.discriminator}: {self.truncate(content)}"
+        f"[{truncate(channel.guild.name, 10)}#{truncate(channel.name, 20)}]",
+        f"{truncate(author.name, 10)}#{author.discriminator}: {truncate(content)}"
       ))
     if isinstance(channel, disnake.DMChannel):
       if channel.recipient:
         return ' '.join((
-          f"[DM({self.truncate(channel.recipient.name, 10)}#{channel.recipient.discriminator})]",
-          f"{author.name}#{author.discriminator}: {self.truncate(content)}"
+          f"[DM({truncate(channel.recipient.name, 10)}#{channel.recipient.discriminator})]",
+          f"{author.name}#{author.discriminator}: {truncate(content)}"
         ))
       return (
-        f"[DM] {self.truncate(author.name, 10)}#{author.discriminator}: {self.truncate(content)}"
+        f"[DM] {truncate(author.name, 10)}#{author.discriminator}: {truncate(content)}"
       )
     if isinstance(channel, disnake.Thread):
       return ' '.join((
-        f"[Thread] {self.truncate(author.name, 10)}#{author.discriminator}:",
-        f"{self.truncate(content)}"
+        f"[Thread] {truncate(author.name, 10)}#{author.discriminator}:",
+        f"{truncate(content)}"
       ))
     return (
-      f"[Unknown] {self.truncate(author.name, 10)}#{author.discriminator}: {self.truncate(content)}"
+      f"[Unknown] {truncate(author.name, 10)}#{author.discriminator}: {truncate(content)}"
     )
 
   @commands.Cog.listener('on_command')
@@ -88,7 +86,8 @@ class Log(commands.Cog):
   @commands.Cog.listener('on_application_command')
   async def log_slash_command(self, inter:disnake.CommandInteraction):
     """ Record slash command calls """
-    options = [f"{opt.name}:{self.truncate(str(opt.value), 30)}" for opt in inter.data.options]
+    truncate = self.bot.utilities.truncate
+    options = [f"{opt.name}:{truncate(str(opt.value), 30)}" for opt in inter.data.options]
     logentry = self.wrap(
       f"/{inter.data.name} {' '.join(options)}",
       inter.author,

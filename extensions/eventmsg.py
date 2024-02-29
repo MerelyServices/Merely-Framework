@@ -464,7 +464,6 @@ class EventMsg(commands.Cog):
       allowed_mentions=[]
     )
 
-  #TODO: add slash command support to welcome/farewell
   @commands.guild_only()
   @commands.slash_command()
   @commands.default_member_permissions(administrator=True)

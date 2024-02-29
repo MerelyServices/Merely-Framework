@@ -10,3 +10,7 @@ class Utilities:
     fill = round(((value/maxval)*(width*2))) / 2
     half = fill % 1
     return int(fill) * '█' + ('▒' if half else '') + (width - int(fill) - (1 if half else 0))*'░'
+
+  def truncate(self, string:str, maxlen:int = 80) -> str:
+    """ Auto-trim strings and add ellipsis if needed """
+    return string[:maxlen] + ('...' if len(string) > maxlen else '')
