@@ -24,14 +24,20 @@ class Setting():
   buttonstyle:disnake.ButtonStyle
   pos:int
 
-  @property
-  def id(self) -> str:
-    return f'controlpanel_{self.scope}/{self.key}'
-
-  def __init__(self, scope:str, key:str):
+  def __init__(
+    self, scope:str, key:str, permissions:disnake.Permissions = disnake.Permissions.none()
+  ):
+    """
+      Creates a setting that can be changed or unset by the user in controlpanel
+    """
     self.scope = scope
     self.original_key = key
     self.key = key
+    self.permissions = permissions
+
+  @property
+  def id(self) -> str:
+    return f'controlpanel_{self.scope}/{self.key}'
 
   def label(self, target:Resolvable) -> str:
     return self.bot.babel(target, self.scope, 'label_' + self.original_key)
@@ -51,30 +57,53 @@ class Setting():
 
 
 class Toggleable(Setting):
+  def __init__(
+    self,
+    scope:str,
+    key:str,
+    default:bool | None = None,
+    permissions:disnake.Permissions = disnake.Permissions.none()
+  ):
+    """ Creates a toggleable setting. If default is None, it cannot be unset by the user. """
+    super().__init__(scope, key, permissions)
+    self.default = default
+
   def get(self, fallback=None):
     return self.bot.config.get(self.scope, self.key, fallback=fallback)
 
   def toggle(self):
-    value = self.get('None')
-    # Cycle between true, false, and unset
-    self.set({'True': 'False', 'False': None, 'None': 'True'}[value])
+    # Hides the unset state by assuming unset means self.default
+    converter = {
+      'True': None if self.default is False else 'False',
+      'False': None if self.default is True else 'True',
+      '_default': 'True' if self.default is None else str(not self.default)
+    }
+    value = converter.get(self.get('_default'), 'True')
+    self.set(value)
 
   def generate_components(self, target:Resolvable) -> list[disnake.ui.Item]:
     """ Toggle button for settings which can only be true or false """
-    value = self.get('*unset*')
+    value = self.get(str(self.default))
     b1 = disnake.ui.Button(
       style=self.buttonstyle,
       label=f'{self.label(target)}: {value}',
       custom_id=self.id,
-      emoji='⚪' if value == '*unset*' else ('🟢' if value == 'True' else '⭕'),
+      emoji='⚪' if value is None else ('🟢' if value == 'True' else '⭕'),
       row=self.pos
     )
     return [b1]
 
 
 class Selectable(Setting):
-  def __init__(self, scope:str, key:str, possible_values:list[str]):
-    super().__init__(scope, key)
+  def __init__(
+    self,
+    scope:str,
+    key:str,
+    possible_values:list[str],
+    permissions:disnake.Permissions = disnake.Permissions.none()
+  ):
+    """ Creates a selectable setting. *unset* will be added to possible_values. """
+    super().__init__(scope, key, permissions)
     self.possible_values = possible_values
 
   def generate_components(self, target:Resolvable) -> list[disnake.ui.Item]:
@@ -199,6 +228,9 @@ class ControlPanel(commands.Cog):
       rowcap:dict[int, int] = {}
 
       for setting in settings:
+        # Check member permissions
+        if not setting.permissions.is_subset(inter.channel.permissions_for(inter.author)):
+          continue
         buttonstyle = parent.section_styles.get(setting.scope, disnake.ButtonStyle.primary)
         if setting.scope not in sections:
           sections.append(setting.scope)
@@ -316,16 +348,14 @@ class ControlPanel(commands.Cog):
 
   # Commands
 
-  @commands.default_member_permissions(administrator=True)
   @commands.guild_only()
   @commands.slash_command()
   async def controlpanel(self, inter:disnake.CommandInteraction):
-    """ Opens the control panel so you can change bot settings for this guild """
-    self.bot.auth.admins(inter)
-    if len(self.settings) < 1:
+    """ Opens the control panel so you can change bot preferences for this guild and yourself """
+    panel = self.ControlPanelView(inter, self, self.settings)
+    if len(panel.settings) < 1:
       inter.response.send_message(self.babel(inter, 'no_settings'))
       return
-    panel = self.ControlPanelView(inter, self, self.settings)
     await inter.response.send_message(
       view=panel,
       ephemeral=True

@@ -42,8 +42,8 @@ class Language(commands.Cog):
     # ControlPanel integration
     langlist = list(self.bot.babel.langs.keys())
     return [
-      Selectable(self.SCOPE, '{u}', langlist),
-      Selectable(self.SCOPE, '{g}', langlist)
+      Selectable(self.SCOPE, '{u}', langlist, permissions=disnake.Permissions.none()),
+      Selectable(self.SCOPE, '{g}', langlist, permissions=disnake.Permissions(administrator=True))
     ]
 
   @commands.slash_command()
