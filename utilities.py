@@ -13,4 +13,5 @@ class Utilities:
 
   def truncate(self, string:str, maxlen:int = 80) -> str:
     """ Auto-trim strings and add ellipsis if needed """
-    return string[:maxlen] + ('...' if len(string) > maxlen else '')
+    n = maxlen - 3 if len(string) > maxlen else maxlen
+    return string[:n] + ('...' if len(string) > maxlen else '')

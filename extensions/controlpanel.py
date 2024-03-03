@@ -111,7 +111,7 @@ class Selectable(Setting):
     value = self.get('*unset*')
     select = disnake.ui.Select(
       custom_id=self.id,
-      placeholder=self.bot.utilities.truncate(f'{self.label(target)}: {value}'),
+      placeholder=self.bot.utilities.truncate(f'{self.label(target)}: {value}', 40),
       min_values=1,
       max_values=1,
       options=['*unset*'] + self.possible_values
@@ -124,7 +124,7 @@ class Stringable(Setting):
     value = self.get('*unset*')
     b1 = disnake.ui.Button(
       style=self.buttonstyle,
-      label=self.bot.utilities.truncate(f'{self.label(target)}: {value}'),
+      label=self.bot.utilities.truncate(f'{self.label(target)}: {value}', 40),
       custom_id=self.id,
       emoji='✏️',
       row=self.pos
@@ -197,7 +197,7 @@ class ControlPanel(commands.Cog):
         components=[disnake.ui.TextInput(
           label=setting.label(parent.msg),
           custom_id='value',
-          placeholder=setting.get(''),
+          placeholder=self.parent.parent.bot.utilities.truncate(setting.get(''), 100),
           value=setting.get(''),
           style=disnake.TextInputStyle.single_line,
           min_length=0
