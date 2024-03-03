@@ -123,8 +123,6 @@ class Config(ConfigParser):
     # Extensions section
     if 'extensions' not in self.sections():
       self.add_section('extensions')
-    if 'allow_reloading' not in self['extensions']:
-      self['extensions']['allow_reloading'] = 'True'
     self.save()
 
   def save(self):

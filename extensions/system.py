@@ -81,10 +81,6 @@ class System(commands.Cog):
       )
       return
 
-    if not bool(self.config.get('extensions', 'allow_reloading')):
-      await inter.send(self.babel('reloading_disabled'), ephemeral=True)
-      return
-
     module = module.lower()
     module_match = None
     if module in active_extensions or action == Actions.load:
