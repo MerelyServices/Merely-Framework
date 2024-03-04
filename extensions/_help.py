@@ -47,8 +47,6 @@ class Help(commands.Cog):
       self.config['helpurlvideoexamples'] = ''
     if 'serverinv' not in self.config:
       self.config['serverinv'] = ''
-    if 'feedbackchannel' not in self.config:
-      self.config['feedbackchannel'] = ''
     if 'highlight_sections' not in self.config:
       self.config['highlight_sections'] = '💡 learn'
       if 'learn_highlights' not in self.config:

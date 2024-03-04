@@ -24,23 +24,20 @@ class Setting():
   buttonstyle:disnake.ButtonStyle
   pos:int
 
-  def __init__(
-    self, scope:str, key:str, permissions:disnake.Permissions = disnake.Permissions.none()
-  ):
+  def __init__(self, scope:str, key:str, babel_key:str):
     """
       Creates a setting that can be changed or unset by the user in controlpanel
     """
     self.scope = scope
-    self.original_key = key
+    self.babel_key = babel_key
     self.key = key
-    self.permissions = permissions
 
   @property
   def id(self) -> str:
     return f'controlpanel_{self.scope}/{self.key}'
 
   def label(self, target:Resolvable) -> str:
-    return self.bot.babel(target, self.scope, 'label_' + self.original_key)
+    return self.bot.babel(target, self.scope, self.babel_key)
 
   def get(self, fallback=None):
     return self.bot.config.get(self.scope, self.key, fallback=fallback)
@@ -57,15 +54,9 @@ class Setting():
 
 
 class Toggleable(Setting):
-  def __init__(
-    self,
-    scope:str,
-    key:str,
-    default:bool | None = None,
-    permissions:disnake.Permissions = disnake.Permissions.none()
-  ):
+  def __init__(self, scope:str, key:str, babel_key:str, default:bool | None = None):
     """ Creates a toggleable setting. If default is None, it cannot be unset by the user. """
-    super().__init__(scope, key, permissions)
+    super().__init__(scope, key, babel_key)
     self.default = default
 
   def get(self, fallback=None):
@@ -94,16 +85,31 @@ class Toggleable(Setting):
     return [b1]
 
 
+class Listable(Toggleable):
+  delimiter = ','
+
+  def __init__(self, scope:str, key:str, babel_key:str, value:str):
+    """ Creates a listable setting, where true or false means the value's presence on the list. """
+    super().__init__(scope, key, babel_key, default=False)
+    self.value = value
+
+  def get(self, _):
+    return str(self.value in self.bot.config.get(self.scope, self.key, fallback=''))
+
+  def set(self, include:bool):
+    state = self.bot.config.get(self.scope, self.key, fallback='')
+    if include:
+      self.bot.config.set(self.scope, self.key, state + self.value + self.delimiter)
+    else:
+      newstate = state.replace(self.value + self.delimiter, '')
+      self.bot.config.set(self.scope, self.key, newstate)
+    self.bot.config.save()
+
+
 class Selectable(Setting):
-  def __init__(
-    self,
-    scope:str,
-    key:str,
-    possible_values:list[str],
-    permissions:disnake.Permissions = disnake.Permissions.none()
-  ):
+  def __init__(self, scope:str, key:str, babel_key:str, possible_values:list[str]):
     """ Creates a selectable setting. *unset* will be added to possible_values. """
-    super().__init__(scope, key, permissions)
+    super().__init__(scope, key, babel_key)
     self.possible_values = possible_values
 
   def generate_components(self, target:Resolvable) -> list[disnake.ui.Item]:
@@ -155,7 +161,6 @@ class ControlPanel(commands.Cog):
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
-    self.settings:list[Toggleable | Selectable | Stringable] = []
     self.section_styles:dict[str, disnake.ButtonStyle] = {}
     self.panels = {}
     # ensure config file has required data
@@ -165,19 +170,20 @@ class ControlPanel(commands.Cog):
   # Events
 
   @commands.Cog.listener('on_connect')
-  async def discover_settings(self):
+  async def discover_styles(self):
     for cog in self.bot.cogs:
-      attr = getattr(self.bot.cogs[cog], 'controlpanel_settings', None)
-      if callable(attr):
-        self.settings += attr()
-        if self.bot.verbose:
-          print(f"Loaded controlpanel settings from '{cog}'")
-      attr = getattr(self.bot.cogs[cog], 'controlpanel_theme', None)
-      if callable(attr):
-        data:tuple[str, disnake.ButtonStyle] = attr()
+      fn = getattr(self.bot.cogs[cog], 'controlpanel_theme', None)
+      if callable(fn):
+        data:tuple[str, disnake.ButtonStyle] = fn()
         self.section_styles[data[0]] = data[1]
-        if self.bot.verbose:
-          print(f"Loaded controlpanel theme from '{cog}'")
+
+  def discover_settings(self, inter:disnake.Interaction) -> list[Setting]:
+    out = []
+    for cog in self.bot.cogs:
+      fn = getattr(self.bot.cogs[cog], 'controlpanel_settings', None)
+      if callable(fn):
+        out += fn(inter)
+    return out
 
   @commands.Cog.listener('on_message_interaction')
   async def on_panel_interaction(self, inter:disnake.MessageInteraction):
@@ -214,23 +220,17 @@ class ControlPanel(commands.Cog):
     msg:disnake.Message | None
 
     def __init__(
-      self,
-      inter:disnake.CommandInteraction,
-      parent:ControlPanel,
-      settings:list[Toggleable | Selectable | Stringable]
+      self, inter:disnake.CommandInteraction, parent:ControlPanel, settings:list[Setting]
     ):
       super().__init__(timeout=300)
 
       self.msg = None
       self.parent = parent
-      self.settings:dict[str, Toggleable | Selectable | Stringable] = {}
+      self.settings:dict[str, Setting] = {}
       sections:list[str] = []
       rowcap:dict[int, int] = {}
 
       for setting in settings:
-        # Check member permissions
-        if not setting.permissions.is_subset(inter.channel.permissions_for(inter.author)):
-          continue
         buttonstyle = parent.section_styles.get(setting.scope, disnake.ButtonStyle.primary)
         if setting.scope not in sections:
           sections.append(setting.scope)
@@ -258,11 +258,6 @@ class ControlPanel(commands.Cog):
         # Dereference setting from the Cog so command-specific changes can be made
         localsetting = copy.copy(setting)
         localsetting.bot = self.parent.bot
-        localsetting.key = (
-          localsetting.key
-          .replace('{g}', str(inter.guild_id))
-          .replace('{u}', str(inter.user.id))
-        )
         localsetting.buttonstyle = buttonstyle
         localsetting.pos = pos
         items = localsetting.generate_components(inter)
@@ -287,7 +282,7 @@ class ControlPanel(commands.Cog):
       # Check for premium before continuing
       generickey = (
         setting.scope + '/' +
-        setting.original_key
+        setting.babel_key
       )
       if (
         generickey in self.parent.bot.config['premium']['restricted_config'].split()
@@ -302,8 +297,8 @@ class ControlPanel(commands.Cog):
       elif isinstance(inter, disnake.ModalInteraction):
         # Callback from string edit modal
         setting.set(inter.text_values['value'])
-      elif type(setting).__name__ == Toggleable.__name__:
-        # Toggle button was pressed
+      elif type(setting).__name__ in (Toggleable.__name__, Listable.__name__):
+        # Toggle-style button was pressed
         setting.toggle()
       elif type(setting).__name__ == Selectable.__name__:
         # Selection was made
@@ -348,11 +343,11 @@ class ControlPanel(commands.Cog):
 
   # Commands
 
-  @commands.guild_only()
   @commands.slash_command()
   async def controlpanel(self, inter:disnake.CommandInteraction):
     """ Opens the control panel so you can change bot preferences for this guild and yourself """
-    panel = self.ControlPanelView(inter, self, self.settings)
+    settings = self.discover_settings(inter)
+    panel = self.ControlPanelView(inter, self, settings)
     if len(panel.settings) < 1:
       inter.response.send_message(self.babel(inter, 'no_settings'))
       return

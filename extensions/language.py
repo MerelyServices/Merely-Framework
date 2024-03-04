@@ -11,7 +11,7 @@ import re
 import disnake
 from disnake.ext import commands
 
-from extensions.controlpanel import Toggleable, Selectable, Stringable
+from extensions.controlpanel import Selectable
 
 if TYPE_CHECKING:
   from main import MerelyBot
@@ -38,13 +38,15 @@ class Language(commands.Cog):
     if not bot.config.has_section(self.SCOPE):
       bot.config.add_section(self.SCOPE)
 
-  def controlpanel_settings(self) -> list[Toggleable | Selectable | Stringable]:
+  def controlpanel_settings(self, inter:disnake.Interaction):
     # ControlPanel integration
     langlist = list(self.bot.babel.langs.keys())
-    return [
-      Selectable(self.SCOPE, '{u}', langlist, permissions=disnake.Permissions.none()),
-      Selectable(self.SCOPE, '{g}', langlist, permissions=disnake.Permissions(administrator=True))
+    out = [
+      Selectable(self.SCOPE, str(inter.user.id), 'user_language_override', langlist)
     ]
+    if inter.guild and inter.permissions.administrator:
+      out.append(Selectable(self.SCOPE, str(inter.guild_id), 'guild_language_override', langlist))
+    return out
 
   @commands.slash_command()
   async def language(self, _:disnake.CommandInteraction):

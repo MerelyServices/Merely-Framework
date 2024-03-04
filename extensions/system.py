@@ -12,6 +12,8 @@ from typing import Optional, TYPE_CHECKING
 import disnake
 from disnake.ext import commands
 
+from extensions.controlpanel import Listable
+
 if TYPE_CHECKING:
   from main import MerelyBot
   from babel import Resolvable
@@ -30,7 +32,7 @@ class Actions(int, Enum):
 
 class System(commands.Cog):
   """commands involved in working with a discord bot"""
-  SCOPE = 'main' # for legacy reasons, this module has no local scope
+  SCOPE = 'system'
   SPECIAL_MODULES = ['config', 'babel', 'utilities', 'auth']
 
   @property
@@ -40,16 +42,136 @@ class System(commands.Cog):
 
   def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> list[str]:
     """ Shorthand for self.bot.babel(scope, key, **values) """
-    return self.bot.babel(target, self.SCOPE, key, **values)
+    # for legacy reasons, this module has no local scope
+    return self.bot.babel(target, 'main', key, **values)
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
 
-    # Restrict usage of these commands to one guild
+    # ensure config file has required data
+    if not bot.config.has_section(self.SCOPE):
+      bot.config.add_section(self.SCOPE)
+    if 'dm_subscription' not in self.config:
+      self.config['dm_subscription'] = ''
+    if 'subscription_history' not in self.config:
+      self.config['subscription_history'] = ''
+
+    # Restrict usage of these commands to specified guilds
     guilds = bot.config['auth']['botadmin_guilds']
     botadmin_guilds = [int(guild) for guild in guilds.split(' ')]
     for cmd in self.get_application_commands():
       cmd.guild_ids = botadmin_guilds
+
+  def controlpanel_settings(self, inter:disnake.Interaction):
+    # ControlPanel integration
+    return [
+      Listable(self.SCOPE, 'dm_subscription', 'dm_subscription', str(inter.user.id))
+    ]
+
+  def controlpanel_theme(self) -> tuple[str, disnake.ButtonStyle]:
+    # Controlpanel custom theme for buttons
+    return (self.SCOPE, disnake.ButtonStyle.red)
+
+  # Modals
+
+  class AnnounceModal(disnake.ui.Modal):
+    """ Type out and send an announcement """
+    def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> list[str]:
+      """ Shorthand for self.bot.babel(scope, key, **values) """
+      # this modal uses the new system scope
+      return self.parent.bot.babel(target, self.parent.SCOPE, key, **values)
+
+    def __init__(self, parent:System, inter:disnake.CommandInteraction):
+      self.parent = parent
+
+      super().__init__(
+        title=self.babel(inter, 'announce_title'),
+        components=[
+          disnake.ui.TextInput(
+            label=self.babel(inter, 'announce_title_of'),
+            custom_id='title',
+            style=disnake.TextInputStyle.single_line,
+            min_length=1
+          ),
+          disnake.ui.TextInput(
+            label=self.babel(inter, 'announce_content'),
+            custom_id='content',
+            style=disnake.TextInputStyle.long,
+            min_length=1
+          ),
+          disnake.ui.TextInput(
+            label=self.babel(inter, 'announce_url'),
+            custom_id='url',
+            style=disnake.TextInputStyle.single_line,
+            min_length=0,
+            required=False
+          ),
+          disnake.ui.TextInput(
+            label=self.babel(inter, 'announce_image'),
+            custom_id='image_url',
+            style=disnake.TextInputStyle.single_line,
+            min_length=0,
+            required=False
+          )
+        ],
+        timeout=300
+      )
+
+    async def callback(self, inter:disnake.ModalInteraction):
+      embed = disnake.Embed(
+        title=inter.text_values['title'],
+        description=inter.text_values['content'],
+        url=inter.text_values['url'],
+        color=int(self.parent.bot.config['main']['themecolor'], 16)
+      )
+      embed.set_image(inter.text_values['image_url'])
+      embed.set_footer(text=self.babel(inter, 'announce_unsubscribe_info'))
+
+      await inter.response.defer(ephemeral=True)
+      for uid in self.parent.config['dm_subscription'].split(','):
+        if uid == '':
+          continue
+        try:
+          user = await self.parent.bot.fetch_user(int(uid))
+        except disnake.NotFound:
+          continue
+        try:
+          await user.send(embed=embed)
+        except disnake.Forbidden:
+          continue
+      await inter.followup.send("Your announcement has been sent", ephemeral=True)
+
+  # Events
+
+  def subscribe(self, user:disnake.User) -> int:
+    # Subscribes users if they have never been subscribed before
+    if (
+      user
+      and f'{user.id},' not in self.config['subscription_history']
+      and f'{user.id},' not in self.config['dm_subscription']
+    ):
+      self.config['dm_subscription'] += f'{user.id},'
+      self.config['subscription_history'] += f'{user.id},'
+      return 1
+    return 0
+
+  @commands.Cog.listener('on_ready')
+  async def search_and_subscribe(self):
+    print("Searching for server owners...")
+    count = 0
+    for guild in self.bot.guilds:
+      if guild.owner_id:
+        member = await guild.fetch_member(guild.owner_id)
+        count += self.subscribe(member)
+    print("Finished searching for server owners.", count, "added.")
+    self.bot.config.save()
+
+  @commands.Cog.listener('on_guild_join')
+  async def autosubscribe(self, guild:disnake.Guild):
+    self.subscribe(guild.owner)
+    self.bot.config.save()
+
+  # Commands
 
   @commands.slash_command()
   @commands.default_member_permissions(administrator=True)
@@ -84,29 +206,18 @@ class System(commands.Cog):
     module = module.lower()
     module_match = None
     if module in active_extensions or action == Actions.load:
-      if module == 'config':
-        self.bot.config.reload()
-        await inter.send(
-          self.babel(inter, 'extension_reload_success', extension=module),
-          ephemeral=True
-        )
-        return
-      elif module == 'babel':
-        self.bot.babel.load()
-        await inter.send(
-          self.babel(inter, 'extension_reload_success', extension=module),
-          ephemeral=True
-        )
-        return
-      elif module == 'utilities':
-        self.bot.utilities = importlib.import_module('utilities', 'main').Utilities()
-        await inter.send(
-          self.babel(inter, 'extension_reload_success', extension=module),
-          ephemeral=True
-        )
-        return
-      elif module == 'auth':
-        self.bot.auth = importlib.import_module('auth', 'main').Auth(self.bot)
+      if module in self.SPECIAL_MODULES:
+        if module == 'config':
+          self.bot.config.reload()
+        elif module == 'babel':
+          self.bot.babel.load()
+        elif module == 'utilities':
+          self.bot.utilities = importlib.import_module('utilities', 'main').Utilities()
+        elif module == 'auth':
+          self.bot.auth = importlib.import_module('auth', 'main').Auth(self.bot)
+        else:
+          raise AssertionError(f"Unhanlded special module {module}!")
+
         await inter.send(
           self.babel(inter, 'extension_reload_success', extension=module),
           ephemeral=True
@@ -206,12 +317,15 @@ class System(commands.Cog):
       [e for e in self.SPECIAL_MODULES if search in e]
     )
 
+  @commands.guild_only()
+  @commands.slash_command()
+  async def announce(self, inter:disnake.CommandInteraction):
+    """ Sends an announcement to server owners and other subscribed users """
+    await inter.response.send_modal(self.AnnounceModal(self, inter))
+
   @commands.slash_command()
   async def delete_message(
-    self,
-    inter:disnake.CommandInteraction,
-    channel_id:str,
-    message_id:str
+    self, inter:disnake.CommandInteraction, channel_id:str, message_id:str
   ):
     """ Deletes a message """
     self.bot.auth.superusers(inter)

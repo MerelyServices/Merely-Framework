@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import disnake
 from disnake.ext import commands
 
-from .controlpanel import Toggleable, Selectable, Stringable
+from .controlpanel import Toggleable, Listable, Selectable, Stringable
 
 if TYPE_CHECKING:
   from main import MerelyBot
@@ -35,12 +35,13 @@ class Example(commands.Cog):
     if not bot.config.has_section(self.SCOPE):
       bot.config.add_section(self.SCOPE)
 
-  def controlpanel_settings(self) -> list[Toggleable | Selectable | Stringable]:
+  def controlpanel_settings(self, inter:disnake.Interaction):
     # ControlPanel integration - use this when you want to allow users / guilds to change preferences
     return [
-      Toggleable("Example toggleable", self.bot.config, self.SCOPE, 'toggle'),
-      Selectable("Example selectable", self.bot.config, self.SCOPE, 'select', ['a', 'b', 'c']),
-      Stringable("Example stringable", self.bot.config, self.SCOPE, 'string')
+      Toggleable(self.SCOPE, 'toggle', 'toggle', False),
+      Listable(self.SCOPE, 'list', 'list', str(inter.user.id)),
+      Selectable(self.SCOPE, 'select', 'select', ['a', 'b', 'c']),
+      Stringable(self.SCOPE, 'string', 'string')
     ]
 
   def controlpanel_theme(self) -> tuple[str, disnake.ButtonStyle]:
