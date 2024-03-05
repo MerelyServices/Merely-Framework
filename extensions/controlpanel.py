@@ -288,6 +288,7 @@ class ControlPanel(commands.Cog):
         if not await self.parent.bot.cogs['Premium'].check_premium(inter.user):
           embed = self.parent.bot.cogs['Premium'].error_embed(inter)
           await inter.response.send_message(embed=embed, ephemeral=True)
+          return
 
       if reset:
         setting.set(None)
