@@ -37,6 +37,7 @@ class ReactRoles(commands.Cog):
     # ensure config file has required data
     if not bot.config.has_section(self.SCOPE):
       bot.config.add_section(self.SCOPE)
+
     self.watching:dict[int, disnake.Message] = {}
     self.drafts = {}
 

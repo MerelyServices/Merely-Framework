@@ -276,9 +276,6 @@ class ControlPanel(commands.Cog):
       else:
         return
 
-      # Verify an admin pressed the button
-      self.parent.bot.auth.admins(inter)
-
       # Check for premium before continuing
       generickey = (
         setting.scope + '/' +
