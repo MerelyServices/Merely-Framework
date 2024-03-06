@@ -173,8 +173,8 @@ class System(commands.Cog):
 
   # Commands
 
-  @commands.slash_command()
   @commands.default_member_permissions(administrator=True)
+  @commands.slash_command()
   async def module(
     self,
     inter:disnake.CommandInteraction,
@@ -318,11 +318,13 @@ class System(commands.Cog):
     )
 
   @commands.guild_only()
+  @commands.default_member_permissions(administrator=True)
   @commands.slash_command()
   async def announce(self, inter:disnake.CommandInteraction):
     """ Sends an announcement to server owners and other subscribed users """
     await inter.response.send_modal(self.AnnounceModal(self, inter))
 
+  @commands.default_member_permissions(administrator=True)
   @commands.slash_command()
   async def delete_message(
     self, inter:disnake.CommandInteraction, channel_id:str, message_id:str
@@ -348,6 +350,7 @@ class System(commands.Cog):
 
     await inter.send("Deleted message successfully!")
 
+  @commands.default_member_permissions(administrator=True)
   @commands.slash_command()
   @commands.cooldown(1, 1)
   async def die(self, inter:disnake.CommandInteraction, saveconfig:bool = False):
