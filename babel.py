@@ -263,7 +263,7 @@ class Babel():
 
     return ''.join(items)
 
-  def list_scope_key_pairs(self, lang) -> set[str]:
+  def scope_key_pairs(self, lang) -> set[str]:
     """ Breaks down the structure of a babel file for evaluation """
     # Check cache first
     if lang in self.scope_key_cache:
@@ -287,7 +287,7 @@ class Babel():
 
   def calculate_coverage(self, lang:str) -> int:
     """ Compares the number of strings between a language and the baselang """
-    langvals = self.list_scope_key_pairs(lang)
-    basevals = self.list_scope_key_pairs(self.defaultlang)
+    langvals = self.scope_key_pairs(lang)
+    basevals = self.scope_key_pairs(self.defaultlang)
 
     return int((len(langvals) / max(len(basevals), 1)) * 100)

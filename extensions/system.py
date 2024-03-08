@@ -43,6 +43,7 @@ class System(commands.Cog):
   def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> list[str]:
     """ Shorthand for self.bot.babel(scope, key, **values) """
     # for legacy reasons, this module has no local scope
+    #BABEL: -main
     return self.bot.babel(target, 'main', key, **values)
 
   def __init__(self, bot:MerelyBot):

@@ -104,6 +104,8 @@ class Language(commands.Cog):
     for lang, origin in zip(langs, origins):
       if origin.startswith('inherit'):
         origin = 'inherit'
+      #BABEL: -origin_reason_,origin_reason_author,origin_reason_guild,origin_reason_default
+      #BABEL: origin_reason_author_locale,origin_reason_guild_locale,origin_reason_inherit
       embeds.append(disnake.Embed(
         title=f"{self.bot.babel.langs[lang].get('meta', 'name')} ({lang})",
         description=self.babel(inter, 'origin_reason_'+origin, backup=backup),
@@ -148,6 +150,7 @@ class Language(commands.Cog):
           self.config[str(inter.guild.id)] = language
       self.bot.config.save()
       if language == 'default' or language in self.bot.babel.langs.keys():
+        #BABEL: set_success,unset_success
         await inter.send(self.babel(
           inter,
           'unset_success' if language == 'default' else 'set_success',

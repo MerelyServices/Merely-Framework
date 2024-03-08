@@ -91,6 +91,7 @@ class ReactRoles(commands.Cog):
     else:
       try:
         if len(give)+len(take) > 0 and dm:
+          #BABEL: role_change
           await member.send(self.babel(
             member,
             'role_change',
