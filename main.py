@@ -27,21 +27,32 @@ class MerelyBot(commands.AutoShardedBot):
   utilities:Utilities = Utilities()
   auth:Auth
   verbose = False
+  quiet = False
+  load_all_extensions = False
   member_cache = True
   overlay = False
 
   def __init__(self, **kwargs):
+    if 'verbose' in kwargs:
+      self.verbose = kwargs['verbose']
+    if 'loadall' in kwargs:
+      self.load_all_extensions = kwargs['loadall']
+    if 'quiet' in kwargs:
+      self.quiet = kwargs['quiet']
+
     if os.path.exists('overlay'):
       overlayconfpath = os.path.join('overlay', 'config')
       overlaybabelpath = os.path.join('overlay', 'babel')
       self.overlay = True
       if os.path.exists(overlayconfpath):
-        print("Using 'overlay/config/'")
+        if not self.quiet:
+          print("Using 'overlay/config/'")
         self.config = Config(overlayconfpath)
       else:
         self.config = Config()
       if os.path.exists(overlaybabelpath):
-        print("Using 'overlay/babel/'")
+        if not self.quiet:
+          print("Using 'overlay/babel/'")
         self.babel = Babel(self.config, overlaybabelpath)
     else:
       self.config = Config()
@@ -49,24 +60,23 @@ class MerelyBot(commands.AutoShardedBot):
 
     self.auth = Auth(self)
 
-    print(f"""
-    merely framework{
-      ' beta' if self.config.getboolean('main', 'beta') else ''
-    } v{self.config['main']['ver']}
-    currently named {self.config['main']['botname']} by config, uses {
-      self.config['main']['prefix_short']
-    }
-    created by Yiays. https://github.com/yiays/merelybot
-    """)
+    if not self.quiet:
+      print(f"""
+      merely framework{
+        ' beta' if self.config.getboolean('main', 'beta') else ''
+      } v{self.config['main']['ver']}
+      currently named {self.config['main']['botname']} by config, uses {
+        self.config['main']['prefix_short']
+      }
+      created by Yiays. https://github.com/yiays/merelybot
+      """)
 
     #stdout to file
     if not os.path.exists('logs'):
       os.makedirs('logs')
-    sys.stdout = Logger()
+    if not self.quiet:
+      sys.stdout = Logger()
     sys.stderr = Logger(err=True)
-
-    if 'verbose' in kwargs:
-      self.verbose = kwargs['verbose']
 
     # set intents
     intents = disnake.Intents.none()
@@ -134,7 +144,8 @@ class MerelyBot(commands.AutoShardedBot):
     extoverlaysearch = os.path.join('overlay', 'extensions', '*.py')
     overlay_extensions = []
     if os.path.exists(os.path.join('overlay', 'extensions')):
-      print("Using 'overlay/extensions/'")
+      if not self.quiet:
+        print("Using 'overlay/extensions/'")
       overlay_extensions = glob(extoverlaysearch)
     for extpath in sorted(
       list(set(overlay_extensions + glob(extsearch))),
@@ -145,21 +156,24 @@ class MerelyBot(commands.AutoShardedBot):
       extfile = re.sub(r'^(extensions[/\\]|overlay[/\\]extensions[/\\])', '', extpath)[:-3]
       extname = extfile.strip('_')
       if extname in self.config['extensions'].keys():
-        if self.config.getboolean('extensions', extname):
+        if self.config.getboolean('extensions', extname) or self.load_all_extensions:
           try:
             self.load_extension(
               'overlay.extensions.'+extfile if extpath.startswith('overlay')
               else 'extensions.'+extfile
             )
-            print(f"{extname} loaded." + (' (overlay)' if extpath.startswith('overlay') else ''))
+            if not self.quiet:
+              print(f"{extname} loaded." + (' (overlay)' if extpath.startswith('overlay') else ''))
           except Exception as e:
             print(f"Failed to load extension '{extpath[:-3]}':\n{e}")
         else:
           if self.verbose:
-            print(f"{extname} is disabled, skipping.")
+            if not self.quiet:
+              print(f"{extname} is disabled, skipping.")
       else:
         self.config['extensions'][extname] = 'False'
-        print(f"discovered {extname}, disabled by default, you can enable it in the config.")
+        if not self.quiet:
+          print(f"discovered {extname}, disabled by default, you can enable it in the config.")
     self.config.save()
 
 
@@ -193,11 +207,18 @@ if __name__ == '__main__':
   if set(['-h','--help']) & set(sys.argv):
     print("""
     merelybot commands
-    -h,--help		shows this help screen
+    -h,--help		    shows this help screen
     -v,--verbose		enables verbose logging
+    -q,--quiet      disables general logging
+    --loadall       loads all extensions for testing
     """)
   else:
-    bot = MerelyBot(verbose=bool(set(['-v','--verbose']) & set(sys.argv)))
+    kwargs = {
+      'verbose': bool(set(['-v','--verbose']) & set(sys.argv)),
+      'quiet': bool(set(['-q','--quiet']) & set(sys.argv)),
+      'loadall': bool(set(['--loadall']) & set(sys.argv))
+    }
+    bot = MerelyBot(**kwargs)
 
     token = bot.config.get('main', 'token', fallback=None)
     if token:
@@ -207,5 +228,4 @@ if __name__ == '__main__':
         "Invalid token!" +
         "\nGet a token from https://discordapp.com/developers/applications/ and put it in config.ini"
       )
-
-print("exited.")
+  print("exited.")
