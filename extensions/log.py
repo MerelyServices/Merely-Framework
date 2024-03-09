@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-import traceback
+import traceback, asyncio
 from typing import Union, TYPE_CHECKING
 import disnake
 from disnake.ext import commands
@@ -43,6 +43,7 @@ class Log(commands.Cog):
   async def get_logchannel(self):
     """ Connect to the logging channel """
     if self.config['logchannel'].isdigit():
+      await asyncio.sleep(10) # Wait to reduce flood of requests on ready
       self.logchannel = await self.bot.fetch_channel(int(self.config['logchannel']))
 
   def wrap(self, content:str, author:disnake.User, channel:disnake.abc.Messageable):

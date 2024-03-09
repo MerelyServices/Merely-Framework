@@ -157,6 +157,7 @@ class System(commands.Cog):
 
   @commands.Cog.listener('on_ready')
   async def search_and_subscribe(self):
+    await asyncio.sleep(15) # Wait to reduce flood of commands on connect
     print("Searching for server owners...")
     count = 0
     for guild in self.bot.guilds:
@@ -284,7 +285,7 @@ class System(commands.Cog):
           for listener in self.bot.cogs[cogmodules[module]].get_listeners():
             if listener[0] == 'on_connect':
               asyncio.ensure_future(listener[1]())
-            elif listener[0] == 'on_ready':
+            elif listener[0] == 'on_ready' and self.bot.is_ready():
               asyncio.ensure_future(listener[1]())
       else:
         await inter.send(self.babel(inter, 'extension_file_missing'), ephemeral=True)
