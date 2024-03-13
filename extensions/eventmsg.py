@@ -360,14 +360,11 @@ class EventMsg(commands.Cog):
 
     async def update(self, inter:disnake.ModalInteraction):
       """ Refresh the view, reflecting any changes made to variables """
-      state = self.parent.babel(
-        inter,
-        'event_controlpanel',
-        message=self.message,
-        channel=self.channel.mention,
-        xp=self.xp,
-        usage=self.usage
-      )
+      state = self.parent.babel(inter, 'event_controlpanel',
+                                message=self.message,
+                                channel=self.channel.mention,
+                                xp=self.xp,
+                                usage=self.usage)
 
       submitbtn:disnake.Button = [
         child for child in self.children if child.custom_id == f'{self.eid}_submit'
@@ -449,14 +446,11 @@ class EventMsg(commands.Cog):
     else:
       raise AssertionError(f"Unhandled action '{action.name}'!")
 
-    state = self.babel(
-      inter,
-      'event_controlpanel',
-      message=message,
-      channel=channel.mention,
-      xp=xp,
-      usage=usage
-    )
+    state = self.babel(inter, 'event_controlpanel',
+                       message=message,
+                       channel=channel.mention,
+                       xp=xp,
+                       usage=usage)
     await inter.response.send_message(
       state,
       view=self.EventEditView(self, inter, event, action, message, xp, channel, usage),
@@ -476,13 +470,9 @@ class EventMsg(commands.Cog):
     if f'{inter.guild.id}_welcome' in self.config:
       data = self.config[f"{inter.guild.id}_welcome"].split(', ')
       await inter.response.send_message(
-          self.bot.babel(
-            inter,
-            'greeter',
-            'greeting_preview',
-            channel=inter.guild.get_channel(int(data[0])).mention,
-            message=', '.join(data[1:]).format('@USER', inter.guild.name)
-          ),
+          self.bot.babel(inter, 'greeter', 'greeting_preview',
+                         channel=inter.guild.get_channel(int(data[0])).mention,
+                         message=', '.join(data[1:]).format('@USER', inter.guild.name)),
           ephemeral=True
         )
     else:
@@ -535,13 +525,9 @@ class EventMsg(commands.Cog):
     if f'{inter.guild.id}_farewell' in self.config:
       data = self.config[f"{inter.guild.id}_farewell"].split(', ')
       await inter.response.send_message(
-        self.bot.babel(
-          inter,
-          'greeter',
-          'greeting_preview',
-          channel=inter.guild.get_channel(int(data[0])).mention,
-          message=', '.join(data[1:]).format('USER#1234', inter.guild.name)
-        ),
+        self.bot.babel(inter, 'greeter', 'greeting_preview',
+                       channel=inter.guild.get_channel(int(data[0])).mention,
+                       message=', '.join(data[1:]).format('USER#1234', inter.guild.name)),
         ephemeral=True
       )
     else:

@@ -175,11 +175,9 @@ class Help(commands.Cog):
       # show the generic help embed with a variety of featured commands
       embed = disnake.Embed(
         title=self.babel(ctx, 'title'),
-        description=self.babel(
-          ctx, 'introduction',
-          videoexamples=bool(self.config['helpurlvideoexamples']),
-          serverinv=self.config['serverinv']
-        ),
+        description=self.babel(ctx, 'introduction',
+                               videoexamples=bool(self.config['helpurlvideoexamples']),
+                               serverinv=self.config['serverinv']),
         color=int(self.bot.config['main']['themecolor'], 16),
         url=self.config['helpurl'] if self.config['helpurl'] else '')
 
@@ -239,12 +237,9 @@ class Help(commands.Cog):
 
     embed.add_field(
       name=self.babel(inter, 'about_field1_title'),
-      value=self.babel(
-        inter,
-        'about_field1_value',
-        cmds=len(self.bot.application_commands),
-        guilds=len(self.bot.guilds)
-      ),
+      value=self.babel(inter, 'about_field1_value',
+                       cmds=len(self.bot.application_commands),
+                       guilds=len(self.bot.guilds)),
       inline=False
     )
     embed.add_field(
@@ -254,12 +249,9 @@ class Help(commands.Cog):
     )
     embed.add_field(
       name=self.babel(inter, 'about_field3_title'),
-      value=self.babel(
-        inter,
-        'about_field3_value',
-        videoexamples=bool(self.config['helpurlvideoexamples']),
-        serverinv=self.config['serverinv']
-      ),
+      value=self.babel(inter, 'about_field3_value',
+                       videoexamples=bool(self.config['helpurlvideoexamples']),
+                       serverinv=self.config['serverinv']),
       inline=False
     )
     embed.add_field(
@@ -269,15 +261,11 @@ class Help(commands.Cog):
     )
     embed.add_field(
       name=self.babel(inter, 'about_field5_title'),
-      value=self.babel(
-        inter,
-        'about_field5_value',
-        invite=(
-          'https://discord.com/oauth2/authorize?client_id=' +
-          str(self.bot.user.id) +
-          '&scope=bot%20applications.commands&permissions=0'
-        )
-      ),
+      value=self.babel(inter, 'about_field5_value', invite=(
+        'https://discord.com/oauth2/authorize?client_id=' +
+        str(self.bot.user.id) +
+        '&scope=bot%20applications.commands&permissions=0'
+      )),
       inline=False
     )
 

@@ -112,8 +112,10 @@ class LivePoll():
 
     timelist = self.parent.bot.babel.string_list(guild, times)
     if timelist == '':
+      #BABEL: near_past,near_future
       return self.parent.babel(guild, 'near_past' if self.counter < 0 else 'near_future')
     else:
+      #BABEL: far_past,far_future
       return self.parent.babel(
         guild,
         'far_past' if self.counter < 0 else 'far_future',
@@ -196,13 +198,10 @@ class LivePoll():
     else:
       winnerstring = self.parent.bot.babel.string_list(self.message.guild, winners)
       await self.message.channel.send(
-        self.parent.babel(
-          self.message.guild,
-          'multiple_winners',
-          title=self.title,
-          num=len(winners),
-          winners=winnerstring
-        ),
+        self.parent.babel(self.message.guild, 'multiple_winners',
+                          title=self.title,
+                          num=len(winners),
+                          winners=winnerstring),
         reference=self.message
       )
     await self.redraw()

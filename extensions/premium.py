@@ -140,6 +140,7 @@ class Premium(commands.Cog):
     )
     embed.set_thumbnail(url=self.config['icon'])
 
+    #BABEL: feature_#,feature_#_desc
     i = 1
     while f'feature_{i}' in self.bot.babel.langs[self.bot.babel.baselang][self.SCOPE]:
       if self.babel(inter, f'feature_{i}') == '':
