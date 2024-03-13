@@ -82,8 +82,9 @@ class System(commands.Cog):
       # this modal uses the new system scope
       return self.parent.bot.babel(target, self.parent.SCOPE, key, **values)
 
-    def __init__(self, parent:System, inter:disnake.CommandInteraction):
+    def __init__(self, parent:System, inter:disnake.CommandInteraction, testing:bool):
       self.parent = parent
+      self.testing = testing
 
       super().__init__(
         title=self.babel(inter, 'announce_title'),
@@ -129,7 +130,15 @@ class System(commands.Cog):
       embed.set_footer(text=self.babel(inter, 'announce_unsubscribe_info'))
 
       await inter.response.defer(ephemeral=True)
-      for uid in self.parent.config['dm_subscription'].split(','):
+      subscribed = self.parent.config['dm_subscription'].split(',')
+      if self.testing:
+        await inter.followup.send(
+          f"Announcement preview; (will be sent to {len(subscribed)} users)",
+          embed=embed,
+          ephemeral=True
+        )
+        return
+      for uid in subscribed:
         if uid == '':
           continue
         try:
@@ -321,9 +330,9 @@ class System(commands.Cog):
   @commands.guild_only()
   @commands.default_member_permissions(administrator=True)
   @commands.slash_command()
-  async def announce(self, inter:disnake.CommandInteraction):
+  async def announce(self, inter:disnake.CommandInteraction, testing:bool = False):
     """ Sends an announcement to server owners and other subscribed users """
-    await inter.response.send_modal(self.AnnounceModal(self, inter))
+    await inter.response.send_modal(self.AnnounceModal(self, inter, testing))
 
   @commands.default_member_permissions(administrator=True)
   @commands.slash_command()
