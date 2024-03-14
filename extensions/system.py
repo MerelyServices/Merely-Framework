@@ -139,6 +139,8 @@ class System(commands.Cog):
         )
         return
       for uid in subscribed:
+        await asyncio.sleep(1)
+        #TODO: make this command resilient
         if uid == '':
           continue
         try:
@@ -148,6 +150,11 @@ class System(commands.Cog):
         try:
           await user.send(embed=embed)
         except disnake.Forbidden:
+          continue
+        except disnake.DiscordServerError:
+          print("WARN: Discord disconnected while sending announcement!")
+          await asyncio.sleep(5)
+          await user.send(embed=embed)
           continue
       await inter.followup.send("Your announcement has been sent", ephemeral=True)
 
