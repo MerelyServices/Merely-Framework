@@ -116,7 +116,7 @@ class System(commands.Cog):
             required=False
           )
         ],
-        timeout=300
+        timeout=600
       )
 
     async def callback(self, inter:disnake.ModalInteraction):
