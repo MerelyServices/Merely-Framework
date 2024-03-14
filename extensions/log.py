@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-import traceback
+import traceback, asyncio
 from typing import Union, TYPE_CHECKING
 import disnake
 from disnake.ext import commands
@@ -43,33 +43,36 @@ class Log(commands.Cog):
   async def get_logchannel(self):
     """ Connect to the logging channel """
     if self.config['logchannel'].isdigit():
+      await asyncio.sleep(10) # Wait to reduce flood of requests on ready
       self.logchannel = await self.bot.fetch_channel(int(self.config['logchannel']))
 
-  def wrap(self, content:str, author:disnake.User, channel:disnake.abc.Messageable):
+  def wrap(self, content:str, author:disnake.User, channel:disnake.abc.Messageable, maxlen:int = 80):
     """ Format log data consistently """
     # Shorthand for truncate because it's used so many times
     truncate = self.bot.utilities.truncate
     if isinstance(channel, disnake.TextChannel):
       return ' '.join((
         f"[{truncate(channel.guild.name, 10)}#{truncate(channel.name, 20)}]",
-        f"{truncate(author.name, 10)}#{author.discriminator}: {truncate(content)}"
+        f"{truncate(author.name, 10)}#{author.discriminator}: {truncate(content, maxlen)}"
       ))
     if isinstance(channel, disnake.DMChannel):
       if channel.recipient:
         return ' '.join((
           f"[DM({truncate(channel.recipient.name, 10)}#{channel.recipient.discriminator})]",
-          f"{author.name}#{author.discriminator}: {truncate(content)}"
+          f"{author.name}#{author.discriminator}: {truncate(content, maxlen)}"
         ))
       return (
-        f"[DM] {truncate(author.name, 10)}#{author.discriminator}: {truncate(content)}"
+        f"[DM] {truncate(author.name, 10)}#{author.discriminator}: {truncate(content, maxlen)}"
       )
     if isinstance(channel, disnake.Thread):
+      channelname = f"{truncate(channel.guild.name, 10)}#{truncate(channel.parent.name, 20)}"
       return ' '.join((
-        f"[Thread] {truncate(author.name, 10)}#{author.discriminator}:",
-        f"{truncate(content)}"
+        f"[{channelname}/{truncate(channel.name, 20)}]",
+        f"{truncate(author.name, 10)}#{author.discriminator}:",
+        f"{truncate(content, maxlen)}"
       ))
     return (
-      f"[Unknown] {truncate(author.name, 10)}#{author.discriminator}: {truncate(content)}"
+      f"[Unknown] {truncate(author.name, 10)}#{author.discriminator}: {truncate(content, maxlen)}"
     )
 
   @commands.Cog.listener('on_command')

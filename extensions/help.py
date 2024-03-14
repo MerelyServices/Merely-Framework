@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-import re
+import re, asyncio
 from typing import Union, Optional, TYPE_CHECKING
 import disnake
 from disnake.ext import commands
@@ -76,6 +76,7 @@ class Help(commands.Cog):
         message = self.bot.config['main']['prefix_short']+'help'
     status = disnake.Status.online if status is None else status
     activity = disnake.Game(message)
+    await asyncio.sleep(5) # Add delay to reduce flood of requests on connect
     await self.bot.change_presence(status=status, activity=activity)
 
   def find_command(self, command:str) -> Union[commands.Command, commands.InvokableSlashCommand]:

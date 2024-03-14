@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING
 import disnake
 from disnake.ext import commands
@@ -74,7 +75,11 @@ class Premium(commands.Cog):
   @commands.Cog.listener('on_connect')
   async def cache_role(self):
     """ Fetches guild and member list on connect to decrease first response time """
+    await asyncio.sleep(5)
     self.premiumguild = self.bot.get_guild(int(self.config['premium_role_guild']))
+    if not self.premiumguild:
+      print("Note: had to fetch premium guild as it has not been loaded yet")
+      self.premiumguild = await self.bot.fetch_guild(int(self.config['premium_role_guild']))
     targets = self.config['premium_roles'].split(' ')
     for role in await self.premiumguild.fetch_roles():
       if str(role.id) in targets:
