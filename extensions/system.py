@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from enum import Enum
 from glob import glob
-import asyncio, os, re, importlib
+import asyncio, os, re, importlib, base64
 from typing import Optional, TYPE_CHECKING
 import disnake
 from disnake.ext import commands
@@ -66,12 +66,24 @@ class System(commands.Cog):
   def controlpanel_settings(self, inter:disnake.Interaction):
     # ControlPanel integration
     return [
-      Listable(self.SCOPE, 'dm_subscription', 'dm_subscription', str(inter.user.id))
+      Listable(self.SCOPE, 'dm_subscription', 'dm_subscription', self.encode_uid(inter.user.id))
     ]
 
   def controlpanel_theme(self) -> tuple[str, disnake.ButtonStyle]:
     # Controlpanel custom theme for buttons
     return (self.SCOPE, disnake.ButtonStyle.red)
+
+  # Common functions
+
+  def encode_uid(self, uid:int) -> str:
+    return base64.b64encode(uid.to_bytes(8, 'big')).decode('ascii')
+
+  def decode_uid(self, uid:str) -> int | None:
+    try:
+      return int.from_bytes(base64.b64decode(uid), 'big')
+    except Exception:
+      print(f"WARN: {uid} is not a valid encoded UID.")
+      return None
 
   # Modals
 
@@ -82,9 +94,8 @@ class System(commands.Cog):
       # this modal uses the new system scope
       return self.parent.bot.babel(target, self.parent.SCOPE, key, **values)
 
-    def __init__(self, parent:System, inter:disnake.CommandInteraction, testing:bool):
+    def __init__(self, parent:System, inter:disnake.CommandInteraction):
       self.parent = parent
-      self.testing = testing
 
       super().__init__(
         title=self.babel(inter, 'announce_title'),
@@ -129,46 +140,85 @@ class System(commands.Cog):
       embed.set_image(inter.text_values['image_url'])
       embed.set_footer(text=self.babel(inter, 'announce_unsubscribe_info'))
 
-      await inter.response.defer(ephemeral=True)
       subscribed = self.parent.config['dm_subscription'].split(',')
-      if self.testing:
-        await inter.followup.send(
-          f"Announcement preview; (will be sent to {len(subscribed)} users)",
-          embed=embed,
-          ephemeral=True
+      await inter.response.send_message(
+        f"Announcement preview; (will be sent to {len(subscribed) - 1} users)",
+        embed=embed,
+        view=self.parent.AnnounceView(self.parent, inter)
+      )
+
+  # Views
+
+  class AnnounceView(disnake.ui.View):
+    def __init__(self, parent:System, inter:disnake.ModalInteraction):
+      self.parent = parent
+      self.inter = inter
+      super().__init__(timeout=300)
+
+    def genstatus(self, message:str, subscribed:list, succeeded:int, failed:list[str]) -> str:
+      return (
+        message + ' ' +
+        f"{succeeded}/{len(subscribed) - len(failed) - 1} sent, {len(failed)} failed." +
+        (
+          '\n```' + self.parent.bot.utilities.truncate('\n'.join(failed), 1800) + '```'
+          if failed else ''
         )
-        return
-      for uid in subscribed:
+      )
+
+    @disnake.ui.button(label='Send announcement', emoji='✈️', style=disnake.ButtonStyle.green)
+    async def callback(self, button:disnake.Button, inter:disnake.MessageInteraction):
+      #TODO: allow for resuming
+      button.disabled = True
+      await inter.response.edit_message(components=[button])
+      msg = await self.inter.original_message()
+      subscribed = self.parent.config['dm_subscription'].split(',')
+      succeeded = 0
+      failed = []
+      for encoded_uid in subscribed:
+        if encoded_uid == '':
+          continue
+        uid = self.parent.decode_uid(encoded_uid)
+        if uid is None:
+          failed.append(f'{encoded_uid} - Failed to decode user id')
+          continue
         await asyncio.sleep(1)
-        #TODO: make this command resilient
-        if uid == '':
-          continue
         try:
-          user = await self.parent.bot.fetch_user(int(uid))
-        except disnake.NotFound:
+          if (succeeded + len(failed)) % 5 == 0:
+            await msg.edit(self.genstatus("Sending announcement...", subscribed, succeeded, failed))
+          try:
+            user = await self.parent.bot.fetch_user(int(uid))
+          except disnake.NotFound:
+            failed.append(f'{encoded_uid} ({uid}) - User not found')
+            continue
+          try:
+            # simulate sending messages by still firing a coroutine
+            await user.trigger_typing() # .send(embed=msg.embed)
+          except disnake.Forbidden:
+            failed.append(f'{encoded_uid} ({uid}) - DM permission denied')
+            continue
+          except disnake.DiscordServerError:
+            failed.append(f'{encoded_uid} ({uid}) - Server disconnect')
+            await asyncio.sleep(5)
+            continue
+        except Exception as e:
+          failed.append(f'{encoded_uid} ({uid}) - Unhandled exception {e}')
           continue
-        try:
-          await user.send(embed=embed)
-        except disnake.Forbidden:
-          continue
-        except disnake.DiscordServerError:
-          print("WARN: Discord disconnected while sending announcement!")
-          await asyncio.sleep(5)
-          await user.send(embed=embed)
-          continue
-      await inter.followup.send("Your announcement has been sent", ephemeral=True)
+        succeeded += 1
+
+      await msg.edit(self.genstatus("Announcement sent!", subscribed, succeeded, failed))
 
   # Events
 
   def subscribe(self, user:disnake.User) -> int:
     # Subscribes users if they have never been subscribed before
+    uid = self.encode_uid(user.id)
     if (
       user
-      and f'{user.id},' not in self.config['subscription_history']
-      and f'{user.id},' not in self.config['dm_subscription']
+      and f'{uid},' not in self.config['subscription_history']
+      and f'{uid},' not in self.config['dm_subscription']
     ):
-      self.config['dm_subscription'] += f'{user.id},'
-      self.config['subscription_history'] += f'{user.id},'
+      self.config['dm_subscription'] += f'{uid},'
+      self.config['subscription_history'] += f'{uid},'
       return 1
     return 0
 
@@ -338,9 +388,9 @@ class System(commands.Cog):
   @commands.guild_only()
   @commands.default_member_permissions(administrator=True)
   @commands.slash_command()
-  async def announce(self, inter:disnake.CommandInteraction, testing:bool = False):
+  async def announce(self, inter:disnake.CommandInteraction):
     """ Sends an announcement to server owners and other subscribed users """
-    await inter.response.send_modal(self.AnnounceModal(self, inter, testing))
+    await inter.response.send_modal(self.AnnounceModal(self, inter))
 
   @commands.default_member_permissions(administrator=True)
   @commands.slash_command()
