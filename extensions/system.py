@@ -76,9 +76,11 @@ class System(commands.Cog):
   # Common functions
 
   def encode_uid(self, uid:int) -> str:
-    return base64.b64encode(uid.to_bytes(8, 'big')).decode('ascii')
+    return base64.b64encode(uid.to_bytes(8, 'big')).decode('ascii').replace('=','')
 
   def decode_uid(self, uid:str) -> int | None:
+    if len(uid) == 11:
+      uid += '='
     try:
       return int.from_bytes(base64.b64decode(uid), 'big')
     except Exception:
@@ -156,9 +158,11 @@ class System(commands.Cog):
       super().__init__(timeout=300)
 
     def genstatus(self, message:str, subscribed:list, succeeded:int, failed:list[str]) -> str:
+      total = len(subscribed) - 1
       return (
         message + ' ' +
-        f"{succeeded}/{len(subscribed) - len(failed) - 1} sent, {len(failed)} failed." +
+        f"{succeeded}/{total} sent, {len(failed)} failed." +
+        '\n' + self.parent.bot.utilities.progress_bar(succeeded, total - len(failed), 40) +
         (
           '\n```' + self.parent.bot.utilities.truncate('\n'.join(failed), 1800) + '```'
           if failed else ''
@@ -181,31 +185,38 @@ class System(commands.Cog):
         if uid is None:
           failed.append(f'{encoded_uid} - Failed to decode user id')
           continue
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.4)
         try:
           if (succeeded + len(failed)) % 5 == 0:
             await msg.edit(self.genstatus("Sending announcement...", subscribed, succeeded, failed))
           try:
             user = await self.parent.bot.fetch_user(int(uid))
           except disnake.NotFound:
-            failed.append(f'{encoded_uid} ({uid}) - User not found')
+            failed.append(f'{encoded_uid} - User not found')
             continue
           try:
             # simulate sending messages by still firing a coroutine
             await user.trigger_typing() # .send(embed=msg.embed)
           except disnake.Forbidden:
-            failed.append(f'{encoded_uid} ({uid}) - DM permission denied')
+            failed.append(f'{encoded_uid} - DM permission denied')
             continue
           except disnake.DiscordServerError:
-            failed.append(f'{encoded_uid} ({uid}) - Server disconnect')
+            failed.append(f'{encoded_uid} - Server disconnect')
             await asyncio.sleep(5)
             continue
         except Exception as e:
-          failed.append(f'{encoded_uid} ({uid}) - Unhandled exception {e}')
+          failed.append(f'{encoded_uid} - Unhandled exception {e}')
           continue
         succeeded += 1
 
       await msg.edit(self.genstatus("Announcement sent!", subscribed, succeeded, failed))
+
+    async def on_timeout(self):
+      for component in self.children:
+        if isinstance(component, (disnake.ui.Button, disnake.ui.Select)):
+          component.disabled = True
+      msg = await self.inter.original_message()
+      await msg.edit(view=self)
 
   # Events
 
