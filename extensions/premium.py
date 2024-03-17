@@ -69,8 +69,9 @@ class Premium(commands.Cog):
     self.premiumguild = None
     self.premiumroles = []
 
-    bot.add_check(self.check_premium_command)
-    bot.add_app_command_check(self.check_premium_slash_command, slash_commands=True)
+    bot.add_app_command_check(
+      self.check_premium_slash_command, slash_commands=True, user_commands=True
+    )
 
   @commands.Cog.listener('on_connect')
   async def cache_role(self):
@@ -95,11 +96,11 @@ class Premium(commands.Cog):
     else:
       return False
 
-  def error_embed(self, ctx: commands.Context | disnake.Interaction) -> disnake.Embed:
-    rolelist = self.bot.babel.string_list(ctx, [r.name for r in self.premiumroles], True)
+  def error_embed(self, inter:disnake.Interaction) -> disnake.Embed:
+    rolelist = self.bot.babel.string_list(inter, [r.name for r in self.premiumroles], True)
     embed = disnake.Embed(
-      title=self.babel(ctx, 'required_title'),
-      description=self.babel(ctx, 'required_error', role=rolelist)
+      title=self.babel(inter, 'required_title'),
+      description=self.babel(inter, 'required_error', role=rolelist)
     )
     embed.url = (
       self.config['patreon'] if self.config['patreon']
@@ -107,15 +108,6 @@ class Premium(commands.Cog):
     )
     embed.set_thumbnail(url=self.config['icon'])
     return embed
-
-  async def check_premium_command(self, ctx:commands.Context):
-    if ctx.command.name in self.config['restricted_commands'].split(' '):
-      if await self.check_premium(ctx.author):
-        return True # user is premium
-
-      await ctx.reply(embed=self.error_embed(ctx))
-      return False # user is not premium
-    return True # command is not restricted
 
   async def check_premium_slash_command(self, inter:disnake.CommandInteraction):
     restricted = self.config['restricted_commands'].split(' ')

@@ -6,8 +6,8 @@
 
 from __future__ import annotations
 
-import traceback, asyncio
-from typing import Union, TYPE_CHECKING
+import asyncio
+from typing import TYPE_CHECKING
 import disnake
 from disnake.ext import commands
 
@@ -75,17 +75,6 @@ class Log(commands.Cog):
       f"[Unknown] {truncate(author.name, 10)}#{author.discriminator}: {truncate(content, maxlen)}"
     )
 
-  @commands.Cog.listener('on_command')
-  async def log_command(self, ctx:commands.Context):
-    """ Record any command calls """
-    logentry = self.wrap(ctx.message.content, ctx.message.author, ctx.message.channel)
-    print(logentry)
-    if self.logchannel:
-      await self.logchannel.send(
-        logentry,
-        embed=ctx.message.embeds[0] if ctx.message.embeds else None
-      )
-
   @commands.Cog.listener('on_application_command')
   async def log_slash_command(self, inter:disnake.CommandInteraction):
     """ Record slash command calls """
@@ -100,14 +89,17 @@ class Log(commands.Cog):
     if self.logchannel:
       await self.logchannel.send(logentry)
 
-  @commands.Cog.listener('on_command_completion')
-  async def log_response(self, ctx:commands.Context):
+  @commands.Cog.listener('on__slash_command_completion')
+  async def log_slash_response(self, inter:disnake.CommandInteraction):
     """ Record any replies to a command """
-    responses = []
-    async for msg in ctx.history(after=ctx.message):
+    if not inter.response.is_done():
+      return
+    responses:list[disnake.Message] = []
+    originalmsg = await inter.original_message()
+    async for msg in inter.channel.history(after=originalmsg):
       if msg.author == self.bot.user and\
          msg.reference and\
-         msg.reference.message_id == ctx.message.id:
+         msg.reference.message_id == originalmsg.id:
         responses.append(msg)
     for response in responses:
       logentry = self.wrap(response.content, response.author, response.channel)
@@ -122,18 +114,9 @@ class Log(commands.Cog):
     if self.logchannel:
       await self.logchannel.send(logentry, embed=msg.embeds[0] if msg.embeds else None)
 
-  async def log_misc_str(self, ctx:Union[commands.Context, disnake.Interaction], content:str):
-    """ Record a string and context separately """
-    logentry = self.wrap(content, ctx.author, ctx.channel)
-    print(logentry)
-    if self.logchannel:
-      await self.logchannel.send(logentry)
-
-  @commands.Cog.listener('on_command_error')
-  async def report_error(self, _:commands.Context, error:Exception):
-    """ Record errors """
-    ex = traceback.format_exception(type(error), error, error.__traceback__)
-    logentry = f"caused an error:\n```\n{''.join(ex)}```"
+  async def log_misc_str(self, inter:disnake.Interaction, content:str):
+    """ Record a string and interaction separately """
+    logentry = self.wrap(content, inter.author, inter.channel)
     print(logentry)
     if self.logchannel:
       await self.logchannel.send(logentry)

@@ -73,7 +73,7 @@ class Help(commands.Cog):
       if self.config['customstatus']:
         message = self.config['customstatus']
       else:
-        message = self.bot.config['main']['prefix_short']+'help'
+        message = '/help'
     status = disnake.Status.online if status is None else status
     activity = disnake.Game(message)
     await asyncio.sleep(5) # Add delay to reduce flood of requests on connect
@@ -84,31 +84,23 @@ class Help(commands.Cog):
     for cmd in self.bot.slash_commands:
       if command == cmd.name:
         return cmd
-    for cmd in self.bot.commands:
-      if command == cmd.name or command in cmd.aliases:
-        return cmd
     return None
 
-  def get_docs(self, ctx:Union[commands.Context, disnake.CommandInteraction], cmd:str):
+  def get_docs(self, inter:disnake.CommandInteraction, cmd:str):
     """ find documentation for this command in babel """
     matchedcommand = self.find_command(cmd)
     # return usage information for a specific command
     if matchedcommand:
-      reslang = self.bot.babel.resolve_lang(
-        ctx.author.id, ctx.guild.id, ctx if isinstance(ctx, disnake.Interaction) else None
-      )
+      reslang = self.bot.babel.resolve_lang(inter.author.id, inter.guild.id, inter)
       for reflang in reslang:
         reflang = self.bot.babel.langs[reflang]
         for key in reflang.keys():
           if f'command_{matchedcommand.name}_help' in reflang[key]:
             docsrc = (
-              self.bot.babel(ctx, key, f'command_{matchedcommand.name}_help', cmd=cmd)
+              self.bot.babel(inter, key, f'command_{matchedcommand.name}_help', cmd=cmd)
               .splitlines()
             )
-            if isinstance(matchedcommand, commands.InvokableSlashCommand):
-              docs = f"**{docsrc[0].replace(self.bot.config['main']['prefix_short'], '/')}**"
-            else:
-              docs = f'**{docsrc[0]}**'
+            docs = f'**{docsrc[0]}**'
             if len(docsrc) > 1:
               docs += '\n'+docsrc[1]
             if len(docsrc) > 2:
@@ -118,22 +110,9 @@ class Help(commands.Cog):
     return None
 
   @commands.slash_command(name='help')
-  async def slash_help(
-    self, inter:disnake.CommandInteraction, command:Optional[str] = None, **kwargs
-  ):
-    """
-    Learn how to use this bot
-
-    Parameters
-    ----------
-    command: Search for a specific command's documentation
-    """
-    await self.help(inter, command, **kwargs)
-
-  @commands.command(aliases=['?','??'])
   async def help(
     self,
-    ctx:Union[commands.Context, disnake.CommandInteraction],
+    inter:disnake.CommandInteraction,
     command:Optional[str] = None,
     **kwargs
   ):
@@ -141,41 +120,41 @@ class Help(commands.Cog):
     highlights some commands if command is None"""
 
     if command:
-      docs = self.get_docs(ctx, command)
+      docs = self.get_docs(inter, command)
       if docs is not None:
         # we found the documentation
-        await ctx.send(docs, **kwargs)
+        await inter.send(docs, **kwargs)
       else:
         # the command doesn't exist right now, figure out why.
         if command in self.config['future_commands'].split(', '):
           # this command will be coming soon according to config
-          await ctx.send(self.babel(ctx, 'future_command'), **kwargs)
+          await inter.send(self.babel(inter, 'future_command'), **kwargs)
         elif command in self.config['obsolete_commands'].split(', '):
           # this command is obsolete according to config
-          await ctx.send(self.babel(ctx, 'obsolete_command'), **kwargs)
+          await inter.send(self.babel(inter, 'obsolete_command'), **kwargs)
         elif command in re.split(r', |>', self.config['moved_commands']):
           # this command has been renamed and requires a new syntax
           moves = re.split(r', |>', self.config['moved_commands'])
           target = moves.index(command)
           if target % 2 == 0:
-            await ctx.send(self.babel(ctx, 'moved_command', cmd=moves[target + 1]), **kwargs)
+            await inter.send(self.babel(inter, 'moved_command', cmd=moves[target + 1]), **kwargs)
           else:
             print(
               "WARNING: bad config. in help/moved_command:\n"
               f"{moves[target-1]} is now {moves[target]} but {moves[target]} doesn't exist."
             )
-            await ctx.send(self.babel(ctx, 'no_command'), **kwargs)
+            await inter.send(self.babel(inter, 'no_command'), **kwargs)
         elif self.find_command(command) is not None:
           # the command definitely exists, but there's no documentation
-          await ctx.send(self.babel(ctx, 'no_docs'), **kwargs)
+          await inter.send(self.babel(inter, 'no_docs'), **kwargs)
         else:
-          await ctx.send(self.babel(ctx, 'no_command'), **kwargs)
+          await inter.send(self.babel(inter, 'no_command'), **kwargs)
 
     else:
       # show the generic help embed with a variety of featured commands
       embed = disnake.Embed(
-        title=self.babel(ctx, 'title'),
-        description=self.babel(ctx, 'introduction',
+        title=self.babel(inter, 'title'),
+        description=self.babel(inter, 'introduction',
                                videoexamples=bool(self.config['helpurlvideoexamples']),
                                serverinv=self.config['serverinv']),
         color=int(self.bot.config['main']['themecolor'], 16),
@@ -190,19 +169,19 @@ class Help(commands.Cog):
           else:
             hcmds.append(hcmd+'❌')
         embed.add_field(
-          name=section, value='```'+self.bot.babel.string_list(ctx, hcmds)+'```', inline=False
+          name=section, value='```'+self.bot.babel.string_list(inter, hcmds)+'```', inline=False
         )
 
-      embed.set_footer(text=self.babel(ctx, 'creator_footer'),
+      embed.set_footer(text=self.babel(inter, 'creator_footer'),
                        icon_url=self.bot.user.avatar.url)
 
-      await ctx.send(
-        self.babel(ctx, 'helpurl_cta') if self.config['helpurl'] else "",
+      await inter.send(
+        self.babel(inter, 'helpurl_cta') if self.config['helpurl'] else "",
         embed=embed,
         **kwargs
       )
 
-  @slash_help.autocomplete('command')
+  @help.autocomplete('command')
   def ac_command(self, _:disnake.CommandInteraction, command:str):
     """ find any commands that contain the provided string """
     matches = []

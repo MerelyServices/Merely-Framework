@@ -11,11 +11,10 @@ from typing import Optional
 from config import Config
 from glob import glob
 import disnake
-from disnake.ext import commands
 
 Resolvable = (
-  commands.Context | disnake.Interaction | disnake.Message | disnake.User | disnake.Member
-  | disnake.Guild | tuple
+  disnake.Interaction | disnake.Message | disnake.User | disnake.Member | disnake.Guild
+  | tuple[int, int | None]
 )
 
 
@@ -157,7 +156,7 @@ class Babel():
   ) -> str:
     """ Determine the locale and resolve the closest translated string """
     inter = None
-    if isinstance(target, (commands.Context, disnake.Interaction, disnake.Message)):
+    if isinstance(target, (disnake.Interaction, disnake.Message)):
       author_id = target.author.id
       guild_id = target.guild.id if hasattr(target, 'guild') and target.guild else None
       if isinstance(target, disnake.Interaction):

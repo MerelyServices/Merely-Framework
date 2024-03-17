@@ -15,12 +15,12 @@ from utilities import Utilities
 from auth import Auth
 
 
-class MerelyBot(commands.AutoShardedBot):
+class MerelyBot(commands.AutoShardedInteractionBot):
   """
-    An extension of disnake.commands.AutoShardedBot with added features
+    An extension of disnake.commands.AutoShardedInteractionBot with added features
 
     This includes a babel module for localised strings, a config module, automatic extension
-    loading, config-defined intents, config-defined prefixes, and logging.
+    loading, config-defined intents, and logging.
   """
   config:Config
   babel:Babel
@@ -65,9 +65,7 @@ class MerelyBot(commands.AutoShardedBot):
       merely framework{
         ' beta' if self.config.getboolean('main', 'beta') else ''
       } v{self.config['main']['ver']}
-      currently named {self.config['main']['botname']} by config, uses {
-        self.config['main']['prefix_short']
-      }
+      currently named {self.config['main']['botname']} by config
       created by Yiays. https://github.com/yiays/merelybot
       """)
 

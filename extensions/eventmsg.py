@@ -395,7 +395,7 @@ class EventMsg(commands.Cog):
       else:
         raise AssertionError(f"Unhandled click event '{inter.component.custom_id}'")
 
-    async def on_timeout(self) -> None:
+    async def on_timeout(self):
       for item in self.children:
         if 'disabled' in item:
           item.disabled = True

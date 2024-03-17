@@ -217,14 +217,13 @@ class ControlPanel(commands.Cog):
   # Views
 
   class ControlPanelView(disnake.ui.View):
-    msg:disnake.Message | None
+    msg:disnake.Message | None = None
 
     def __init__(
       self, inter:disnake.CommandInteraction, parent:ControlPanel, settings:list[Setting]
     ):
       super().__init__(timeout=300)
 
-      self.msg = None
       self.parent = parent
       self.settings:dict[str, Setting] = {}
       sections:list[str] = []
@@ -327,7 +326,7 @@ class ControlPanel(commands.Cog):
       self.timeout = 300
       await inter.response.edit_message(view=self)
 
-    async def on_timeout(self) -> None:
+    async def on_timeout(self):
       if self.msg:
         try:
           await self.msg.delete()
