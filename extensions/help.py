@@ -128,27 +128,28 @@ class Help(commands.Cog):
         # the command doesn't exist right now, figure out why.
         if command in self.config['future_commands'].split(', '):
           # this command will be coming soon according to config
-          await inter.send(self.babel(inter, 'future_command'), **kwargs)
+          await inter.send(self.babel(inter, 'future_command', cmd=command), **kwargs)
         elif command in self.config['obsolete_commands'].split(', '):
           # this command is obsolete according to config
-          await inter.send(self.babel(inter, 'obsolete_command'), **kwargs)
+          await inter.send(self.babel(inter, 'obsolete_command', cmd=command), **kwargs)
         elif command in re.split(r', |>', self.config['moved_commands']):
           # this command has been renamed and requires a new syntax
           moves = re.split(r', |>', self.config['moved_commands'])
           target = moves.index(command)
           if target % 2 == 0:
-            await inter.send(self.babel(inter, 'moved_command', cmd=moves[target + 1]), **kwargs)
+            await inter.send(self.babel(inter, 'moved_command',
+                                        oldcmd=command, cmd=moves[target + 1]), **kwargs)
           else:
             print(
               "WARNING: bad config. in help/moved_command:\n"
               f"{moves[target-1]} is now {moves[target]} but {moves[target]} doesn't exist."
             )
-            await inter.send(self.babel(inter, 'no_command'), **kwargs)
+            await inter.send(self.babel(inter, 'no_command', cmd=command), **kwargs)
         elif self.find_command(command) is not None:
           # the command definitely exists, but there's no documentation
-          await inter.send(self.babel(inter, 'no_docs'), **kwargs)
+          await inter.send(self.babel(inter, 'no_docs', cmd=command), **kwargs)
         else:
-          await inter.send(self.babel(inter, 'no_command'), **kwargs)
+          await inter.send(self.babel(inter, 'no_command', cmd=command), **kwargs)
 
     else:
       # show the generic help embed with a variety of featured commands
@@ -192,13 +193,6 @@ class Help(commands.Cog):
         and cmd.guild_ids is None
       ):
         matches.append(cmd.name)
-    for cmd in self.bot.commands:
-      if command in cmd.name and cmd.name not in matches and cmd.name not in hide:
-        matches.append(cmd.name)
-      else:
-        for alias in cmd.aliases:
-          if command in alias and cmd.name not in matches and cmd.name not in hide:
-            matches.append(cmd.name)
     return matches[0:25]
 
   @commands.slash_command()
