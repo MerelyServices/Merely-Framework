@@ -432,7 +432,9 @@ class System(commands.Cog):
   @commands.default_member_permissions(administrator=True)
   @commands.slash_command()
   @commands.cooldown(1, 1)
-  async def die(self, inter:disnake.CommandInteraction, saveconfig:bool = False):
+  async def die(
+    self, inter:disnake.CommandInteraction, saveconfig:bool = False, restart:bool = False
+  ):
     """
     Log out and shut down
 
@@ -444,6 +446,7 @@ class System(commands.Cog):
     await inter.send(self.bot.babel(inter, 'admin', 'die_success'))
     if saveconfig:
       self.bot.config.save()
+    self.bot.restart = restart
     await self.bot.close()
 
 

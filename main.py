@@ -31,6 +31,7 @@ class MerelyBot(commands.AutoShardedInteractionBot):
   load_all_extensions = False
   member_cache = True
   overlay = False
+  restart = False
 
   def __init__(self, **kwargs):
     if 'verbose' in kwargs:
@@ -110,29 +111,29 @@ class MerelyBot(commands.AutoShardedInteractionBot):
       syncflags.sync_commands_debug = True
 
     super().__init__(
-      command_prefix=self.check_prefix if intents.message_content else None,
-      help_command=None,
       intents=intents,
       member_cache_flags=cachepolicy,
-      command_sync_flags=syncflags,
-      case_insensitive=True
+      command_sync_flags=syncflags
     )
 
     self.autoload_extensions()
 
-  def check_prefix(self, _, msg:disnake.Message) -> list[str]:
-    """ Check provided message should trigger the bot """
-    if (
-      self.config['main']['prefix_short'] and
-      msg.content.lower().startswith(self.config['main']['prefix_short'].lower())
-    ):
-      return (
-        [
-          msg.content[0: len(self.config['main']['prefix_short'])],
-          msg.content[0: len(self.config['main']['prefix_short'])] + ' '
-        ]
-      )
-    return commands.when_mentioned(self, msg)
+  def reinit(self):
+    # Lightweight init that tries to preserve old state
+    self.loop = None
+    syncflags = commands.CommandSyncFlags.default()
+    if self.verbose:
+      syncflags.sync_commands_debug = True
+    super().__init__(
+      intents=self.intents,
+      member_cache_flags=(
+        disnake.MemberCacheFlags.none() if self.member_cache is None
+        else disnake.MemberCacheFlags.from_intents(self.intents)
+      ),
+      command_sync_flags=syncflags
+    )
+
+    self.autoload_extensions()
 
   def autoload_extensions(self):
     """ Search the filesystem for extensions, list them in config, load them if enabled """
@@ -155,6 +156,8 @@ class MerelyBot(commands.AutoShardedInteractionBot):
       extname = extfile.strip('_')
       if extname in self.config['extensions'].keys():
         if self.config.getboolean('extensions', extname) or self.load_all_extensions:
+          if '_common' in extname and self.load_all_extensions:
+            continue # skip *_common extensions as they are not cogs
           try:
             self.load_extension(
               'overlay.extensions.'+extfile if extpath.startswith('overlay')
@@ -220,7 +223,14 @@ if __name__ == '__main__':
 
     token = bot.config.get('main', 'token', fallback=None)
     if token:
-      bot.run(token)
+      while True:
+        try:
+          bot.run(token)
+          if not bot.restart:
+            break
+        except Exception as e:
+          print("FATAL: Bot crashed. Restarting...\n", e, file=sys.stderr)
+        bot.reinit()
     else:
       raise Exception(
         "Invalid token!" +
