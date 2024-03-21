@@ -4,8 +4,7 @@
 """
 
 from configparser import ConfigParser
-from shutil import copy
-import os
+import os, glob, shutil
 import time
 
 
@@ -38,7 +37,7 @@ class Config(ConfigParser):
     if not os.path.exists(self.file):
       if os.path.exists(self.template):
         print(f"WARNING: {self.file} missing - reverting to template config")
-        copy(self.template, self.file)
+        shutil.copy(self.template, self.file)
       else:
         print(
           f"WARNING: {self.template} missing - resorting to bare-minimum defaults.",
@@ -130,11 +129,16 @@ class Config(ConfigParser):
       if not os.path.exists(os.path.join(self.path, 'config_history')):
         os.makedirs(os.path.join(self.path, 'config_history'))
       if os.path.isfile(self.file):
-        copy(self.file, os.path.join(
+        oldfiles = glob.glob(
+          os.path.join(self.path, 'config_history', 'config-'+time.strftime("%d-%m-%y ")+'*.ini')
+        )
+        shutil.copy(self.file, os.path.join(
           self.path,
           'config_history',
           'config-'+time.strftime("%d-%m-%y %H:%M.%S")+'.ini'
         ))
+        for oldfile in oldfiles:
+          os.remove(oldfile)
 
       self.last_backup = time.time()
     #TODO: autodelete all but one of each config history
