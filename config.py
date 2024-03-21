@@ -4,8 +4,8 @@
 """
 
 from configparser import ConfigParser
-import os, glob, shutil
-import time
+import os, glob, shutil, time
+from packaging import version
 
 
 class Config(ConfigParser):
@@ -20,7 +20,9 @@ class Config(ConfigParser):
     self.path = path
     self.file = os.path.join(self.path, "config.ini")
     self.template = os.path.join(self.path, "config.factory.ini")
+    self.reference:ConfigParser | None = None
     self.last_backup = 0
+    self.migrate:bool | version.Version = False
 
     self.load()
 
@@ -48,15 +50,20 @@ class Config(ConfigParser):
       with open(self.file, 'r', encoding='utf-8') as f:
         ini = f.read()
         if ini.endswith('\n\n'):
-          ConfigParser.read_string(self, ini)
+          self.read_string(ini)
         else:
           raise AssertionError(
             f"FATAL: {self.file} may have been in the process of saving during the last run!",
             "\nCheck your config file! There may be data loss."
           )
+      if os.path.exists(self.template):
+        with open(self.template, 'r', encoding='utf-8') as f:
+          self.reference = ConfigParser()
+          self.reference.read_file(f)
 
     # Ensure required sections exist and provide sane defaults
     # Generates config in case it's missing, but also updates old configs
+
     # Main section
     if 'main' not in self.sections():
       self.add_section('main')
@@ -74,6 +81,12 @@ class Config(ConfigParser):
       self['main']['beta'] = 'False'
     if 'ver' not in self['main']:
       self['main']['ver'] = ''
+    elif (
+      self.reference and
+      version.parse(self.reference['main']['ver']) > version.parse(self['main']['ver'])
+    ):
+      self.migrate = version.parse(self['main']['ver'])
+      self['main']['ver'] = self.reference['main']['ver']
     if 'creator' not in self['main']:
       self['main']['creator'] = ''
 
@@ -138,6 +151,7 @@ class Config(ConfigParser):
           'config-'+time.strftime("%d-%m-%y %H:%M.%S")+'.ini'
         ))
         for oldfile in oldfiles:
+          # delete older configs from the day so only one is stored a day
           os.remove(oldfile)
 
       self.last_backup = time.time()

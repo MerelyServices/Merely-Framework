@@ -4,9 +4,9 @@
   Created by Yiays and contributors
 """
 
-import sys, time, os, re
+import sys, time, os, re, glob, importlib
 from itertools import groupby
-from glob import glob
+from packaging import version
 import disnake
 from disnake.ext import commands
 from config import Config
@@ -47,13 +47,13 @@ class MerelyBot(commands.AutoShardedInteractionBot):
       self.overlay = True
       if os.path.exists(overlayconfpath):
         if not self.quiet:
-          print("Using 'overlay/config/'")
+          print("Loading config\n - Using 'overlay/config/'")
         self.config = Config(overlayconfpath)
       else:
         self.config = Config()
       if os.path.exists(overlaybabelpath):
         if not self.quiet:
-          print("Using 'overlay/babel/'")
+          print("Loading config\n - Using 'overlay/babel/'")
         self.babel = Babel(self.config, overlaybabelpath)
     else:
       self.config = Config()
@@ -70,12 +70,17 @@ class MerelyBot(commands.AutoShardedInteractionBot):
       created by Yiays. https://github.com/yiays/merelybot
       """)
 
-    #stdout to file
+    # stdout to file
     if not os.path.exists('logs'):
       os.makedirs('logs')
     if not self.quiet:
       sys.stdout = Logger()
     sys.stderr = Logger(err=True)
+
+    # Migration handling
+    if self.config.migrate:
+      print(f"Migrating from {self.config.migrate} to {self.config['main']['ver']}...")
+      self.automigrate_config()
 
     # set intents
     intents = disnake.Intents.none()
@@ -134,6 +139,7 @@ class MerelyBot(commands.AutoShardedInteractionBot):
     )
 
     self.autoload_extensions()
+    print("Bot startup complete\n")
 
   def autoload_extensions(self):
     """ Search the filesystem for extensions, list them in config, load them if enabled """
@@ -144,10 +150,10 @@ class MerelyBot(commands.AutoShardedInteractionBot):
     overlay_extensions = []
     if os.path.exists(os.path.join('overlay', 'extensions')):
       if not self.quiet:
-        print("Using 'overlay/extensions/'")
-      overlay_extensions = glob(extoverlaysearch)
+        print("Loading extensions\n - Using 'overlay/extensions/'")
+      overlay_extensions = glob.glob(extoverlaysearch)
     for extpath in sorted(
-      list(set(overlay_extensions + glob(extsearch))),
+      list(set(overlay_extensions + glob.glob(extsearch))),
       key=lambda s:[
         int(''.join(g)) if k else ''.join(g) for k,g in groupby('\0'+s, str.isdigit)
       ]
@@ -159,23 +165,60 @@ class MerelyBot(commands.AutoShardedInteractionBot):
           if '_common' in extname and self.load_all_extensions:
             continue # skip *_common extensions as they are not cogs
           try:
+            if not self.quiet:
+              print(
+                f" - Loading {extname}",
+                ' (overlay)' if extpath.startswith('overlay') else '',
+                sep='',
+                end=''
+              )
             self.load_extension(
               'overlay.extensions.'+extfile if extpath.startswith('overlay')
               else 'extensions.'+extfile
             )
             if not self.quiet:
-              print(f"{extname} loaded." + (' (overlay)' if extpath.startswith('overlay') else ''))
+              print(" (success)")
           except Exception as e:
-            print(f"Failed to load extension '{extpath[:-3]}':\n{e}")
+            print(f" (failed: '{extpath[:-3]}'):\n{e}")
         else:
           if self.verbose:
             if not self.quiet:
-              print(f"{extname} is disabled, skipping.")
+              print(f" - {extname} is disabled, skipping.")
       else:
         self.config['extensions'][extname] = 'False'
         if not self.quiet:
-          print(f"discovered {extname}, disabled by default, you can enable it in the config.")
+          print(f" - Discovered {extname}, disabled by default, you can enable it in the config.")
     self.config.save()
+
+  def automigrate_config(self):
+    """
+      Searches the filesystem for migration scripts and applies relevant ones
+
+      Migration files must be in ./migrations, and must start with the target version number (with
+      dots replaced with underscores) followed by a final underscore. Then, a brief description of
+      what will be changed. For example; 'v1_3_0_help.py'
+
+      If an overlay folder exists, it will also be searched.
+    """
+    migrations:list[str] = []
+    if os.path.exists('migrations'):
+      migrations += glob.glob(os.path.join('migrations', 'v*_*.py'))
+    if os.path.exists(os.path.join('overlay', 'migrations')):
+      print(" - Using 'overlay/migrations'...")
+      migrations += glob.glob(os.path.join('overlay', 'migrations', 'v*_*.py'))
+    counter = 0
+    for migration in migrations:
+      fname = migration.split('/')[-1]
+      target_ver = version.parse('.'.join(fname.split('_')[:-1]))
+      if self.config.migrate <= target_ver <= version.parse(self.config['main']['ver']):
+        module = importlib.import_module(re.sub(r'[/\\]', '.', migration[:-3]), 'main')
+        module.migrate(self.config)
+        counter += 1
+    if counter > 0:
+      self.config.save()
+      print(" - Migration succeeded!")
+    else:
+      print(" - No migration files found. Skipping...")
 
 
 class Logger(object):

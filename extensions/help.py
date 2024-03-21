@@ -58,7 +58,14 @@ class Help(commands.Cog):
     if 'hidden_commands' not in self.config:
       self.config['hidden_commands'] = ''
     if 'changelog' not in self.config:
-      self.config['changes'] = '> '+bot.config['main']['ver']+'\n- No changes yet!'
+      self.config['changelog'] = '> '+bot.config['main']['ver']+'\n- No changes yet!'
+    elif (
+      bot.config.reference and
+      bot.config.reference['help']['changelog'] != self.config['changelog']
+    ):
+      self.config['changelog'] = bot.config.reference['help']['changelog']
+      bot.config.save()
+      print("   - Updated changelog")
 
   @commands.Cog.listener('on_connect')
   async def on_starting(self):

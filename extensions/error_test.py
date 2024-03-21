@@ -31,11 +31,6 @@ class ErrorTest(commands.Cog):
     """ Throws an error for testing """
     raise Exception("Command failed successfully")
 
-  @commands.command(name='throw_error')
-  async def throw_error_text(self, _):
-    """ Throws an error for testing """
-    raise Exception("Command failed successfully")
-
 
 def setup(bot:MerelyBot):
   """ Bind this cog to the bot """
