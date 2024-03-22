@@ -49,7 +49,7 @@ class Babel():
     self.config = config
     self.filter_conditional = re.compile(r'{([a-z]*?)\?(.*?)\|(.*?)}')
     self.filter_configreference = re.compile(r'{c\:([a-z_]*?)\/([a-z_]*?)}')
-    self.filter_commandreference = re.compile(r'{p\:([a-z_ ]*?)}')
+    self.filter_commandreference = re.compile(r'{p\:([a-z_ -]*?)}')
     self.load()
 
   def load(self):

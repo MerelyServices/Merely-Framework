@@ -53,7 +53,7 @@ class MerelyBot(commands.AutoShardedInteractionBot):
         self.config = Config()
       if os.path.exists(overlaybabelpath):
         if not self.quiet:
-          print("Loading config\n - Using 'overlay/babel/'")
+          print("Loading translations\n - Using 'overlay/babel/'")
         self.babel = Babel(self.config, overlaybabelpath)
     else:
       self.config = Config()
