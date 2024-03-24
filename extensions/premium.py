@@ -142,10 +142,17 @@ class Premium(commands.Cog):
                       value=self.babel(inter, f'feature_{i}_desc'),
                       inline=False)
       i += 1
-
     embed.set_footer(text=self.babel(inter, 'fine_print'))
 
-    await inter.response.send_message(self.babel(inter, 'cta', link=embed.url), embed=embed)
+    buttons = None
+    if self.bot.config['help']['serverinv']:
+      buttons = [
+        disnake.ui.Button(emoji='1️⃣', label=self.babel(inter, 'join_server_cta'),
+                          url=self.bot.config['help']['serverinv']),
+        disnake.ui.Button(emoji='2️⃣', label=self.babel(inter, 'subscribe_cta'), url=embed.url)
+      ]
+
+    await inter.response.send_message(embed=embed, components=buttons)
 
 
 def setup(bot:MerelyBot):
