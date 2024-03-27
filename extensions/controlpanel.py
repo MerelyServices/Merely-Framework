@@ -189,6 +189,7 @@ class ControlPanel(commands.Cog):
   async def on_panel_interaction(self, inter:disnake.MessageInteraction):
     if inter.message.id in self.panels:
       await self.panels[inter.message.id].callback_all(inter)
+    return
 
   # Modals
 

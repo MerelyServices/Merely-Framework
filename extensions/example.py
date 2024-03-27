@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import disnake
 from disnake.ext import commands
 
-from .controlpanel import Toggleable, Listable, Selectable, Stringable
+from extensions.controlpanel import Toggleable, Listable, Selectable, Stringable
 
 if TYPE_CHECKING:
   from main import MerelyBot

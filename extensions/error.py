@@ -71,11 +71,8 @@ class Error(commands.Cog):
       if isinstance(error.original, self.bot.auth.AuthError):
         await inter.send(str(error.original), **kwargs)
         return
-      await inter.send(
-        self.babel(inter, 'commanderror', error=str(error.original)),
-        **kwargs
-      )
-      raise error
+      await inter.send(self.babel(inter, 'commanderror', error=str(error.original)), **kwargs)
+      raise error.original
     elif isinstance(error, (commands.CheckFailure, commands.CheckAnyFailure)):
       return
 

@@ -6,13 +6,10 @@
 from __future__ import annotations
 
 from enum import Enum
-from glob import glob
-import asyncio, os, re, importlib, base64
+import asyncio, os, re, importlib, glob
 from typing import Optional, TYPE_CHECKING
 import disnake
 from disnake.ext import commands
-
-from extensions.controlpanel import Listable
 
 if TYPE_CHECKING:
   from main import MerelyBot
@@ -49,206 +46,11 @@ class System(commands.Cog):
   def __init__(self, bot:MerelyBot):
     self.bot = bot
 
-    # ensure config file has required data
-    if not bot.config.has_section(self.SCOPE):
-      bot.config.add_section(self.SCOPE)
-    if 'dm_subscription' not in self.config:
-      self.config['dm_subscription'] = ''
-    if 'subscription_history' not in self.config:
-      self.config['subscription_history'] = ''
-
     # Restrict usage of these commands to specified guilds
     guilds = bot.config['auth']['botadmin_guilds']
     botadmin_guilds = [int(guild) for guild in guilds.split(' ')]
     for cmd in self.get_application_commands():
       cmd.guild_ids = botadmin_guilds
-
-  def controlpanel_settings(self, inter:disnake.Interaction):
-    # ControlPanel integration
-    return [
-      Listable(self.SCOPE, 'dm_subscription', 'dm_subscription', self.encode_uid(inter.user.id))
-    ]
-
-  def controlpanel_theme(self) -> tuple[str, disnake.ButtonStyle]:
-    # Controlpanel custom theme for buttons
-    return (self.SCOPE, disnake.ButtonStyle.red)
-
-  # Common functions
-
-  def encode_uid(self, uid:int) -> str:
-    return base64.b64encode(uid.to_bytes(8, 'big')).decode('ascii').replace('=','')
-
-  def decode_uid(self, uid:str) -> int | None:
-    if len(uid) == 11:
-      uid += '='
-    try:
-      return int.from_bytes(base64.b64decode(uid), 'big')
-    except Exception:
-      print(f"WARN: {uid} is not a valid encoded UID.")
-      return None
-
-  # Modals
-
-  class AnnounceModal(disnake.ui.Modal):
-    """ Type out and send an announcement """
-    def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> list[str]:
-      """ Shorthand for self.bot.babel(scope, key, **values) """
-      # this modal uses the new system scope
-      return self.parent.bot.babel(target, self.parent.SCOPE, key, **values)
-
-    def __init__(self, parent:System, inter:disnake.CommandInteraction):
-      self.parent = parent
-
-      super().__init__(
-        title=self.babel(inter, 'announce_title'),
-        components=[
-          disnake.ui.TextInput(
-            label=self.babel(inter, 'announce_title_of'),
-            custom_id='title',
-            style=disnake.TextInputStyle.single_line,
-            min_length=1
-          ),
-          disnake.ui.TextInput(
-            label=self.babel(inter, 'announce_content'),
-            custom_id='content',
-            style=disnake.TextInputStyle.long,
-            min_length=1
-          ),
-          disnake.ui.TextInput(
-            label=self.babel(inter, 'announce_url'),
-            custom_id='url',
-            style=disnake.TextInputStyle.single_line,
-            min_length=0,
-            required=False
-          ),
-          disnake.ui.TextInput(
-            label=self.babel(inter, 'announce_image'),
-            custom_id='image_url',
-            style=disnake.TextInputStyle.single_line,
-            min_length=0,
-            required=False
-          )
-        ],
-        timeout=600
-      )
-
-    async def callback(self, inter:disnake.ModalInteraction):
-      embed = disnake.Embed(
-        title=inter.text_values['title'],
-        description=inter.text_values['content'],
-        url=inter.text_values['url'],
-        color=int(self.parent.bot.config['main']['themecolor'], 16)
-      )
-      embed.set_image(inter.text_values['image_url'])
-      embed.set_footer(text=self.babel(inter, 'announce_unsubscribe_info'))
-
-      subscribed = self.parent.config['dm_subscription'].split(',')
-      await inter.response.send_message(
-        f"Announcement preview; (will be sent to {len(subscribed) - 1} users)",
-        embed=embed,
-        view=self.parent.AnnounceView(self.parent, inter)
-      )
-
-  # Views
-
-  class AnnounceView(disnake.ui.View):
-    def __init__(self, parent:System, inter:disnake.ModalInteraction):
-      self.parent = parent
-      self.inter = inter
-      super().__init__(timeout=300)
-
-    def genstatus(self, message:str, subscribed:list, succeeded:int, failed:list[str]) -> str:
-      total = len(subscribed) - 1
-      return (
-        message + ' ' +
-        f"{succeeded}/{total} sent, {len(failed)} failed." +
-        '\n' + self.parent.bot.utilities.progress_bar(succeeded, total - len(failed), 40) +
-        (
-          '\n```' + self.parent.bot.utilities.truncate('\n'.join(failed), 1800) + '```'
-          if failed else ''
-        )
-      )
-
-    @disnake.ui.button(label='Send announcement', emoji='✈️', style=disnake.ButtonStyle.green)
-    async def callback(self, button:disnake.Button, inter:disnake.MessageInteraction):
-      #TODO: allow for resuming
-      button.disabled = True
-      await inter.response.edit_message(components=[button])
-      msg = await self.inter.original_message()
-      subscribed = self.parent.config['dm_subscription'].split(',')
-      succeeded = 0
-      failed = []
-      for encoded_uid in subscribed:
-        if encoded_uid == '':
-          continue
-        uid = self.parent.decode_uid(encoded_uid)
-        if uid is None:
-          failed.append(f'{encoded_uid} - Failed to decode user id')
-          continue
-        await asyncio.sleep(0.4)
-        try:
-          if (succeeded + len(failed)) % 5 == 0:
-            await msg.edit(self.genstatus("Sending announcement...", subscribed, succeeded, failed))
-          try:
-            user = await self.parent.bot.fetch_user(int(uid))
-          except disnake.NotFound:
-            failed.append(f'{encoded_uid} - User not found')
-            continue
-          try:
-            # simulate sending messages by still firing a coroutine
-            await user.trigger_typing() # .send(embed=msg.embed)
-          except disnake.Forbidden:
-            failed.append(f'{encoded_uid} - DM permission denied')
-            continue
-          except disnake.DiscordServerError:
-            failed.append(f'{encoded_uid} - Server disconnect')
-            await asyncio.sleep(5)
-            continue
-        except Exception as e:
-          failed.append(f'{encoded_uid} - Unhandled exception {e}')
-          continue
-        succeeded += 1
-
-      await msg.edit(self.genstatus("Announcement sent!", subscribed, succeeded, failed))
-
-    async def on_timeout(self):
-      for component in self.children:
-        if isinstance(component, (disnake.ui.Button, disnake.ui.Select)):
-          component.disabled = True
-      msg = await self.inter.original_message()
-      await msg.edit(view=self)
-
-  # Events
-
-  def subscribe(self, user:disnake.User) -> int:
-    # Subscribes users if they have never been subscribed before
-    uid = self.encode_uid(user.id)
-    if (
-      user
-      and f'{uid},' not in self.config['subscription_history']
-      and f'{uid},' not in self.config['dm_subscription']
-    ):
-      self.config['dm_subscription'] += f'{uid},'
-      self.config['subscription_history'] += f'{uid},'
-      return 1
-    return 0
-
-  @commands.Cog.listener('on_ready')
-  async def search_and_subscribe(self):
-    await asyncio.sleep(15) # Wait to reduce flood of commands on connect
-    print("Searching for server owners...")
-    count = 0
-    for guild in self.bot.guilds:
-      if guild.owner_id:
-        member = await guild.fetch_member(guild.owner_id)
-        count += self.subscribe(member)
-    print("Finished searching for server owners.", count, "added.")
-    self.bot.config.save()
-
-  @commands.Cog.listener('on_guild_join')
-  async def autosubscribe(self, guild:disnake.Guild):
-    self.subscribe(guild.owner)
-    self.bot.config.save()
 
   # Commands
 
@@ -295,7 +97,7 @@ class System(commands.Cog):
         elif module == 'auth':
           self.bot.auth = importlib.import_module('auth', 'main').Auth(self.bot)
         else:
-          raise AssertionError(f"Unhanlded special module {module}!")
+          raise AssertionError(f"Unhandled special module {module}!")
 
         await inter.send(
           self.babel(inter, 'extension_reload_success', extension=module),
@@ -304,8 +106,8 @@ class System(commands.Cog):
         return
 
       if action == Actions.load:
-        base_ext_files = glob(os.path.join('extensions', '*.py'))
-        ovl_ext_files = glob(
+        base_ext_files = glob.glob(os.path.join('extensions', '*.py'))
+        ovl_ext_files = glob.glob(
           os.path.join('overlay', 'extensions', '*.py')
         ) if self.bot.overlay else []
         # Prioritise overlay extensions over built-in extensions
@@ -383,9 +185,9 @@ class System(commands.Cog):
       elif inter.filled_options['action'] == Actions.list:
         return []
     if extension_list is None:
-      stock_extensions = glob(os.path.join('extensions', '*.py'))
+      stock_extensions = glob.glob(os.path.join('extensions', '*.py'))
       overlay_extensions = (
-        glob(os.path.join('overlay', 'extensions', '*.py')) if self.bot.overlay else []
+        glob.glob(os.path.join('overlay', 'extensions', '*.py')) if self.bot.overlay else []
       )
       extension_list = set(
         re.sub(r'^(extensions[/\\]|overlay[/\\]extensions[/\\])', '', f).strip('_')[:-3]
@@ -395,13 +197,6 @@ class System(commands.Cog):
       [x for x in extension_list if search in x] +
       [e for e in self.SPECIAL_MODULES if search in e]
     )
-
-  @commands.guild_only()
-  @commands.default_member_permissions(administrator=True)
-  @commands.slash_command()
-  async def announce(self, inter:disnake.CommandInteraction):
-    """ Sends an announcement to server owners and other subscribed users """
-    await inter.response.send_modal(self.AnnounceModal(self, inter))
 
   @commands.default_member_permissions(administrator=True)
   @commands.slash_command()
