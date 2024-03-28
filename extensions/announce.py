@@ -63,12 +63,7 @@ class Announce(commands.Cog):
 
   # Events
 
-  async def cog_load(self):
-    # Inform bot of unsent announcements, ongoing announcements are handled in on_ready
-    self.bot.add_view(self.AnnounceView(self))
-    print(list(view for view in self.bot.persistent_views))
-
-  def subscribe(self, user:disnake.User) -> int:
+  def subscribe(self, user:disnake.User) -> bool:
     # Subscribes users if they have never been subscribed before
     uid = self.encode_uid(user.id)
     if (
@@ -78,34 +73,40 @@ class Announce(commands.Cog):
     ):
       self.config['dm_subscription'] += f'{uid},'
       self.config['subscription_history'] += f'{uid},'
-      return 1
-    return 0
+      return True
+    return False
 
   @commands.Cog.listener('on_ready')
   async def catchup(self):
-    await asyncio.sleep(15) # Wait to reduce flood of commands on connect
+    await asyncio.sleep(5) # Wait to reduce flood of commands on connect
 
     # Enable resume button if an announcement was in progress
     if self.config['in_progress']:
       raw_channel_id, raw_message_id = self.config['in_progress'].split('/')
       channel = self.bot.get_channel(int(raw_channel_id))
       msg = await channel.fetch_message(int(raw_message_id))
-      view = self.AnnounceView(self, resume=True)
-      await msg.edit(view=view)
+      buttons:list[disnake.Button] = [self.SendButton(), self.ResumeButton()]
+      buttons[0].disabled = True
+      await msg.edit(components=buttons)
 
-    print("Searching for server owners...")
-    count = 0
-    for guild in self.bot.guilds:
-      if guild.owner_id:
-        member = await guild.fetch_member(guild.owner_id)
-        count += self.subscribe(member)
-    print("Finished searching for server owners.", count, "added.")
-    self.bot.config.save()
+  @commands.Cog.listener('on_guild_update')
+  async def verify_owner(self, _:disnake.Guild, guild:disnake.Guild):
+    # This indicates a guild owner might be active
+    # Check they're subscribed, in case they weren't found earlier
+    if self.subscribe(guild.owner):
+      self.bot.config.save()
 
   @commands.Cog.listener('on_guild_join')
   async def autosubscribe(self, guild:disnake.Guild):
-    self.subscribe(guild.owner)
-    self.bot.config.save()
+    if self.subscribe(guild.owner):
+      self.bot.config.save()
+
+  @commands.Cog.listener('on_button_click')
+  async def click_handler(self, inter:disnake.MessageInteraction):
+    if inter.data.custom_id == 'announce_send':
+      await self.send_button_callback(inter)
+    elif inter.data.custom_id == 'announce_resume':
+      await self.resume_button_callback(inter)
 
   # Common functions
 
@@ -238,63 +239,75 @@ class Announce(commands.Cog):
       embed.set_footer(text=self.babel(inter, 'announce_unsubscribe_info'))
 
       subscribed = self.parent.config['dm_subscription'].split(',')
-      view = self.parent.AnnounceView(self.parent)
+      buttons:list[disnake.Button] = [
+        self.parent.SendButton(), self.parent.ResumeButton()
+      ]
+      buttons[1].disabled = True
       await inter.response.send_message(
         f"Announcement preview; (will be sent to {len(subscribed) - 1} users)",
         embed=embed,
-        view=view
+        components=buttons
       )
 
-  # Views
+  # Components
 
-  class AnnounceView(disnake.ui.View):
-    def __init__(self, parent:Announce, *, resume=False):
-      self.parent = parent
-      super().__init__(timeout=None)
-      self.send_button.disabled = resume
-      self.resume_button.disabled = not resume
+  class SendButton(disnake.ui.Button):
+    def __init__(self):
+      super().__init__(
+        label='Send announcement',
+        emoji='📨',
+        custom_id='announce_send',
+        style=disnake.ButtonStyle.green
+      )
 
-    @disnake.ui.button(
-      label='Send announcement',
-      emoji='✈️', style=disnake.ButtonStyle.green,
-      custom_id='announce_send'
+  async def send_button_callback(self, inter:disnake.MessageInteraction):
+    if self.lock:
+      # Lock means an announcement is already in progress
+      return
+    # Prevent any random users from pressing the button
+    self.bot.auth.superusers(inter)
+
+    # Disable button
+    buttons:list[disnake.Button] = [self.SendButton(), self.ResumeButton()]
+    buttons[0].disabled = True
+    buttons[1].disabled = True
+    await inter.response.edit_message(components=buttons)
+    await self.send_announcement(await inter.original_message())
+
+  class ResumeButton(disnake.ui.Button):
+    def __init__(self):
+      super().__init__(label='Resume sending', emoji='▶️', custom_id='announce_resume')
+
+  async def resume_button_callback(self, inter:disnake.MessageInteraction):
+    if self.lock:
+      # Lock means an announcement is already in progress
+      return
+    # Prevent any random users from pressing the button
+    self.bot.auth.superusers(inter)
+
+    # Disable resume button once again
+    buttons:list[disnake.Button] = [self.SendButton(), self.ResumeButton()]
+    buttons[0].disabled = True
+    buttons[1].disabled = True
+    await inter.response.edit_message(components=buttons)
+
+    # Recover state from message content
+    succeeded = int(inter.message.content[24:].split('/')[0])
+    failed = []
+    readnext = False
+    for line in inter.message.content.splitlines():
+      if line == '```':
+        if readnext is False:
+          readnext = True
+        else:
+          break
+      if readnext:
+        failed.append(line)
+
+    # Use recovered state to resume the announcement
+    await self.send_announcement(
+      inter.message, succeeded + len(failed), succeeded, failed
     )
-    async def send_button(self, _:disnake.Button, inter:disnake.MessageInteraction):
-      # Prevent any random users from pressing the button
-      self.parent.bot.auth.superusers(inter)
-
-      # Disable button to prevent double firing
-      self.send_button.disabled = True
-      await inter.response.edit_message(view=self)
-      await self.parent.send_announcement(await inter.original_message())
-
-    @disnake.ui.button(label='Resume sending', emoji='▶️', custom_id='announce_resume')
-    async def resume_button(self, _:disnake.Button, inter:disnake.MessageInteraction):
-      if self.parent.lock:
-        # Lock means an announcement is already in progress
-        return
-
-      # Disable resume button once again
-      self.resume_button.disabled = True
-      await inter.response.edit_message(view=self)
-
-      # Recover state from message content
-      succeeded = int(inter.message.content[24:].split('/')[0])
-      failed = []
-      readnext = False
-      for line in inter.message.content.splitlines():
-        if line == '```':
-          if readnext is False:
-            readnext = True
-          else:
-            break
-        if readnext:
-          failed.append(line)
-
-      # Use recovered state to resume the announcement
-      await self.parent.send_announcement(
-        inter.message, succeeded + len(failed), succeeded, failed
-      )
 
   # Commands
 

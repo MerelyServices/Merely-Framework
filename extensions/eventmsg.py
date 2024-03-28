@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Union, Callable, TYPE_CHECKING
+from typing import Optional, Union, TYPE_CHECKING
 import disnake
 from disnake.ext import commands
 
@@ -254,18 +254,6 @@ class EventMsg(commands.Cog):
       await channel.send(', '.join(data[1:])
                          .format(f"{payload.user.name}#{payload.user.discriminator}", guild.name))
 
-  class CallbackButton(disnake.ui.Button):
-    """ Modified Button which can have a pre-defined callback function """
-    def __init__(self, callback:Callable[[disnake.MessageInteraction], None], **kwargs) -> None:
-      super().__init__(**kwargs)
-      self.callback = callback
-
-  class CallbackSelect(disnake.ui.Select):
-    """ Modified Select which can have a pre-defined callback function """
-    def __init__(self, callback:Callable[[disnake.MessageInteraction], None], **kwargs) -> None:
-      super().__init__(**kwargs)
-      self.callback = callback
-
   class EventMessageEditor(disnake.ui.Modal):
     """ Modal simply provides a text box to change the event message """
     def __init__(self, eventview:"EventMsg.EventEditView"):
@@ -319,7 +307,7 @@ class EventMsg(commands.Cog):
       # Build view
       match action:
         case Action.SEND_MESSAGE | Action.EDIT_MESSAGE:
-          self.add_item(parent.CallbackButton(
+          self.add_item(parent.bot.utilities.CallbackButton(
             callback=self.edit_click,
             label="Edit",
             style=disnake.ButtonStyle.secondary,
@@ -328,19 +316,19 @@ class EventMsg(commands.Cog):
           ))
           if event.components:
             for comp in event.components:
-              self.add_item(parent.CallbackButton(
+              self.add_item(parent.bot.utilities.CallbackButton(
                 callback=self.custom_click,
                 **comp
               ))
         case Action.GRANT_XP:
-          self.add_item(parent.CallbackSelect(
+          self.add_item(parent.bot.utilities.CallbackSelect(
             callback=self.custom_click,
             custom_id=f"{self.eid}_xpmult",
             placeholder="XP Points",
             options=range(1,25)
           ))
           if event.name == 'on_message':
-            self.add_item(parent.CallbackSelect(
+            self.add_item(parent.bot.utilities.CallbackSelect(
               callback=self.custom_click,
               custom_id=f"{self.eid}_xpmode",
               placeholder="Mode",
@@ -349,7 +337,7 @@ class EventMsg(commands.Cog):
         case _:
           raise AssertionError("An event was specified which was not handled in /eventmessage")
 
-      self.add_item(parent.CallbackButton(
+      self.add_item(parent.bot.utilities.CallbackButton(
         callback=self.submit_click,
         label="Submit",
         custom_id=f"{self.eid}_submit",
