@@ -87,7 +87,7 @@ class Babel():
       if newbaselang in self.langs:
         self.baselang = newbaselang
       else:
-        print("WARNING: unable to resolve language dependancy chain.")
+        print("WARN: unable to resolve language dependancy chain.")
 
   def localeconv(self, locale:disnake.Locale) -> str:
     """ Converts a Discord API locale to a babel locale """

@@ -148,7 +148,7 @@ class Help(commands.Cog):
                                         oldcmd=command, cmd=moves[target + 1]), **kwargs)
           else:
             print(
-              "WARNING: bad config. in help/moved_command:\n"
+              "WARN: bad config. in help/moved_commands:\n"
               f"{moves[target-1]} is now {moves[target]} but {moves[target]} doesn't exist."
             )
             await inter.send(self.babel(inter, 'no_command', cmd=command), **kwargs)

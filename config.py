@@ -10,7 +10,7 @@ from packaging import version
 
 class Config(ConfigParser):
   """loads the config file automatically and ensures it's in a valid state"""
-  def __init__(self, path:str = 'config'):
+  def __init__(self, path='config', quiet=False):
     """
     Custom init for merelybot configparser
     will always return a valid config object, even if the filesystem is broken
@@ -23,6 +23,7 @@ class Config(ConfigParser):
     self.reference:ConfigParser | None = None
     self.last_backup = 0
     self.migrate:bool | version.Version = False
+    self.quiet = quiet
 
     self.load()
 
@@ -30,21 +31,24 @@ class Config(ConfigParser):
     """ Verify file exists and load it """
     rebuild = False
     if not os.path.exists(self.path):
-      print(
-        f"WARNING: {self.path} missing - creating folder and generating bare-minimum defaults.",
-        f"\nYou should consider writing or including a '{self.template}'"
-      )
+      if not self.quiet:
+        print(
+          f"WARN: {self.path} missing - creating folder and generating bare-minimum defaults.",
+          f"\nYou should consider writing or including a '{self.template}'"
+        )
       rebuild = True
       os.makedirs(self.path)
     if not os.path.exists(self.file):
       if os.path.exists(self.template):
-        print(f"WARNING: {self.file} missing - reverting to template config")
+        if not self.quiet:
+          print(f"WARN: {self.file} missing - reverting to template config")
         shutil.copy(self.template, self.file)
       else:
-        print(
-          f"WARNING: {self.template} missing - resorting to bare-minimum defaults.",
-          f"\nYou should consider writing or including a '{self.template}'"
-        )
+        if not self.quiet:
+          print(
+            f"WARN: {self.template} missing - resorting to bare-minimum defaults.",
+            f"\nYou should consider writing or including a '{self.template}'"
+          )
         rebuild = True
     if not rebuild:
       with open(self.file, 'r', encoding='utf-8') as f:

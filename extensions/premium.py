@@ -56,15 +56,6 @@ class Premium(commands.Cog):
       self.config['premium_role_guild'] = ''
       self.config['premium_roles'] = ''
       bot.config.save()
-      raise Exception(
-        "You must provide a reference to a guild and at least one role in order for premium to work!"
-      )
-    if not self.bot.config.get('help', 'serverinv', fallback=''):
-      bot.config.save()
-      raise Exception(
-        "You must have an invite to the support server with the supporter role in " +
-        "config[help][serverinv]!"
-      )
 
     self.premiumguild = None
     self.premiumroles = []
@@ -72,6 +63,18 @@ class Premium(commands.Cog):
     bot.add_app_command_check(
       self.check_premium_slash_command, slash_commands=True, user_commands=True
     )
+
+  async def cog_load(self):
+    if not (self.config['premium_role_guild'] or self.config['premium_roles']):
+      raise Exception(
+        "You must provide a reference to a guild and at least one role in order for premium to work!"
+      )
+    if not self.bot.config.get('help', 'serverinv', fallback=''):
+      self.bot.config.save()
+      raise Exception(
+        "You must have an invite to the support server with the supporter role in " +
+        "config[help][serverinv]!"
+      )
 
   @commands.Cog.listener('on_connect')
   async def cache_role(self):

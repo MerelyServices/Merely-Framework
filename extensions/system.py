@@ -47,10 +47,13 @@ class System(commands.Cog):
     self.bot = bot
 
     # Restrict usage of these commands to specified guilds
-    guilds = bot.config['auth']['botadmin_guilds']
-    botadmin_guilds = [int(guild) for guild in guilds.split(' ')]
-    for cmd in self.get_application_commands():
-      cmd.guild_ids = botadmin_guilds
+    if bot.config['auth']['botadmin_guilds']:
+      guilds = bot.config['auth']['botadmin_guilds']
+      botadmin_guilds = [int(guild) for guild in guilds.split(' ')]
+      for cmd in self.get_application_commands():
+        cmd.guild_ids = botadmin_guilds
+    elif not bot.quiet:
+      print("  WARN: No botadmin_guilds defined, so all servers will be able to see system commands!")
 
   # Commands
 

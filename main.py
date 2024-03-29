@@ -56,7 +56,7 @@ class MerelyBot(commands.AutoShardedInteractionBot):
           print("Loading translations\n - Using 'overlay/babel/'")
         self.babel = Babel(self.config, overlaybabelpath)
     else:
-      self.config = Config()
+      self.config = Config(quiet=self.quiet)
       self.babel = Babel(self.config)
 
     self.auth = Auth(self)
