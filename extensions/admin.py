@@ -67,6 +67,7 @@ class Admin(commands.Cog):
         await asyncio.sleep(30)
         await message.delete()
 
+  @commands.bot_has_permissions(read_messages=True, manage_messages=True)
   @commands.slash_command()
   @commands.default_member_permissions(administrator=True)
   async def janitor(
@@ -88,6 +89,7 @@ class Admin(commands.Cog):
       self.bot.config.save()
       await inter.send(self.babel(inter, 'janitor_unset_success'))
 
+  @commands.bot_has_permissions(read_messages=True, manage_messages=True)
   @commands.slash_command()
   @commands.default_member_permissions(moderate_members=True)
   async def clean(

@@ -389,6 +389,7 @@ class EventMsg(commands.Cog):
           item.disabled = True
       #await self.msg.edit(self.parent.bot.babel(self.msg.guild, 'error', 'timeoutview'))
 
+  @commands.bot_has_permissions(read_messages=True, manage_messages=True)
   @commands.slash_command()
   @commands.default_member_permissions(moderate_members=True)
   async def eventmessage(
@@ -446,6 +447,7 @@ class EventMsg(commands.Cog):
       allowed_mentions=[]
     )
 
+  @commands.bot_has_permissions(read_messages=True, manage_messages=True)
   @commands.guild_only()
   @commands.slash_command()
   @commands.default_member_permissions(administrator=True)
@@ -501,6 +503,7 @@ class EventMsg(commands.Cog):
         ephemeral=True
       )
 
+  @commands.bot_has_permissions(read_messages=True, manage_messages=True)
   @commands.guild_only()
   @commands.slash_command()
   @commands.default_member_permissions(administrator=True)

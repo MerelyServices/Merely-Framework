@@ -367,6 +367,7 @@ class Poll(commands.Cog):
           self.livepolls.pop(poll.message.id)
           poll.remove()
 
+  @commands.bot_has_permissions(read_messages=True, send_messages=True, add_reactions=True)
   @commands.guild_only()
   @commands.slash_command()
   async def poll(

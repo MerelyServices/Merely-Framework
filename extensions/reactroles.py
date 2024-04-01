@@ -408,6 +408,7 @@ class ReactRoles(commands.Cog):
     ]
     return results[:25]
 
+  @commands.bot_has_permissions(read_messages=True, manage_messages=True, add_reactions=True)
   @commands.guild_only()
   @commands.slash_command()
   @commands.default_member_permissions(administrator=True)

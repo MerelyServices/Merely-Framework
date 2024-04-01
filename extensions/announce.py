@@ -314,6 +314,7 @@ class Announce(commands.Cog):
 
   # Commands
 
+  @commands.bot_has_permissions(read_messages=True, send_messages=True)
   @commands.guild_only()
   @commands.default_member_permissions(administrator=True)
   @commands.slash_command()
