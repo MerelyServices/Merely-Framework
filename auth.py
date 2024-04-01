@@ -7,7 +7,7 @@
 
 from __future__ import annotations
 
-from typing import Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 import disnake
 
 if TYPE_CHECKING:
@@ -44,40 +44,52 @@ class Auth():
   class AuthError(Exception):
     """Errors to be sent to a user that failed an auth test"""
 
-  def owners(self, msg:Union[disnake.Message, disnake.GuildCommandInteraction]):
-    """ Verify this user owns this guild """
-    if msg.author == msg.guild.owner or\
-       str(str(msg.author.id)) in self.config['superusers']:
-      return True
-    raise self.AuthError(self.babel(msg, 'unauthorized'))
-
-  def admins(self, msg:Union[disnake.Message, disnake.GuildCommandInteraction]):
-    """ Verify this user is an admin """
-    if msg.author == msg.guild.owner or\
-       msg.channel.permissions_for(msg.author).administrator or\
-       str(msg.author.id) in self.config['superusers']:
-      return True
-    raise self.AuthError(self.babel(msg, 'not_admin'))
-
-  def mods(self, msg:Union[disnake.Message, disnake.GuildCommandInteraction]):
-    """ Verify this user is a moderator """
-    if msg.author == msg.guild.owner or\
-       msg.channel.permissions_for(msg.author).administrator or\
-       msg.channel.permissions_for(msg.author).ban_members or\
-       str(msg.author.id) in self.config['superusers'] or\
-       str(msg.author.id) in self.config['authusers']:
-      return True
-    raise self.AuthError(self.babel(msg, 'not_mod'))
-
-  def superusers(self, msg:Union[disnake.Message, disnake.Interaction]):
+  def superusers(self, inter:disnake.Interaction, fail=True) -> bool:
     """ Verify this user is a superuser """
-    if str(msg.author.id) in self.config['superusers']:
+    if str(inter.author.id) in self.config['superusers']:
       return True
-    raise self.AuthError(self.babel(msg, 'not_superuser'))
+    if fail:
+      raise self.AuthError(self.babel(inter, 'not_superuser'))
+    return False
 
-  def authusers(self, msg:Union[disnake.Message, disnake.Interaction]):
-    """ Verify this user is an authuser """
-    if str(msg.author.id) in self.config['superusers'] or\
-       str(msg.author.id) in self.config['authusers']:
+  def owners(self, inter:disnake.Interaction, fail=True) -> bool:
+    """ Verify this user owns this guild """
+    if self.superusers(inter, fail=False):
       return True
-    raise self.AuthError(self.babel(msg, 'not_authuser'))
+    if isinstance(inter, disnake.GuildCommandInteraction) and inter.author == inter.guild.owner:
+      return True
+    if fail:
+      raise self.AuthError(self.babel(inter, 'unauthorized'))
+    return False
+
+  def admins(self, inter:disnake.Interaction, fail=True) -> bool:
+    """ Verify this user is an admin """
+    if self.owners(inter, fail=False):
+      return True
+    if inter.permissions.administrator:
+      return True
+    if fail:
+      raise self.AuthError(self.babel(inter, 'not_admin'))
+    return False
+
+  def authusers(self, inter:disnake.Interaction, fail=True) -> bool:
+    """ Verify this user is an authuser """
+    if self.superusers(inter, fail=False):
+      return True
+    if str(inter.author.id) in self.config['authusers']:
+      return True
+    if fail:
+      raise self.AuthError(self.babel(inter, 'not_authuser'))
+    return False
+
+  def mods(self, inter:disnake.Interaction, fail=True) -> bool:
+    """ Verify this user is a moderator """
+    if self.authusers(inter, fail=False):
+      return True
+    if self.admins(inter, fail=False):
+      return True
+    if inter.permissions.ban_members:
+      return True
+    if fail:
+      raise self.AuthError(self.babel(inter, 'not_mod'))
+    return False
