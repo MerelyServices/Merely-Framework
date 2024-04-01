@@ -66,16 +66,14 @@ class Announce(commands.Cog):
 
   # Events
 
-  def subscribe(self, user:disnake.User) -> bool:
+  def subscribe(self, user_id:int) -> bool:
     # Subscribes users if they have never been subscribed before
-    uid = self.encode_uid(user.id)
     if (
-      user
-      and f'{uid},' not in self.config['subscription_history']
-      and f'{uid},' not in self.config['dm_subscription']
+      f'{user_id},' not in self.config['subscription_history']
+      and f'{user_id},' not in self.config['dm_subscription']
     ):
-      self.config['dm_subscription'] += f'{uid},'
-      self.config['subscription_history'] += f'{uid},'
+      self.config['dm_subscription'] += f'{user_id},'
+      self.config['subscription_history'] += f'{user_id},'
       return True
     return False
 
@@ -96,12 +94,15 @@ class Announce(commands.Cog):
   async def verify_owner(self, _:disnake.Guild, guild:disnake.Guild):
     # This indicates a guild owner might be active
     # Check they're subscribed, in case they weren't found earlier
-    if self.subscribe(guild.owner):
-      self.bot.config.save()
+    if guild.owner_id:
+      if self.subscribe(guild.owner_id):
+        self.bot.config.save()
+    else:
+      print("No owner found")
 
   @commands.Cog.listener('on_guild_join')
   async def autosubscribe(self, guild:disnake.Guild):
-    if self.subscribe(guild.owner):
+    if self.subscribe(guild.owner_id):
       self.bot.config.save()
 
   @commands.Cog.listener('on_button_click')
