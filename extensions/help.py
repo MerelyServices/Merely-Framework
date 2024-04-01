@@ -283,10 +283,7 @@ class Help(commands.Cog):
     if end < len(fchanges):
       changelog += "\n..."
 
-    logurl = (
-      self.config['changelogurl']+"changes.html#"+search.replace('.','')
-      if self.config['changelogurl'] else ''
-    )
+    logurl = self.config['changelogurl'] if self.config['changelogurl'] else ''
 
     embed = disnake.Embed(
       title=self.babel(inter, 'changelog_title'),
