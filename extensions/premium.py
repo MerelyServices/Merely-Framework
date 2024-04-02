@@ -95,12 +95,13 @@ class Premium(commands.Cog):
     if not self.premiumroles:
       raise Exception("The designated premium role was not found!")
 
-  async def check_premium(self, user:disnake.User):
-    member = await self.premiumguild.fetch_member(user.id)
-    if isinstance(member, disnake.Member):
-      return list(self.premiumroles & set(member.roles))
-    else:
+  async def check_premium(self, user:disnake.User | disnake.Member):
+    try:
+      member = await self.premiumguild.fetch_member(user.id)
+    except disnake.NotFound:
       return False
+    else:
+      return list(self.premiumroles & set(member.roles))
 
   def error_embed(self, inter:disnake.Interaction) -> disnake.Embed:
     rolelist = self.bot.babel.string_list(inter, [r.name for r in self.premiumroles], True)
