@@ -72,8 +72,9 @@ class Announce(commands.Cog):
       f'{user_id},' not in self.config['subscription_history']
       and f'{user_id},' not in self.config['dm_subscription']
     ):
-      self.config['dm_subscription'] += f'{user_id},'
-      self.config['subscription_history'] += f'{user_id},'
+      uid = self.encode_uid(user_id)
+      self.config['dm_subscription'] += f'{uid},'
+      self.config['subscription_history'] += f'{uid},'
       return True
     return False
 
