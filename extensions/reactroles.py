@@ -85,7 +85,10 @@ class ReactRoles(commands.Cog):
         await member.remove_roles(*take, reason=reason)
     except disnake.Forbidden:
       if dm:
-        await member.send(self.babel(member, 'role_change_failed_perms'))
+        try:
+          await member.send(self.babel(member, 'role_change_failed_perms'))
+        except disnake.Forbidden:
+          pass
     except disnake.HTTPException:
       pass
     else:
