@@ -31,7 +31,7 @@ class Premium(commands.Cog):
     return self.bot.babel(target, self.SCOPE, key, **values)
 
   premiumguild: disnake.Guild
-  premiumroles: list[disnake.Role]
+  premiumroles: set[disnake.Role]
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
@@ -58,7 +58,7 @@ class Premium(commands.Cog):
       bot.config.save()
 
     self.premiumguild = None
-    self.premiumroles = []
+    self.premiumroles = set()
 
     bot.add_app_command_check(
       self.check_premium_slash_command, slash_commands=True, user_commands=True
@@ -84,10 +84,13 @@ class Premium(commands.Cog):
     if not self.premiumguild:
       print("Note: had to fetch premium guild as it has not been loaded yet")
       self.premiumguild = await self.bot.fetch_guild(int(self.config['premium_role_guild']))
+
+    # Repopulate list of premium roles
+    self.premiumroles = set()
     targets = self.config['premium_roles'].split(' ')
     for role in await self.premiumguild.fetch_roles():
       if str(role.id) in targets:
-        self.premiumroles.append(role)
+        self.premiumroles.add(role)
 
     if not self.premiumroles:
       raise Exception("The designated premium role was not found!")
@@ -95,7 +98,7 @@ class Premium(commands.Cog):
   async def check_premium(self, user:disnake.User):
     member = await self.premiumguild.fetch_member(user.id)
     if isinstance(member, disnake.Member):
-      return list(set(self.premiumroles) & set(member.roles))
+      return list(self.premiumroles & set(member.roles))
     else:
       return False
 
