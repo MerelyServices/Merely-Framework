@@ -123,9 +123,10 @@ class Help(commands.Cog):
     command:Optional[str] = None,
     **kwargs
   ):
-    """finds usage information in babel and sends them
-    highlights some commands if command is None"""
-
+    """
+    Get a summary of featured commands, or help with a specific command.
+    """
+    # finds usage information in babel and sends them highlights some commands if command is None
     if command:
       docs = self.get_docs(inter, command)
       if docs is not None:
@@ -262,7 +263,7 @@ class Help(commands.Cog):
   @commands.slash_command()
   async def changes(self, inter:disnake.CommandInteraction, search:Optional[str] = None):
     """
-    See what's changed in recent updates
+    See what has changed in recent updates
 
     Parameters
     ----------
