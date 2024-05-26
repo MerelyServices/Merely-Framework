@@ -152,6 +152,7 @@ class Babel():
     target:Resolvable,
     scope:str,
     key:str,
+    fallback:str | None = None,
     **values: dict[str, str | bool]
   ) -> str:
     """ Determine the locale and resolve the closest translated string """
@@ -186,8 +187,11 @@ class Babel():
 
     if match is None:
       # Placeholder string when no strings are found
-      variables = self.string_list(target, [k+'={'+k+'}' for k in values])
-      match = "{" + key.upper() + (': '+variables if variables else '') + "}"
+      if fallback:
+        match = fallback
+      else:
+        variables = self.string_list(target, [k+'={'+k+'}' for k in values])
+        match = "{" + key.upper() + (': '+variables if variables else '') + "}"
 
     # Fill in variables in the string
     for varname,varval in values.items():
@@ -242,13 +246,23 @@ class Babel():
 
   def string_list(self, target:Resolvable, items:list[str], or_mode:bool = False) -> str:
     """ Takes list items, and joins them together in a regionally correct way """
-    CONJUNCTION = self(target, 'main', 'list_conjunction').replace('_', ' ')
+    CONJUNCTION = (
+      self(target, 'main', 'list_conjunction', fallback=', ').replace('_', ' ')
+    )
     if or_mode:
-      CONJUNCTION_2 = self(target, 'main', 'list_conjunction_2_or').replace('_', ' ')
-      CONJUNCTIONLAST = self(target, 'main', 'list_last_conjunction_or').replace('_', ' ')
+      CONJUNCTION_2 = (
+        self(target, 'main', 'list_conjunction_2_or', fallback=' or ').replace('_', ' ')
+      )
+      CONJUNCTIONLAST = (
+        self(target, 'main', 'list_last_conjunction_or', fallback=', or ').replace('_', ' ')
+      )
     else:
-      CONJUNCTION_2 = self(target, 'main', 'list_conjunction_2').replace('_', ' ')
-      CONJUNCTIONLAST = self(target, 'main', 'list_last_conjunction').replace('_', ' ')
+      CONJUNCTION_2 = (
+        self(target, 'main', 'list_conjunction_2', fallback=' and ').replace('_', ' ')
+      )
+      CONJUNCTIONLAST = (
+        self(target, 'main', 'list_last_conjunction', fallback=', and ').replace('_', ' ')
+      )
 
     items = list(items)
     if len(items) > 2:
