@@ -1,3 +1,3 @@
-disnake==2.8.1
+disnake==2.9.2
 emoji
 packaging
