@@ -83,7 +83,7 @@ class Help(commands.Cog):
         message = '/help'
     status = disnake.Status.online if status is None else status
     activity = disnake.Game(message)
-    await asyncio.sleep(5) # Add delay to reduce flood of requests on connect
+    await asyncio.sleep(1) # Add delay to reduce flood of requests on connect
     await self.bot.change_presence(status=status, activity=activity)
 
   def find_command(self, command:str) -> Union[commands.Command, commands.InvokableSlashCommand]:
