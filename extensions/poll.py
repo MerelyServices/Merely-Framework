@@ -72,7 +72,7 @@ class LivePoll():
     """ Clears poll from config - from here, this object can safely be dereferenced """
     configkey = f'{self.message.channel.id}_{self.message.id}_expiry' +\
                 ('_expired' if self.expired else '')
-    self.parent.bot.config.remove_option(self.parent.SCOPE, configkey)
+    self.parent.config.pop(configkey)
     if save:
       self.parent.bot.config.save()
 
@@ -257,7 +257,7 @@ class Poll(commands.Cog):
             channel = await self.bot.fetch_channel(channel_id)
             message = await channel.fetch_message(message_id)
           except (disnake.NotFound, disnake.Forbidden):
-            self.bot.config.remove_option(self.SCOPE, key)
+            self.config.pop(key)
             save = True
             continue
 

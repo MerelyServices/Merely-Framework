@@ -491,7 +491,7 @@ class EventMsg(commands.Cog):
   async def welcome_clear(self, inter:disnake.CommandInteraction):
     """ Clears the welcome message """
     if f'{inter.guild.id}_welcome' in self.config:
-      self.bot.config.remove_option(self.SCOPE, f'{inter.guild.id}_welcome')
+      self.config.pop(f'{inter.guild.id}_welcome')
       self.bot.config.save()
       await inter.response.send_message(
         self.bot.babel(inter, 'greeter', 'welcome_clear_success'),
@@ -544,7 +544,7 @@ class EventMsg(commands.Cog):
   async def farewell_clear(self, inter:disnake.CommandInteraction):
     """ Clears the farewell message """
     if f'{inter.guild.id}_farewell' in self.config:
-      self.bot.config.remove_option(self.SCOPE, f'{inter.guild.id}_farewell')
+      self.config.pop(f'{inter.guild.id}_farewell')
       self.bot.config.save()
       await inter.response.send_message(self.bot.babel(inter, 'greeter', 'farewell_clear_success'))
     else:

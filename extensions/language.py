@@ -139,13 +139,13 @@ class Language(commands.Cog):
       ):
         usermode = True
         if language == 'default':
-          self.bot.config.remove_option(self.SCOPE, str(inter.author.id))
+          self.config.pop(str(inter.author.id))
         else:
           self.config[str(inter.author.id)] = language
       else:
         usermode = False
         if language == 'default':
-          self.bot.config.remove_option(self.SCOPE, str(inter.guild.id))
+          self.config.pop(str(inter.guild.id))
         else:
           self.config[str(inter.guild.id)] = language
       self.bot.config.save()

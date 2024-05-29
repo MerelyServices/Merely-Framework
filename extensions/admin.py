@@ -85,7 +85,7 @@ class Admin(commands.Cog):
       self.bot.config.save()
       await inter.send(self.babel(inter, 'janitor_set_success'))
     else:
-      self.bot.config.remove_option(self.SCOPE, f'{inter.channel.id}_janitor')
+      self.config.pop(f'{inter.channel.id}_janitor')
       self.bot.config.save()
       await inter.send(self.babel(inter, 'janitor_unset_success'))
 

@@ -166,7 +166,7 @@ class ReactRoles(commands.Cog):
         ch = await self.bot.fetch_channel(chid)
         msg = await ch.fetch_message(msgid)
       except disnake.NotFound:
-        self.bot.config.remove_option(self.SCOPE, key)
+        self.config.pop(key)
         deleted += 1
       except Exception as e:
         print(f"failed to get reactionrole message {msgid} from channel {chid}. {e}")
@@ -182,7 +182,7 @@ class ReactRoles(commands.Cog):
     """ Remove message from config so it won't attempt to load it again """
     for k in self.config.keys():
       if k.split('_')[1] == str(message.id):
-        self.bot.config.remove_option(self.SCOPE, k)
+        self.config.pop(k)
         self.bot.config.save()
         break
     if message.id in self.watching:
