@@ -264,19 +264,20 @@ if __name__ == '__main__':
     }
     bot = MerelyBot(**kwargs)
 
-    token = bot.config.get('main', 'token', fallback=None)
-    if token:
-      while True:
-        try:
-          bot.run(token)
-          if not bot.restart:
-            break
-        except Exception as e:
-          print("FATAL: Bot crashed. Restarting...\n", e, file=sys.stderr)
-        bot.reinit()
+    if token := bot.config.get('main', 'token', fallback=None):
+      try:
+        # Create autorestart marker
+        open('.restart', 'a').close()
+        bot.run(token)
+        if not bot.restart:
+          # Tell the batch/shell script that the bot does not want to restart
+          os.remove('.restart')
+      except Exception as e:
+        print("FATAL: Bot crashed! Restarting...\n", e, file=sys.stderr)
     else:
       raise Exception(
         "Invalid token!" +
         "\nGet a token from https://discordapp.com/developers/applications/ and put it in config.ini"
       )
-  print("exited.")
+  # Denote the end of this process with a separator
+  print('='*20)

@@ -5,3 +5,4 @@ __pycache__
 /config/config.ini
 /logs
 /overlay
+/.restart
