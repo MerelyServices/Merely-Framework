@@ -163,12 +163,18 @@ class System(commands.Cog):
           )
         else:
           raise commands.BadArgument
-        cogmodules = {cog.lower(): cog for cog in self.bot.cogs}
-        if module in cogmodules:
-          for listener in self.bot.cogs[cogmodules[module]].get_listeners():
+        cogmodules = {cog.lower().replace('_', ''): cog for cog in self.bot.cogs}
+        compatmod = module.lower().replace('_', '')
+        if compatmod in cogmodules:
+          # Fire ready events again in the loaded module
+          for listener in self.bot.cogs[cogmodules[compatmod]].get_listeners():
             if listener[0] == 'on_connect':
+              if self.bot.verbose:
+                print("Firing event", listener[1].__name__, "as a part of loading module", module)
               asyncio.ensure_future(listener[1]())
             elif listener[0] == 'on_ready' and self.bot.is_ready():
+              if self.bot.verbose:
+                print("Firing event", listener[1].__name__, "as a part of loading module", module)
               asyncio.ensure_future(listener[1]())
       else:
         await inter.send(self.babel(inter, 'extension_file_missing'), ephemeral=True)
