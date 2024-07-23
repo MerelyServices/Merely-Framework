@@ -41,6 +41,8 @@ class Language(commands.Cog):
   def controlpanel_settings(self, inter:disnake.Interaction):
     # ControlPanel integration
     langlist = list(self.bot.babel.langs.keys())
+    if not self.config.getboolean('show_in_controlpanel', fallback=True):
+      return []
     out = [
       Selectable(self.SCOPE, str(inter.user.id), 'user_language_override', langlist)
     ]

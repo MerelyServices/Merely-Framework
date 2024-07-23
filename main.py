@@ -207,7 +207,7 @@ class MerelyBot(commands.AutoShardedInteractionBot):
     for migration in migrations:
       fname = migration.split('/')[-1]
       target_ver = version.parse('.'.join(fname.split('_')[:-1]))
-      if self.config.migrate <= target_ver <= version.parse(self.config['main']['ver']):
+      if self.config.migrate < target_ver <= version.parse(self.config['main']['ver']):
         module = importlib.import_module(re.sub(r'[/\\]', '.', migration[:-3]), 'main')
         module.migrate(self.config)
         counter += 1

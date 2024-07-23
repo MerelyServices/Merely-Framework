@@ -83,7 +83,7 @@ class Help(commands.Cog):
         message = '/help'
     status = disnake.Status.online if status is None else status
     activity = disnake.Game(message)
-    await asyncio.sleep(5) # Add delay to reduce flood of requests on connect
+    await asyncio.sleep(1) # Add delay to reduce flood of requests on connect
     await self.bot.change_presence(status=status, activity=activity)
 
   def find_command(self, command:str) -> Union[commands.Command, commands.InvokableSlashCommand]:
@@ -98,7 +98,9 @@ class Help(commands.Cog):
     matchedcommand = self.find_command(cmd)
     # return usage information for a specific command
     if matchedcommand:
-      reslang = self.bot.babel.resolve_lang(inter.author.id, inter.guild.id, inter)
+      reslang = self.bot.babel.resolve_lang(
+        inter.author.id, inter.guild.id if inter.guild else None, inter
+      )
       for reflang in reslang:
         reflang = self.bot.babel.langs[reflang]
         for key in reflang.keys():

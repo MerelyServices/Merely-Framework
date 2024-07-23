@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from enum import Enum
-import asyncio, os, re, importlib, glob
+import asyncio, io, os, re, importlib, glob, contextlib
 from typing import Optional, TYPE_CHECKING
 import disnake
 from disnake.ext import commands
@@ -206,6 +206,47 @@ class System(commands.Cog):
       [x for x in extension_list if search in x] +
       [e for e in self.SPECIAL_MODULES if search in e]
     )
+
+  @commands.default_member_permissions(administrator=True)
+  @commands.slash_command()
+  async def migrate(self, inter:disnake.CommandInteraction, script:str):
+    """
+    Manually trigger a config migration script
+
+    Parameters
+    ----------
+    script: The filename of the migration script you would like to trigger
+    """
+    # For security, generate a list of approved scripts
+    migrations:list[str] = []
+    if os.path.exists('migrations'):
+      migrations += glob.glob(os.path.join('migrations', 'v*_*.py'))
+    if os.path.exists(os.path.join('overlay', 'migrations')):
+      migrations += glob.glob(os.path.join('overlay', 'migrations', 'v*_*.py'))
+    # Check script path is valid
+    if script not in migrations:
+      await inter.send("Script not found! You can only choose a script from the autocomplete list.")
+      return
+    # Begin the migration
+    module = importlib.import_module(re.sub(r'[/\\]', '.', script[:-3]), 'main')
+    f = io.StringIO()
+    try:
+      with contextlib.redirect_stdout(f):
+        module.migrate(self.bot.config)
+    except Exception as e:
+      await inter.send(f"Exception encountered while running migration;```{e}```")
+    else:
+      await inter.send(f"Migration succeeded with the following output;```{f.getvalue()}```")
+
+  @migrate.autocomplete('script')
+  async def migrate_ac(self, inter:disnake.CommandInteraction, search:str):
+    """ Return a list of matching migration scripts """
+    migrations:list[str] = []
+    if os.path.exists('migrations'):
+      migrations += glob.glob(os.path.join('migrations', 'v*_*.py'))
+    if os.path.exists(os.path.join('overlay', 'migrations')):
+      migrations += glob.glob(os.path.join('overlay', 'migrations', 'v*_*.py'))
+    return [m for m in migrations if search in m]
 
   @commands.default_member_permissions(administrator=True)
   @commands.slash_command()
