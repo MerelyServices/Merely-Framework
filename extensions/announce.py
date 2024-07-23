@@ -68,20 +68,21 @@ class Announce(commands.Cog):
 
   def subscribe(self, user_id:int) -> bool:
     # Subscribes users if they have never been subscribed before
+    uid = self.encode_uid(user_id)
     if (
-      f'{user_id},' not in self.config['subscription_history']
-      and f'{user_id},' not in self.config['dm_subscription']
+      uid+',' not in self.config['subscription_history']
+      and uid+',' not in self.config['dm_subscription']
     ):
-      uid = self.encode_uid(user_id)
       self.config['dm_subscription'] += f'{uid},'
       self.config['subscription_history'] += f'{uid},'
       return True
     return False
-  
+
   def unsubscribe(self, user_id:int) -> bool:
     # Unsubscribes a user if they are subscribed
-    if str(user_id) in self.config['dm_subscription']:
-      self.config['dm_subscription'] = self.config['dm_subscription'].replace(f'{user_id},', '')
+    uid = self.encode_uid(user_id)
+    if uid in self.config['dm_subscription']:
+      self.config['dm_subscription'] = self.config['dm_subscription'].replace(uid+',', '')
     return False
 
   @commands.Cog.listener('on_ready')
