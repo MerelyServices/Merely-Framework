@@ -77,6 +77,12 @@ class Announce(commands.Cog):
       self.config['subscription_history'] += f'{uid},'
       return True
     return False
+  
+  def unsubscribe(self, user_id:int) -> bool:
+    # Unsubscribes a user if they are subscribed
+    if str(user_id) in self.config['dm_subscription']:
+      self.config['dm_subscription'] = self.config['dm_subscription'].replace(f'{user_id},', '')
+    return False
 
   @commands.Cog.listener('on_ready')
   async def catchup(self):
@@ -170,11 +176,24 @@ class Announce(commands.Cog):
         try:
           await user.send(embed=msg.embeds[0])
         except disnake.Forbidden:
-          failed.append(f'{encoded_uid} - DM permission denied')
+          failed.append(f'{encoded_uid} - DM permission denied, unsubscribing user')
+          self.unsubscribe(user.id)
+          self.bot.config.save()
           continue
         except disnake.DiscordServerError:
           failed.append(f'{encoded_uid} - Server disconnect')
           await asyncio.sleep(5)
+          continue
+        except disnake.HTTPException as e:
+          if e.status == 400:
+            failed.append(f'{encoded_uid} - HTTP Exception 400 - Bad Request, unsubscribing user')
+            self.unsubscribe(user.id)
+            self.bot.config.save()
+            continue
+          if e.status == 503:
+            failed.append(f'{encoded_uid} - HTTP Exception 503 - Service unavailable')
+            continue
+          failed.append(f'HTTP Exception {e.status} - Unknown error')
           continue
       except Exception as e:
         failed.append(f'{encoded_uid} - Unhandled exception {e}')
