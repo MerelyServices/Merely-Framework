@@ -168,8 +168,7 @@ class Announce(commands.Cog):
           failed.append(f'{encoded_uid} - User not found')
           continue
         try:
-          # simulate sending messages by still firing a coroutine
-          await user.trigger_typing() # .send(embed=msg.embed)
+          await user.send(embed=msg.embeds[0])
         except disnake.Forbidden:
           failed.append(f'{encoded_uid} - DM permission denied')
           continue
