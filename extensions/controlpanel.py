@@ -347,7 +347,7 @@ class ControlPanel(commands.Cog):
     settings = self.discover_settings(inter)
     panel = self.ControlPanelView(inter, self, settings)
     if len(panel.settings) < 1:
-      await inter.response.send_message(self.babel(inter, 'no_settings'))
+      await inter.response.send_message(self.babel(inter, 'no_settings'), ephemeral=True)
       return
     await inter.response.send_message(
       view=panel,

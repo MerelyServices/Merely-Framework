@@ -37,6 +37,8 @@ class Language(commands.Cog):
     # ensure config file has required data
     if not bot.config.has_section(self.SCOPE):
       bot.config.add_section(self.SCOPE)
+    if 'show_in_controlpanel' not in self.config:
+      self.config['show_in_controlpanel'] = 'True'
 
   def controlpanel_settings(self, inter:disnake.Interaction):
     # ControlPanel integration
