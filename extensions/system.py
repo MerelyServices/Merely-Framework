@@ -237,6 +237,7 @@ class System(commands.Cog):
       await inter.send(f"Exception encountered while running migration;```{e}```")
     else:
       await inter.send(f"Migration succeeded with the following output;```{f.getvalue()}```")
+    self.bot.config.save()
 
   @migrate.autocomplete('script')
   async def migrate_ac(self, inter:disnake.CommandInteraction, search:str):
