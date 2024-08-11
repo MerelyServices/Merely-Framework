@@ -27,7 +27,7 @@ class Announce(commands.Cog):
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 
-  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> list[str]:
+  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> str:
     """ Shorthand for self.bot.babel(scope, key, **values) """
     return self.bot.babel(target, self.SCOPE, key, **values)
 
@@ -211,7 +211,7 @@ class Announce(commands.Cog):
 
   class AnnounceModal(disnake.ui.Modal):
     """ Type out and send an announcement """
-    def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> list[str]:
+    def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> str:
       """ Shorthand for self.bot.babel(scope, key, **values) """
       # this modal uses the new system scope
       return self.parent.bot.babel(target, self.parent.SCOPE, key, **values)
