@@ -120,24 +120,6 @@ class MerelyBot(commands.AutoShardedInteractionBot):
 
     self.autoload_extensions()
 
-  def reinit(self):
-    # Lightweight init that tries to preserve old state
-    self.loop = None
-    syncflags = commands.CommandSyncFlags.default()
-    if self.verbose:
-      syncflags.sync_commands_debug = True
-    super().__init__(
-      intents=self.intents,
-      member_cache_flags=(
-        disnake.MemberCacheFlags.none() if self.member_cache is None
-        else disnake.MemberCacheFlags.from_intents(self.intents)
-      ),
-      command_sync_flags=syncflags
-    )
-
-    self.autoload_extensions()
-    print("Bot startup complete\n")
-
   def autoload_extensions(self):
     """ Search the filesystem for extensions, list them in config, load them if enabled """
     # a natural sort is used to make it possible to prioritize extensions by filename
