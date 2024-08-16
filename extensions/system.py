@@ -289,7 +289,7 @@ class System(commands.Cog):
     saveconfig: Write the last known state of the config file on shutdown
     """
     self.bot.auth.superusers(inter)
-    await inter.send(self.bot.babel(inter, 'admin', 'die_success'))
+    await inter.send(self.bot.babel(inter, 'admin', 'die_success', restart=restart))
     if saveconfig:
       self.bot.config.save()
     self.bot.restart = restart
