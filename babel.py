@@ -4,13 +4,17 @@
   You can find a language editor at https://github.com/yiays/Babel-Translator
   Recommended cogs: Language
 """
+from __future__ import annotations
 
 import os, re
 from configparser import ConfigParser
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from config import Config
 from glob import glob
 import disnake
+
+if TYPE_CHECKING:
+  from .main import MerelyBot
 
 Resolvable = (
   disnake.Interaction | disnake.Message | disnake.User | disnake.Member | disnake.Guild
@@ -200,21 +204,10 @@ class Babel():
     # Fill in command queries
     commandqueries = self.filter_commandreference.findall(match)
     for commandquery in commandqueries:
-      # Pre-fetch the slash command (if it exists)
-      cmd = None
-      if hasattr(target, 'bot'):
-        cmd = target.bot.get_global_command_named(commandquery)
-
-      if isinstance(cmd, disnake.APISlashCommand):
-        # Use slash command references if they can be found
-        match = match.replace('{p:'+commandquery+'}', '</'+cmd.name+':'+str(cmd.id)+'>')
-      elif not self.config.getboolean('intents', 'message_content'):
-        # If the text prefix can't be seen, assume this is a missing slash command
-        match = match.replace('{p:'+commandquery+'}', '/'+commandquery)
-      else:
-        match = match.replace(
-          '{p:'+commandquery+'}', self.config['main']['prefix_short'] + commandquery
-        )
+      match = match.replace(
+        '{p:'+commandquery+'}',
+        self.mention_command(commandquery, target.bot if hasattr(target, 'bot') else None)
+      )
 
     # Fill in conditionals
     conditionalqueries = self.filter_conditional.findall(match)
@@ -243,6 +236,22 @@ class Babel():
     match = match.replace('\\n', '\n')
 
     return match
+
+  def mention_command(self, command:str, bot:Optional[MerelyBot] = None):
+    # Pre-fetch the slash command (if it exists)
+    cmd = None
+    if bot:
+      cmd = bot.get_global_command_named(command)
+
+    if isinstance(cmd, disnake.APISlashCommand):
+      # Use slash command references if they can be found
+      return '</'+cmd.name+':'+str(cmd.id)+'>'
+    elif not self.config.getboolean('intents', 'message_content'):
+      # If the text prefix can't be seen, assume this is a missing slash command
+      return '/'+command
+    else:
+      # This must be a plaintext command
+      return self.config['main']['prefix_short'] + command
 
   def string_list(self, target:Resolvable, items:list[str], or_mode:bool = False) -> str:
     """ Takes list items, and joins them together in a regionally correct way """

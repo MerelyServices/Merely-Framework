@@ -175,12 +175,13 @@ class Help(commands.Cog):
       for section in sections:
         hcmds = []
         for hcmd in self.config[section.split()[1]+'_highlights'].split(', '):
+          cmdstr = self.bot.babel.mention_command(hcmd, self.bot)
           if self.find_command(hcmd):
-            hcmds.append(hcmd)
+            hcmds.append(cmdstr)
           else:
-            hcmds.append(hcmd+'❌')
+            hcmds.append(cmdstr+'❌')
         embed.add_field(
-          name=section, value='```'+self.bot.babel.string_list(inter, hcmds)+'```', inline=False
+          name=section, value=self.bot.babel.string_list(inter, hcmds), inline=False
         )
 
       embed.set_footer(text=self.babel(inter, 'creator_footer'),
