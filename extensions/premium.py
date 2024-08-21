@@ -56,6 +56,8 @@ class Premium(commands.Cog):
       self.config['premium_role_guild'] = ''
       self.config['premium_roles'] = ''
       bot.config.save()
+    if 'offer_custom_bot' not in self.config:
+      self.config['offer_custom_bot'] = 'False'
 
     self.premiumguild = None
     self.premiumroles = set()
@@ -131,33 +133,43 @@ class Premium(commands.Cog):
     """
       Learn more about premium.
     """
-    embed = disnake.Embed(title=self.babel(inter, 'name'), description=self.babel(inter, 'desc'))
-
-    embed.url = (
-      self.config['patreon'] if self.config['patreon']
-      else self.config['other']
-    )
-    embed.set_thumbnail(url=self.config['icon'])
-
+    fulldesc = self.babel(inter, 'desc')
     #BABEL: feature_#,feature_#_desc
     i = 1
     while f'feature_{i}' in self.bot.babel.langs[self.bot.babel.baselang][self.SCOPE]:
       if self.babel(inter, f'feature_{i}') == '':
         i += 1
         continue
-      embed.add_field(name=self.babel(inter, f'feature_{i}'),
-                      value=self.babel(inter, f'feature_{i}_desc'),
-                      inline=False)
+      fulldesc += '\n### ' + self.babel(inter, f'feature_{i}')
+      fulldesc += '\n' + self.babel(inter, f'feature_{i}_desc')
       i += 1
+    if self.config.getboolean('offer_custom_bot', False):
+      fulldesc += '\n### ' + self.babel(inter, 'feature_custom')
+      fulldesc += '\n' + self.babel(inter, 'feature_custom_desc')
+
+    embed = disnake.Embed(title=self.babel(inter, 'name'), description=fulldesc)
+
+    if self.config['patreon'] or self.config['other']:
+      embed.url = (
+        self.config['patreon'] if self.config['patreon']
+        else self.config['other']
+      )
+    if self.config['icon']:
+      embed.set_thumbnail(url=self.config['icon'])
     embed.set_footer(text=self.babel(inter, 'fine_print'))
 
-    buttons = None
+    buttons = []
     if self.bot.config['help']['serverinv']:
-      buttons = [
-        disnake.ui.Button(emoji='1️⃣', label=self.babel(inter, 'join_server_cta'),
-                          url=self.bot.config['help']['serverinv']),
-        disnake.ui.Button(emoji='2️⃣', label=self.babel(inter, 'subscribe_cta'), url=embed.url)
-      ]
+      buttons.append(disnake.ui.Button(
+        emoji='1️⃣',
+        label=self.babel(inter, 'join_server_cta'),
+        url=self.bot.config['help']['serverinv']
+      ))
+      buttons.append(disnake.ui.Button(
+        emoji='2️⃣',
+        label=self.babel(inter, 'subscribe_cta'),
+        url=embed.url
+      ))
 
     await inter.response.send_message(embed=embed, components=buttons)
 
