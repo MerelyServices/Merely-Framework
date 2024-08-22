@@ -59,6 +59,11 @@ class Premium(commands.Cog):
     if 'offer_custom_bot' not in self.config:
       self.config['offer_custom_bot'] = 'False'
 
+    if not self.config['premium_role_guild'] or not self.config['premium_roles']:
+      raise Exception("Premium needs premium_role_guild and premium_roles set in config!")
+    if not bot.config.get('help', 'serverinv', fallback=''):
+      raise Exception("Premium needs serverinv to be set in config!")
+
     self.premiumguild = None
     self.premiumroles = set()
 
@@ -66,25 +71,14 @@ class Premium(commands.Cog):
       self.check_premium_slash_command, slash_commands=True, user_commands=True
     )
 
-  async def cog_load(self):
-    if not (self.config['premium_role_guild'] or self.config['premium_roles']):
-      raise Exception(
-        "You must provide a reference to a guild and at least one role in order for premium to work!"
-      )
-    if not self.bot.config.get('help', 'serverinv', fallback=''):
-      self.bot.config.save()
-      raise Exception(
-        "You must have an invite to the support server with the supporter role in " +
-        "config[help][serverinv]!"
-      )
-
   @commands.Cog.listener('on_connect')
   async def cache_role(self):
     """ Fetches guild and member list on connect to decrease first response time """
     await asyncio.sleep(5)
     self.premiumguild = self.bot.get_guild(int(self.config['premium_role_guild']))
     if not self.premiumguild:
-      print("Note: had to fetch premium guild as it has not been loaded yet")
+      if not self.bot.quiet:
+        print("Note: had to fetch premium guild as it has not been loaded yet")
       self.premiumguild = await self.bot.fetch_guild(int(self.config['premium_role_guild']))
 
     # Repopulate list of premium roles
