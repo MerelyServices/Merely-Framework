@@ -162,7 +162,7 @@ class System(commands.Cog):
             ephemeral=True
           )
         else:
-          raise commands.BadArgument
+          raise commands.BadArgument()
         cogmodules = {cog.lower().replace('_', ''): cog for cog in self.bot.cogs}
         compatmod = module.lower().replace('_', '')
         if compatmod in cogmodules:
