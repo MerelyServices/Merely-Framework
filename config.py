@@ -159,7 +159,6 @@ class Config(ConfigParser):
           os.remove(oldfile)
 
       self.last_backup = time.time()
-    #TODO: autodelete all but one of each config history
     with open(self.file, 'w', encoding='utf-8') as f:
       ConfigParser.write(self, f)
 

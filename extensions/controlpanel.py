@@ -199,10 +199,10 @@ class ControlPanel(commands.Cog):
       self.parent = parent
 
       super().__init__(
-        title=setting.label(parent.msg),
+        title=setting.label(parent.origin),
         custom_id=setting.id,
         components=[disnake.ui.TextInput(
-          label=setting.label(parent.msg),
+          label=setting.label(parent.origin),
           custom_id='value',
           placeholder=self.parent.parent.bot.utilities.truncate(setting.get(''), 100),
           value=setting.get(''),
@@ -218,14 +218,13 @@ class ControlPanel(commands.Cog):
   # Views
 
   class ControlPanelView(disnake.ui.View):
-    msg:disnake.Message | None = None
-
     def __init__(
       self, inter:disnake.CommandInteraction, parent:ControlPanel, settings:list[Setting]
     ):
       super().__init__(timeout=300)
 
       self.parent = parent
+      self.origin = inter
       self.settings:dict[str, Setting] = {}
       sections:list[str] = []
       rowcap:dict[int, int] = {}
@@ -328,16 +327,10 @@ class ControlPanel(commands.Cog):
       await inter.response.edit_message(view=self)
 
     async def on_timeout(self):
-      if self.msg:
-        try:
-          await self.msg.delete()
-        except disnake.HTTPException:
-          pass
-      else:
-        for component in self.children:
-          if isinstance(component, (disnake.ui.Button, disnake.ui.Select)):
-            component.disabled = True
-        await self.msg.edit(view=self)
+      try:
+        await self.origin.delete_original_response()
+      except disnake.HTTPException:
+        pass # Message was probably dismissed, don't worry about it
 
   # Commands
 
@@ -353,8 +346,8 @@ class ControlPanel(commands.Cog):
       view=panel,
       ephemeral=True
     )
-    panel.msg = await inter.original_response()
-    self.panels[panel.msg.id] = panel
+    msg = await inter.original_response()
+    self.panels[msg.id] = panel
 
 
 def setup(bot:MerelyBot):
