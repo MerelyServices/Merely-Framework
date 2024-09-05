@@ -71,7 +71,8 @@ class Error(commands.Cog):
       if isinstance(error, (commands.BotMissingPermissions, commands.MissingPermissions)):
         permlist = self.bot.babel.string_list(inter, [f'`{p}`' for p in error.missing_permissions])
         me = isinstance(error, commands.BotMissingPermissions)
-        await inter.send(self.babel(inter, 'missingperms', me=me, perms=permlist))
+        await inter.send(self.babel(inter, 'missingperms', me=me, perms=permlist), **kwargs)
+        return
       if isinstance(error, commands.CommandInvokeError):
         if isinstance(error.original, self.bot.auth.AuthError):
           await inter.send(str(error.original), **kwargs)
