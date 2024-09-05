@@ -17,6 +17,33 @@ if TYPE_CHECKING:
   from configparser import SectionProxy
 
 
+# Stateless functions
+
+def encode_uid(uid:int) -> str:
+  """ Takes discord id and encodes it using ascii """
+  return base64.b64encode(uid.to_bytes(8, 'big')).decode('ascii').replace('=','')
+
+
+def decode_uid(uid:str) -> int | None:
+  """ Takes encoded uid and returns id number """
+  if len(uid) == 11:
+    uid += '='
+  try:
+    return int.from_bytes(base64.b64decode(uid), 'big')
+  except Exception:
+    print(f"WARN: {uid} is not a valid encoded UID.")
+    return None
+
+
+def add_to_failed(failed:dict[str, list[str]], key:str, new:str):
+  """ Adds to key or creates a new key for failed as needed """
+  if key in failed:
+    failed[key] += new
+  else:
+    failed[key] = [new]
+  return failed
+
+
 class Announce(commands.Cog):
   """ Handles DM announcements and ensures the process can resume after a crash or restart """
   SCOPE = 'announce'
@@ -56,9 +83,7 @@ class Announce(commands.Cog):
 
   def controlpanel_settings(self, inter:disnake.Interaction):
     # ControlPanel integration
-    return [
-      Listable(self.SCOPE, 'dm_subscription', 'dm_subscription', self.encode_uid(inter.user.id))
-    ]
+    return [Listable(self.SCOPE, 'dm_subscription', 'dm_subscription', encode_uid(inter.user.id))]
 
   def controlpanel_theme(self) -> tuple[str, disnake.ButtonStyle]:
     # Controlpanel custom theme for buttons
@@ -68,7 +93,7 @@ class Announce(commands.Cog):
 
   def subscribe(self, user_id:int) -> bool:
     # Subscribes users if they have never been subscribed before
-    uid = self.encode_uid(user_id)
+    uid = encode_uid(user_id)
     if (
       uid+',' not in self.config['subscription_history']
       and uid+',' not in self.config['dm_subscription']
@@ -80,7 +105,7 @@ class Announce(commands.Cog):
 
   def unsubscribe(self, user_id:int) -> bool:
     # Unsubscribes a user if they are subscribed
-    uid = self.encode_uid(user_id)
+    uid = encode_uid(user_id)
     if uid in self.config['dm_subscription']:
       self.config['dm_subscription'] = self.config['dm_subscription'].replace(uid+',', '')
     return False
@@ -122,31 +147,27 @@ class Announce(commands.Cog):
 
   # Common functions
 
-  def encode_uid(self, uid:int) -> str:
-    return base64.b64encode(uid.to_bytes(8, 'big')).decode('ascii').replace('=','')
-
-  def decode_uid(self, uid:str) -> int | None:
-    if len(uid) == 11:
-      uid += '='
-    try:
-      return int.from_bytes(base64.b64decode(uid), 'big')
-    except Exception:
-      print(f"WARN: {uid} is not a valid encoded UID.")
-      return None
-
-  def genstatus(self, message:str, subscribed:list, succeeded:int, failed:list[str]) -> str:
+  def genstatus(
+    self, message:str, subscribed:list, succeeded:int, failed:dict[str, list[str]]
+  ) -> str:
     total = len(subscribed) - 1
+    failedcount = sum((len(f) for f in failed.values()))
+    failedstring = ''
+    for k,v in failed.items():
+      failedstring += f"{k}: {','.join(v)}\n"
     return (
       message + ' ' +
-      f"{succeeded}/{total} sent, {len(failed)} failed." +
-      '\n' + self.bot.utilities.progress_bar(succeeded, total - len(failed), 40) +
+      f"{succeeded}/{total} sent, {failedcount} failed." +
+      '\n' + self.bot.utilities.progress_bar(succeeded, total - failedcount, 40) +
       (
-        '\n```\n' + self.bot.utilities.truncate('\n'.join(failed), 1800) + '\n```'
+        '\n```\n' + self.bot.utilities.truncate(failedstring, 1800) + '\n```'
         if failed else ''
       )
     )
 
-  async def send_announcement(self, msg:disnake.Message, skip=0, succeeded=0, failed:list[str] = []):
+  async def send_announcement(
+    self, msg:disnake.Message, skip=0, succeeded=0, failed:dict[str, list[str]] = []
+  ):
     """
       Sends / resumes sending an announcement to all subscribed users.
       Assumes the message has an embed and sends that as the announcement.
@@ -161,43 +182,45 @@ class Announce(commands.Cog):
     for encoded_uid in subscribed[skip:]:
       if encoded_uid == '':
         continue
-      uid = self.decode_uid(encoded_uid)
+      uid = decode_uid(encoded_uid)
       if uid is None:
-        failed.append(f'{encoded_uid} - Failed to decode user id')
+        failed = add_to_failed(failed, 'Failed to decode user id', encoded_uid)
         continue
       await asyncio.sleep(0.4)
       try:
-        if (succeeded + len(failed)) % 5 == 0:
+        if (succeeded + sum((len(f) for f in failed.values()))) % 5 == 0:
           await msg.edit(self.genstatus("Sending announcement...", subscribed, succeeded, failed))
         try:
           user = await self.bot.fetch_user(int(uid))
         except disnake.NotFound:
-          failed.append(f'{encoded_uid} - User not found')
+          failed = add_to_failed(failed, 'User not found', encoded_uid)
           continue
         try:
           await user.send(embed=msg.embeds[0])
         except disnake.Forbidden:
-          failed.append(f'{encoded_uid} - DM permission denied, unsubscribing user')
+          failed = add_to_failed(failed, 'DM permission denied, unsubscribing user', encoded_uid)
           self.unsubscribe(user.id)
           self.bot.config.save()
           continue
         except disnake.DiscordServerError:
-          failed.append(f'{encoded_uid} - Server disconnect')
+          failed = add_to_failed(failed, 'Server disconnect', encoded_uid)
           await asyncio.sleep(5)
           continue
         except disnake.HTTPException as e:
           if e.status == 400:
-            failed.append(f'{encoded_uid} - HTTP Exception 400 - Bad Request, unsubscribing user')
+            failed = add_to_failed(
+              failed, 'HTTP Exception 400 - Bad Request, unsubscribing user', encoded_uid
+            )
             self.unsubscribe(user.id)
             self.bot.config.save()
             continue
           if e.status == 503:
-            failed.append(f'{encoded_uid} - HTTP Exception 503 - Service unavailable')
+            failed = add_to_failed(failed, 'HTTP Exception 503 - Service unavailable', encoded_uid)
             continue
-          failed.append(f'HTTP Exception {e.status} - Unknown error')
+          failed = add_to_failed(failed, '.status} - Unknown error', encoded_uid)
           continue
       except Exception as e:
-        failed.append(f'{encoded_uid} - Unhandled exception {e}')
+        failed = add_to_failed(failed, f'Unhandled exception {e}', encoded_uid)
         continue
       succeeded += 1
 
@@ -317,7 +340,7 @@ class Announce(commands.Cog):
 
     # Recover state from message content
     succeeded = int(inter.message.content[24:].split('/')[0])
-    failed = []
+    failed = {}
     readnext = False
     for line in inter.message.content.splitlines():
       if line == '```':
@@ -326,11 +349,15 @@ class Announce(commands.Cog):
         else:
           break
       if readnext:
-        failed.append(line)
+        fparts = line.split(':')
+        if fparts[0] in failed:
+          failed[fparts[0]] += fparts[1].split(',')
+          continue
+        failed[fparts[0]] = fparts[1].split(',')
 
     # Use recovered state to resume the announcement
     await self.send_announcement(
-      inter.message, succeeded + len(failed), succeeded, failed
+      inter.message, succeeded + sum((len(f) for f in failed.values())), succeeded, failed
     )
 
   # Commands
