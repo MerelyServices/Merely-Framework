@@ -246,12 +246,9 @@ class Babel():
     if isinstance(cmd, disnake.APISlashCommand):
       # Use slash command references if they can be found
       return '</'+cmd.name+':'+str(cmd.id)+'>'
-    elif not self.config.getboolean('intents', 'message_content'):
+    else:
       # If the text prefix can't be seen, assume this is a missing slash command
       return '/'+command
-    else:
-      # This must be a plaintext command
-      return self.config['main']['prefix_short'] + command
 
   def string_list(self, target:Resolvable, items:list[str], or_mode:bool = False) -> str:
     """ Takes list items, and joins them together in a regionally correct way """
