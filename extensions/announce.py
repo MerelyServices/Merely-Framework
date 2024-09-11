@@ -38,7 +38,7 @@ def decode_uid(uid:str) -> int | None:
 def add_to_failed(failed:dict[str, list[str]], key:str, new:str):
   """ Adds to key or creates a new key for failed as needed """
   if key in failed:
-    failed[key] += new
+    failed[key].append(new)
   else:
     failed[key] = [new]
   return failed
@@ -118,10 +118,23 @@ class Announce(commands.Cog):
     if self.config['in_progress']:
       raw_channel_id, raw_message_id = self.config['in_progress'].split('/')
       channel = self.bot.get_channel(int(raw_channel_id))
-      msg = await channel.fetch_message(int(raw_message_id))
-      buttons:list[disnake.Button] = [self.SendButton(), self.ResumeButton()]
-      buttons[0].disabled = True
-      await msg.edit(components=buttons)
+      try:
+        msg = await channel.fetch_message(int(raw_message_id))
+      except disnake.NotFound:
+        self.config['in_progress'] = ''
+        self.bot.config.save()
+        print("Stopped tracking existing announcement because it was deleted")
+      else:
+        buttons:list[disnake.Button] = [self.SendButton(), self.ResumeButton()]
+        buttons[0].disabled = True
+        await msg.edit(components=buttons)
+
+  @commands.Cog.listener('on_message_delete')
+  async def on_cancel(self, msg:disnake.Message):
+    if self.config['in_progress'] and f'{msg.channel.id}/{msg.id}' == self.config['in_progress']:
+      self.config['in_progress'] = ''
+      self.bot.config.save()
+      print("Stopped tracking existing announcement because it was deleted")
 
   @commands.Cog.listener('on_guild_update')
   async def verify_owner(self, _:disnake.Guild, guild:disnake.Guild):
@@ -158,7 +171,7 @@ class Announce(commands.Cog):
     return (
       message + ' ' +
       f"{succeeded}/{total} sent, {failedcount} failed." +
-      '\n' + self.bot.utilities.progress_bar(succeeded, total - failedcount, 40) +
+      '\n' + self.bot.utilities.progress_bar(succeeded + failedcount, total, 30) +
       (
         '\n```\n' + self.bot.utilities.truncate(failedstring, 1800) + '\n```'
         if failed else ''
@@ -166,7 +179,7 @@ class Announce(commands.Cog):
     )
 
   async def send_announcement(
-    self, msg:disnake.Message, skip=0, succeeded=0, failed:dict[str, list[str]] = []
+    self, msg:disnake.Message, skip=0, succeeded=0, failed:dict[str, list[str]] = {}
   ):
     """
       Sends / resumes sending an announcement to all subscribed users.
@@ -348,7 +361,9 @@ class Announce(commands.Cog):
           readnext = True
         else:
           break
-      if readnext:
+      elif readnext and line:
+        if ':' not in line:
+          raise Exception("Expected to find : in the following line;", line)
         fparts = line.split(':')
         if fparts[0] in failed:
           failed[fparts[0]] += fparts[1].split(',')
