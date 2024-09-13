@@ -8,8 +8,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 import re
-import disnake
-from disnake.ext import commands
+import discord
+from discord import app_commands
+from discord.ext import commands
 
 from extensions.controlpanel import Selectable
 
@@ -52,14 +53,14 @@ class Language(commands.Cog):
       out.append(Selectable(self.SCOPE, str(inter.guild_id), 'guild_language_override', langlist))
     return out
 
-  @commands.slash_command()
-  async def language(self, _:disnake.CommandInteraction):
+  @app_commands.command()
+  async def language(self, _:disnake.Interaction):
     """
     Changes the language this bot speaks to you, or to a server you administrate
     """
 
   @language.sub_command(name='list')
-  async def language_list(self, inter:disnake.CommandInteraction):
+  async def language_list(self, inter:disnake.Interaction):
     """
     Lists all available languages this bot can be translated to
     """
@@ -89,15 +90,15 @@ class Language(commands.Cog):
         inline=False
       )
 
-    await inter.send(embed=embed)
+    await inter.response.send_message(embed=embed)
 
   @language.sub_command(name='get')
-  async def language_get(self, inter:disnake.CommandInteraction):
+  async def language_get(self, inter:disnake.Interaction):
     """
     Get the language the bot is using with you right now and the reason why it was selected
     """
     langs, origins = self.bot.babel.resolve_lang(
-      user_id=inter.author.id,
+      user_id=inter.user.id,
       guild_id=inter.guild.id,
       inter=inter,
       debug=True
@@ -117,12 +118,12 @@ class Language(commands.Cog):
       ))
       backup = True
 
-    await inter.send(embeds=embeds)
+    await inter.response.send_message(embeds=embeds)
 
   @language.sub_command(name='set')
   async def language_set(
     self,
-    inter:disnake.CommandInteraction,
+    inter:disnake.Interaction,
     language:str
   ):
     """
@@ -133,19 +134,19 @@ class Language(commands.Cog):
     language: An ISO language code for your language and dialect
     """
     if not language == 'default' and re.match(r'[a-z]{2}(-[A-Z]{2})?$', language) is None:
-      await inter.send(self.babel(inter, 'set_failed_invalid_pattern'))
+      await inter.response.send_message(self.babel(inter, 'set_failed_invalid_pattern'))
     else:
       if language != 'default':
         language = self.config.get('prefix', fallback='')+language
       if (
-        isinstance(inter.author, disnake.User) or
-        not inter.author.guild_permissions.administrator
+        isinstance(inter.user, disnake.User) or
+        not inter.user.guild_permissions.administrator
       ):
         usermode = True
         if language == 'default':
-          self.config.pop(str(inter.author.id))
+          self.config.pop(str(inter.user.id))
         else:
-          self.config[str(inter.author.id)] = language
+          self.config[str(inter.user.id)] = language
       else:
         usermode = False
         if language == 'default':
@@ -155,7 +156,7 @@ class Language(commands.Cog):
       self.bot.config.save()
       if language == 'default' or language in self.bot.babel.langs.keys():
         #BABEL: set_success,unset_success
-        await inter.send(self.babel(
+        await inter.response.send_message(self.babel(
           inter,
           'unset_success' if language == 'default' else 'set_success',
           language=(
@@ -166,13 +167,13 @@ class Language(commands.Cog):
           usermode=usermode)
         )
       else:
-        await inter.send(
+        await inter.response.send_message(
           self.babel(inter, 'set_warning_no_match')+'\n' +
           self.babel(inter, 'contribute_cta')
         )
 
   @language_set.autocomplete('language')
-  def language_set_ac(self, _:disnake.MessageCommandInteraction, search:str):
+  def language_set_ac(self, _:disnake.Interaction, search:str):
     """ Suggests languages that are already available """
     matches = []
     prefix = self.config['prefix']
@@ -184,6 +185,6 @@ class Language(commands.Cog):
     return (['default'] if 'default'.startswith(search) else []) + matches
 
 
-def setup(bot:MerelyBot):
+async def setup(bot:MerelyBot):
   """ Bind this cog to the bot """
-  bot.add_cog(Language(bot))
+  await bot.add_cog(Language(bot))

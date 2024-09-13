@@ -7,8 +7,9 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-import disnake
-from disnake.ext import commands
+import discord
+from discord import app_commands
+from discord.ext import commands
 
 if TYPE_CHECKING:
   from main import MerelyBot
@@ -37,7 +38,7 @@ class Error(commands.Cog):
   @commands.Cog.listener('on_slash_command_error')
   async def handle_error(
     self,
-    inter:disnake.CommandInteraction,
+    inter:disnake.Interaction,
     error:commands.CommandError
   ):
     """ Report to the user what went wrong """
@@ -45,7 +46,7 @@ class Error(commands.Cog):
     try:
       if isinstance(error, commands.CommandOnCooldown):
         if error.cooldown.get_retry_after() > 5:
-          await inter.send(
+          await inter.response.send_message(
             self.babel(inter, 'cooldown', t=int(error.cooldown.get_retry_after())),
             ephemeral=True
           )
@@ -60,24 +61,24 @@ class Error(commands.Cog):
         if 'Help' in self.bot.cogs:
           await self.bot.cogs['Help'].help(inter, inter.application_command.name, **kwargs)
         else:
-          await inter.send(self.babel(inter, 'missingrequiredargument'), **kwargs)
+          await inter.response.send_message(self.babel(inter, 'missingrequiredargument'), **kwargs)
         return
       if isinstance(error, commands.NoPrivateMessage):
-        await inter.send(self.babel(inter, 'noprivatemessage'), **kwargs)
+        await inter.response.send_message(self.babel(inter, 'noprivatemessage'), **kwargs)
         return
       if isinstance(error, commands.PrivateMessageOnly):
-        await inter.send(self.babel(inter, 'privatemessageonly'), **kwargs)
+        await inter.response.send_message(self.babel(inter, 'privatemessageonly'), **kwargs)
         return
       if isinstance(error, (commands.BotMissingPermissions, commands.MissingPermissions)):
         permlist = self.bot.babel.string_list(inter, [f'`{p}`' for p in error.missing_permissions])
         me = isinstance(error, commands.BotMissingPermissions)
-        await inter.send(self.babel(inter, 'missingperms', me=me, perms=permlist), **kwargs)
+        await inter.response.send_message(self.babel(inter, 'missingperms', me=me, perms=permlist), **kwargs)
         return
       if isinstance(error, commands.CommandInvokeError):
         if isinstance(error.original, self.bot.auth.AuthError):
-          await inter.send(str(error.original), **kwargs)
+          await inter.response.send_message(str(error.original), **kwargs)
           return
-        await inter.send(self.babel(inter, 'commanderror', error=str(error.original)), **kwargs)
+        await inter.response.send_message(self.babel(inter, 'commanderror', error=str(error.original)), **kwargs)
         raise error.original
       elif isinstance(error, (commands.CheckFailure, commands.CheckAnyFailure)):
         print("Unhandled error;", error)
@@ -91,6 +92,6 @@ class Error(commands.Cog):
       print(error)
 
 
-def setup(bot:MerelyBot):
+async def setup(bot:MerelyBot):
   """ Bind this cog to the bot """
-  bot.add_cog(Error(bot))
+  await bot.add_cog(Error(bot))

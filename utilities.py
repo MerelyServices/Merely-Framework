@@ -4,7 +4,7 @@
 """
 
 from typing import Callable
-import disnake
+import discord
 
 
 class Utilities:
@@ -19,14 +19,14 @@ class Utilities:
     n = maxlen - 3 if len(string) > maxlen else maxlen
     return string[:n] + ('...' if len(string) > maxlen else '')
 
-  class CallbackButton(disnake.ui.Button):
+  class CallbackButton(discord.ui.Button):
     """ Modified Button which can have a pre-defined callback function """
-    def __init__(self, callback:Callable[[disnake.MessageInteraction], None], **kwargs) -> None:
+    def __init__(self, callback:Callable[[discord.Interaction], None], **kwargs) -> None:
       super().__init__(**kwargs)
       self.callback = callback
 
-  class CallbackSelect(disnake.ui.Select):
+  class CallbackSelect(discord.ui.Select):
     """ Modified Select which can have a pre-defined callback function """
-    def __init__(self, callback:Callable[[disnake.MessageInteraction], None], **kwargs) -> None:
+    def __init__(self, callback:Callable[[discord.Interaction], None], **kwargs) -> None:
       super().__init__(**kwargs)
       self.callback = callback

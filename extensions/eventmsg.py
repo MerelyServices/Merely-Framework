@@ -9,8 +9,9 @@ from __future__ import annotations
 from datetime import datetime
 from enum import Enum
 from typing import Optional, Union, TYPE_CHECKING
-import disnake
-from disnake.ext import commands
+import discord
+from discord import app_commands
+from discord.ext import commands
 
 if TYPE_CHECKING:
   from main import MerelyBot
@@ -283,7 +284,7 @@ class EventMsg(commands.Cog):
     def __init__(
       self,
       parent:"EventMsg",
-      inter:disnake.GuildCommandInteraction,
+      inter:disnake.Interaction,
       event:Event,
       action:Action,
       message:str,
@@ -364,15 +365,15 @@ class EventMsg(commands.Cog):
 
       await inter.response.edit_message(state, components=self.children)
 
-    async def edit_click(self, inter:disnake.MessageInteraction):
+    async def edit_click(self, inter:disnake.Interaction):
       """ Opens the event message editor """
       await inter.response.send_modal(EventMsg.EventMessageEditor(self))
 
-    async def submit_click(self, inter:disnake.MessageInteraction):
+    async def submit_click(self, inter:disnake.Interaction):
       """ Saves event to storage and finishes the interaction """
       pass
 
-    async def custom_click(self, inter:disnake.MessageInteraction):
+    async def custom_click(self, inter:disnake.Interaction):
       """ Code to handle any other user input (Button or Select) """
       if inter.component.custom_id == 'edit_date':
         pass
@@ -390,11 +391,11 @@ class EventMsg(commands.Cog):
       #await self.msg.edit(self.parent.bot.babel(self.msg.guild, 'error', 'timeoutview'))
 
   @commands.bot_has_permissions(read_messages=True, manage_messages=True)
-  @commands.slash_command()
-  @commands.default_member_permissions(moderate_members=True)
+  @app_commands.command()
+  @app_commands.default_permissions(moderate_members=True)
   async def eventmessage(
     self,
-    inter:disnake.GuildCommandInteraction,
+    inter:disnake.Interaction,
     channel:disnake.TextChannel,
     raw_event:str = commands.Param(name='event', choices=list(Events)),
     raw_action:Action = commands.Param(name='action')
@@ -449,13 +450,13 @@ class EventMsg(commands.Cog):
 
   @commands.bot_has_permissions(read_messages=True, manage_messages=True)
   @commands.guild_only()
-  @commands.slash_command()
-  @commands.default_member_permissions(administrator=True)
+  @app_commands.command()
+  @app_commands.default_permissions(administrator=True)
   async def welcome(self, _):
     """ An automation that posts a message whenever a member joins """
 
   @welcome.sub_command(name='get')
-  async def welcome_get(self, inter:disnake.CommandInteraction):
+  async def welcome_get(self, inter:disnake.Interaction):
     """ Gets the current welcome message. Otherwise, gives instructions on how to set one """
     if f'{inter.guild.id}_welcome' in self.config:
       data = self.config[f"{inter.guild.id}_welcome"].split(', ')
@@ -472,7 +473,7 @@ class EventMsg(commands.Cog):
       )
 
   @welcome.sub_command(name='set')
-  async def welcome_set(self, inter:disnake.CommandInteraction, message:str):
+  async def welcome_set(self, inter:disnake.Interaction, message:str):
     """
       Sets the welcome message based on your input.
 
@@ -488,7 +489,7 @@ class EventMsg(commands.Cog):
     )
 
   @welcome.sub_command(name='clear')
-  async def welcome_clear(self, inter:disnake.CommandInteraction):
+  async def welcome_clear(self, inter:disnake.Interaction):
     """ Clears the welcome message """
     if f'{inter.guild.id}_welcome' in self.config:
       self.config.pop(f'{inter.guild.id}_welcome')
@@ -505,13 +506,13 @@ class EventMsg(commands.Cog):
 
   @commands.bot_has_permissions(read_messages=True, manage_messages=True)
   @commands.guild_only()
-  @commands.slash_command()
-  @commands.default_member_permissions(administrator=True)
+  @app_commands.command()
+  @app_commands.default_permissions(administrator=True)
   async def farewell(self, _):
     """ An automation that posts a message whenever a user leaves """
 
   @farewell.sub_command(name='get')
-  async def farewell_get(self, inter:disnake.CommandInteraction):
+  async def farewell_get(self, inter:disnake.Interaction):
     """ Gets the current farewell message. Otherwise, gives instructions on how to set one """
     if f'{inter.guild.id}_farewell' in self.config:
       data = self.config[f"{inter.guild.id}_farewell"].split(', ')
@@ -528,7 +529,7 @@ class EventMsg(commands.Cog):
       )
 
   @farewell.sub_command(name='set')
-  async def farewell_set(self, inter:disnake.CommandInteraction, message:str):
+  async def farewell_set(self, inter:disnake.Interaction, message:str):
     """
       Sets the welcome message based on your input.
 
@@ -541,7 +542,7 @@ class EventMsg(commands.Cog):
     await inter.response.send_message(self.bot.babel(inter, 'greeter', 'farewell_set_success'))
 
   @farewell.sub_command(name='clear')
-  async def farewell_clear(self, inter:disnake.CommandInteraction):
+  async def farewell_clear(self, inter:disnake.Interaction):
     """ Clears the farewell message """
     if f'{inter.guild.id}_farewell' in self.config:
       self.config.pop(f'{inter.guild.id}_farewell')
@@ -551,6 +552,6 @@ class EventMsg(commands.Cog):
       await inter.response.send_message(self.bot.babel(inter, 'greeter', 'farewell_clear_failure'))
 
 
-def setup(bot:MerelyBot):
+async def setup(bot:MerelyBot):
   """ Bind this cog to the bot """
-  bot.add_cog(EventMsg(bot))
+  await bot.add_cog(EventMsg(bot))

@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import asyncio
 from typing import TYPE_CHECKING
-import disnake
-from disnake.ext import commands
+import discord
+from discord import app_commands
+from discord.ext import commands
 
 if TYPE_CHECKING:
   from main import MerelyBot
@@ -101,13 +102,13 @@ class Premium(commands.Cog):
     else:
       return list(self.premiumroles & set(member.roles))
 
-  async def check_premium_slash_command(self, inter:disnake.CommandInteraction):
+  async def check_premium_slash_command(self, inter:disnake.Interaction):
     restricted = self.config['restricted_commands'].split(' ')
     premium_users = [int(u) for u in self.config['premium_users'].split(' ') if u]
     if inter.application_command.name in restricted:
-      if inter.author.id in premium_users:
+      if inter.user.id in premium_users:
         return True # user is automatically premium through config
-      if await self.check_premium(inter.author):
+      if await self.check_premium(inter.user):
         return True # user is premium
       await inter.response.send_message(embed=self.error_embed(inter), ephemeral=True)
       return False # user is not premium
@@ -126,8 +127,8 @@ class Premium(commands.Cog):
     embed.set_thumbnail(url=self.config['icon'])
     return embed
 
-  @commands.slash_command()
-  async def premium(self, inter:disnake.CommandInteraction):
+  @app_commands.command()
+  async def premium(self, inter:disnake.Interaction):
     """
       Learn more about premium.
     """
@@ -172,6 +173,6 @@ class Premium(commands.Cog):
     await inter.response.send_message(embed=embed, components=buttons)
 
 
-def setup(bot:MerelyBot):
+async def setup(bot:MerelyBot):
   """ Bind this cog to the bot """
-  bot.add_cog(Premium(bot))
+  await bot.add_cog(Premium(bot))

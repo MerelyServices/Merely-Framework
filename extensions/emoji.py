@@ -6,8 +6,9 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-import disnake
-from disnake.ext import commands
+import discord
+from discord import app_commands
+from discord.ext import commands
 
 if TYPE_CHECKING:
   from main import MerelyBot
@@ -31,8 +32,8 @@ class Emoji(commands.Cog):
   def __init__(self, bot:MerelyBot):
     self.bot = bot
 
-  @commands.slash_command()
-  async def emoji(self, inter:disnake.CommandInteraction, search:str):
+  @app_commands.command()
+  async def emoji(self, inter:disnake.Interaction, search:str):
     """
     Searches emojis from all servers merely is a part of for one to use
 
@@ -53,12 +54,12 @@ class Emoji(commands.Cog):
       matches = [e for e in self.bot.emojis if emojiname == e.name.lower()]
 
     if matches:
-      await inter.send(matches[0])
+      await inter.response.send_message(matches[0])
     else:
-      await inter.send(self.babel(inter, 'not_found'))
+      await inter.response.send_message(self.babel(inter, 'not_found'))
 
   @emoji.autocomplete('search')
-  def ac_emoji(self, _:disnake.CommandInteraction, search:str):
+  def ac_emoji(self, _:disnake.Interaction, search:str):
     """ Autocomplete for emoji search """
     results = [
       f':{e.name}: ({e.guild_id})'
@@ -67,6 +68,6 @@ class Emoji(commands.Cog):
     return results[:25]
 
 
-def setup(bot:MerelyBot):
+async def setup(bot:MerelyBot):
   """ Bind this cog to the bot """
-  bot.add_cog(Emoji(bot))
+  await bot.add_cog(Emoji(bot))

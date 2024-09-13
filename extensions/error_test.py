@@ -26,12 +26,12 @@ class ErrorTest(commands.Cog):
     """ Throws an error for testing """
     raise Exception("Command failed successfully")
 
-  @commands.slash_command(name='throw_error')
+  @app_commands.command(name='throw_error')
   async def throw_error_slash(self, _):
     """ Throws an error for testing """
     raise Exception("Command failed successfully")
 
 
-def setup(bot:MerelyBot):
+async def setup(bot:MerelyBot):
   """ Bind this cog to the bot """
-  bot.add_cog(ErrorTest(bot))
+  await bot.add_cog(ErrorTest(bot))

@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import re, asyncio
 from typing import Union, Optional, TYPE_CHECKING
-import disnake
-from disnake.ext import commands
+import discord
+from discord import app_commands
+from discord.ext import commands
 
 if TYPE_CHECKING:
   from main import MerelyBot
@@ -93,13 +94,13 @@ class Help(commands.Cog):
         return cmd
     return None
 
-  def get_docs(self, inter:disnake.CommandInteraction, cmd:str):
+  def get_docs(self, inter:disnake.Interaction, cmd:str):
     """ find documentation for this command in babel """
     matchedcommand = self.find_command(cmd)
     # return usage information for a specific command
     if matchedcommand:
       reslang = self.bot.babel.resolve_lang(
-        inter.author.id, inter.guild.id if inter.guild else None, inter
+        inter.user.id, inter.guild.id if inter.guild else None, inter
       )
       for reflang in reslang:
         reflang = self.bot.babel.langs[reflang]
@@ -118,10 +119,10 @@ class Help(commands.Cog):
             return docs
     return None
 
-  @commands.slash_command(name='help')
+  @app_commands.command()
   async def help(
     self,
-    inter:disnake.CommandInteraction,
+    inter:disnake.Interaction,
     command:Optional[str] = None,
     **kwargs
   ):
@@ -133,33 +134,33 @@ class Help(commands.Cog):
       docs = self.get_docs(inter, command)
       if docs is not None:
         # we found the documentation
-        await inter.send(docs, **kwargs)
+        await inter.response.send_message(docs, **kwargs)
       else:
         # the command doesn't exist right now, figure out why.
         if command in self.config['future_commands'].split(', '):
           # this command will be coming soon according to config
-          await inter.send(self.babel(inter, 'future_command', cmd=command), **kwargs)
+          await inter.response.send_message(self.babel(inter, 'future_command', cmd=command), **kwargs)
         elif command in self.config['obsolete_commands'].split(', '):
           # this command is obsolete according to config
-          await inter.send(self.babel(inter, 'obsolete_command', cmd=command), **kwargs)
+          await inter.response.send_message(self.babel(inter, 'obsolete_command', cmd=command), **kwargs)
         elif command in re.split(r', |>', self.config['moved_commands']):
           # this command has been renamed and requires a new syntax
           moves = re.split(r', |>', self.config['moved_commands'])
           target = moves.index(command)
           if target % 2 == 0:
-            await inter.send(self.babel(inter, 'moved_command',
+            await inter.response.send_message(self.babel(inter, 'moved_command',
                                         oldcmd=command, cmd=moves[target + 1]), **kwargs)
           else:
             print(
               "WARN: bad config. in help/moved_commands:\n"
               f"{moves[target-1]} is now {moves[target]} but {moves[target]} doesn't exist."
             )
-            await inter.send(self.babel(inter, 'no_command', cmd=command), **kwargs)
+            await inter.response.send_message(self.babel(inter, 'no_command', cmd=command), **kwargs)
         elif self.find_command(command) is not None:
           # the command definitely exists, but there's no documentation
-          await inter.send(self.babel(inter, 'no_docs', cmd=command), **kwargs)
+          await inter.response.send_message(self.babel(inter, 'no_docs', cmd=command), **kwargs)
         else:
-          await inter.send(self.babel(inter, 'no_command', cmd=command), **kwargs)
+          await inter.response.send_message(self.babel(inter, 'no_command', cmd=command), **kwargs)
 
     else:
       # show the generic help embed with a variety of featured commands
@@ -187,14 +188,14 @@ class Help(commands.Cog):
       embed.set_footer(text=self.babel(inter, 'creator_footer'),
                        icon_url=self.bot.user.avatar.url)
 
-      await inter.send(
+      await inter.response.send_message(
         self.babel(inter, 'helpurl_cta') if self.config['helpurl'] else "",
         embed=embed,
         **kwargs
       )
 
   @help.autocomplete('command')
-  def ac_command(self, _:disnake.CommandInteraction, command:str):
+  def ac_command(self, _:disnake.Interaction, command:str):
     """ find any commands that contain the provided string """
     matches = []
     hide = self.config.get('hidden_commands', fallback='').split(', ')
@@ -206,8 +207,8 @@ class Help(commands.Cog):
         matches.append(cmd.name)
     return matches[0:25]
 
-  @commands.slash_command()
-  async def about(self, inter:disnake.CommandInteraction):
+  @app_commands.command()
+  async def about(self, inter:disnake.Interaction):
     """
     General information about this bot, including an invite link
     """
@@ -258,13 +259,13 @@ class Help(commands.Cog):
       icon_url=self.bot.user.avatar.url
     )
 
-    await inter.send(
+    await inter.response.send_message(
       self.babel(inter, 'helpurl_cta') if self.config['helpurl'] else "",
       embed=embed
     )
 
-  @commands.slash_command()
-  async def changes(self, inter:disnake.CommandInteraction, search:Optional[str] = None):
+  @app_commands.command()
+  async def changes(self, inter:disnake.Interaction, search:Optional[str] = None):
     """
     See what has changed in recent updates
 
@@ -303,13 +304,13 @@ class Help(commands.Cog):
       icon_url=self.bot.user.avatar.url
     )
 
-    await inter.send(
+    await inter.response.send_message(
       self.babel(inter, 'changelog_cta', logurl=logurl) if logurl else None,
       embed=embed
     )
 
   @changes.autocomplete('search')
-  def ac_version(self, _:disnake.CommandInteraction, search:str):
+  def ac_version(self, _:disnake.Interaction, search:str):
     """ find any matching versions """
     matches = []
     iver = '0'
@@ -324,6 +325,6 @@ class Help(commands.Cog):
     return matches
 
 
-def setup(bot:MerelyBot):
+async def setup(bot:MerelyBot):
   """ Bind this cog to the bot """
-  bot.add_cog(Help(bot))
+  await bot.add_cog(Help(bot))

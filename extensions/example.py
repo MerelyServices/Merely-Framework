@@ -5,8 +5,9 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-import disnake
-from disnake.ext import commands
+import discord
+from discord import app_commands
+from discord.ext import commands
 
 from extensions.controlpanel import Toggleable, Listable, Selectable, Stringable
 
@@ -55,12 +56,12 @@ class Example(commands.Cog):
     print(self.babel(member.guild, 'joined', user=member.name))
     # babel will return "{JOINED: user=member.name}" until a string is added to en.ini
 
-  @commands.slash_command()
-  async def example(self, inter:disnake.CommandInteraction, echo:str):
+  @app_commands.command()
+  async def example(self, inter:disnake.Interaction, echo:str):
     """ Just a simple echo command """
-    await inter.send(echo, ephemeral=True)
+    await inter.response.send_message(echo, ephemeral=True)
 
 
-def setup(bot:MerelyBot):
+async def setup(bot:MerelyBot):
   """ Bind this cog to the bot """
-  bot.add_cog(Example(bot))
+  await bot.add_cog(Example(bot))

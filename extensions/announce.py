@@ -6,8 +6,9 @@ from __future__ import annotations
 
 import base64, asyncio
 from typing import TYPE_CHECKING
-import disnake
-from disnake.ext import commands
+import discord
+from discord import app_commands
+from discord.ext import commands
 
 from extensions.controlpanel import Listable
 
@@ -152,7 +153,7 @@ class Announce(commands.Cog):
       self.bot.config.save()
 
   @commands.Cog.listener('on_button_click')
-  async def click_handler(self, inter:disnake.MessageInteraction):
+  async def click_handler(self, inter:disnake.Interaction):
     if inter.data.custom_id == 'announce_send':
       await self.send_button_callback(inter)
     elif inter.data.custom_id == 'announce_resume':
@@ -252,7 +253,7 @@ class Announce(commands.Cog):
       # this modal uses the new system scope
       return self.parent.bot.babel(target, self.parent.SCOPE, key, **values)
 
-    def __init__(self, parent:Announce, inter:disnake.CommandInteraction):
+    def __init__(self, parent:Announce, inter:disnake.Interaction):
       self.parent = parent
 
       super().__init__(
@@ -320,7 +321,7 @@ class Announce(commands.Cog):
         style=disnake.ButtonStyle.green
       )
 
-  async def send_button_callback(self, inter:disnake.MessageInteraction):
+  async def send_button_callback(self, inter:disnake.Interaction):
     if self.lock:
       # Lock means an announcement is already in progress
       return
@@ -332,13 +333,13 @@ class Announce(commands.Cog):
     buttons[0].disabled = True
     buttons[1].disabled = True
     await inter.response.edit_message(components=buttons)
-    await self.send_announcement(await inter.original_message())
+    await self.send_announcement(await inter.original_response())
 
   class ResumeButton(disnake.ui.Button):
     def __init__(self):
       super().__init__(label='Resume sending', emoji='▶️', custom_id='announce_resume')
 
-  async def resume_button_callback(self, inter:disnake.MessageInteraction):
+  async def resume_button_callback(self, inter:disnake.Interaction):
     if self.lock:
       # Lock means an announcement is already in progress
       return
@@ -379,13 +380,13 @@ class Announce(commands.Cog):
 
   @commands.bot_has_permissions(read_messages=True, send_messages=True)
   @commands.guild_only()
-  @commands.default_member_permissions(administrator=True)
-  @commands.slash_command()
-  async def announce(self, inter:disnake.CommandInteraction):
+  @app_commands.default_permissions(administrator=True)
+  @app_commands.command()
+  async def announce(self, inter:disnake.Interaction):
     """ Sends an announcement to server owners and other subscribed users """
     await inter.response.send_modal(self.AnnounceModal(self, inter))
 
 
-def setup(bot:MerelyBot):
+async def setup(bot:MerelyBot):
   """ Bind this cog to the bot """
-  bot.add_cog(Announce(bot))
+  await bot.add_cog(Announce(bot))

@@ -8,8 +8,9 @@ from __future__ import annotations
 from enum import Enum
 import asyncio, io, os, re, importlib, glob, contextlib
 from typing import Optional, TYPE_CHECKING
-import disnake
-from disnake.ext import commands
+import discord
+from discord import app_commands
+from discord.ext import commands
 
 if TYPE_CHECKING:
   from main import MerelyBot
@@ -50,18 +51,19 @@ class System(commands.Cog):
     if bot.config['auth']['botadmin_guilds']:
       guilds = bot.config['auth']['botadmin_guilds']
       botadmin_guilds = [int(guild) for guild in guilds.split(' ')]
-      for cmd in self.get_application_commands():
-        cmd.guild_ids = botadmin_guilds
+      for cmd in self.get_app_commands():
+        cmd._guild_ids = botadmin_guilds
     elif not bot.quiet:
       print("  WARN: No botadmin_guilds defined, so all servers will be able to see system commands!")
 
   # Commands
 
-  @commands.default_member_permissions(administrator=True)
-  @commands.slash_command()
+  @app_commands.command()
+  @app_commands.default_permissions(administrator=True)
+  @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
   async def module(
     self,
-    inter:disnake.CommandInteraction,
+    inter:discord.Interaction,
     action:Actions,
     module:Optional[str] = None
   ):
@@ -81,7 +83,7 @@ class System(commands.Cog):
       for e in self.bot.extensions.keys()
     ] + self.SPECIAL_MODULES
     if module is None or action == Actions.list:
-      await inter.send(
+      await inter.response.send_message(
         self.babel(inter, 'extensions_list', list='\n'.join(active_extensions)),
         ephemeral=True
       )
@@ -102,7 +104,7 @@ class System(commands.Cog):
         else:
           raise AssertionError(f"Unhandled special module {module}!")
 
-        await inter.send(
+        await inter.response.send_message(
           self.babel(inter, 'extension_reload_success', extension=module),
           ephemeral=True
         )
@@ -132,35 +134,38 @@ class System(commands.Cog):
         if action == Actions.enable:
           self.bot.config['extensions'][module] = 'True'
           self.bot.config.save()
-          await inter.send(
+          await inter.response.send_message(
             self.babel(inter, 'extension_enable_success', extension=module),
             ephemeral=True
           )
         elif action == Actions.disable:
           self.bot.config['extensions'][module] = 'False'
           self.bot.config.save()
-          await inter.send(
+          await inter.response.send_message(
             self.babel(inter, 'extension_disable_success', extension=module),
             ephemeral=True
           )
+          await self.bot.tree.sync()
         elif action == Actions.load:
-          self.bot.load_extension(module_match)
-          await inter.send(
+          await self.bot.load_extension(module_match)
+          await inter.response.send_message(
             self.babel(inter, 'extension_load_success', extension=module),
             ephemeral=True
           )
         elif action == Actions.unload:
-          self.bot.unload_extension(module_match)
-          await inter.send(
+          await self.bot.unload_extension(module_match)
+          await inter.response.send_message(
             self.babel(inter, 'extension_unload_success', extension=module),
             ephemeral=True
           )
+          await self.bot.tree.sync()
         elif action == Actions.reload:
-          self.bot.reload_extension(module_match)
-          await inter.send(
+          await self.bot.reload_extension(module_match)
+          await inter.response.send_message(
             self.babel(inter, 'extension_reload_success', extension=module),
             ephemeral=True
           )
+          await self.bot.tree.sync()
         else:
           raise commands.BadArgument()
         cogmodules = {cog.lower().replace('_', ''): cog for cog in self.bot.cogs}
@@ -177,39 +182,40 @@ class System(commands.Cog):
                 print("Firing event", listener[1].__name__, "as a part of loading module", module)
               asyncio.ensure_future(listener[1]())
       else:
-        await inter.send(self.babel(inter, 'extension_file_missing'), ephemeral=True)
+        await inter.response.send_message(self.babel(inter, 'extension_file_missing'), ephemeral=True)
     else:
-      await inter.send(self.babel(inter, 'extension_not_found'), ephemeral=True)
+      await inter.response.send_message(self.babel(inter, 'extension_not_found'), ephemeral=True)
 
   @module.autocomplete('module')
-  async def module_ac(self, inter:disnake.CommandInteraction, search:str):
+  async def module_ac(self, inter:discord.Interaction, search:str) -> list[app_commands.Choice[str]]:
     """ Suggests modules based on the list in config """
     extension_list = None
-    if 'action' in inter.filled_options:
-      if inter.filled_options['action'] in [Actions.reload, Actions.unload]:
-        extension_list = (
+    if 'options' in inter.data and 'action' in inter.data['options']:
+      if inter.data['options']['action']['value'] in [Actions.reload, Actions.unload]:
+        extension_list = [
           e.replace('extensions.','').replace('overlay.','').strip('_')
           for e in self.bot.extensions.keys()
-        )
-      elif inter.filled_options['action'] == Actions.list:
+        ]
+      elif inter['options']['action']['value'] == Actions.list:
         return []
     if extension_list is None:
       stock_extensions = glob.glob(os.path.join('extensions', '*.py'))
       overlay_extensions = (
         glob.glob(os.path.join('overlay', 'extensions', '*.py')) if self.bot.overlay else []
       )
-      extension_list = set(
+      extension_list = list(set(
         re.sub(r'^(extensions[/\\]|overlay[/\\]extensions[/\\])', '', f).strip('_')[:-3]
         for f in (overlay_extensions + stock_extensions)
-      )
-    return (
-      [x for x in extension_list if search in x] +
-      [e for e in self.SPECIAL_MODULES if search in e]
-    )
+      ))
+    return [
+      app_commands.Choice(name=x, value=x) for x in extension_list + self.SPECIAL_MODULES
+      if search in x
+    ][:25]
 
-  @commands.default_member_permissions(administrator=True)
-  @commands.slash_command()
-  async def migrate(self, inter:disnake.CommandInteraction, script:str):
+  @app_commands.command()
+  @app_commands.default_permissions(administrator=True)
+  @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+  async def migrate(self, inter:discord.Interaction, script:str):
     """
     Manually trigger a config migration script
 
@@ -225,7 +231,9 @@ class System(commands.Cog):
       migrations += glob.glob(os.path.join('overlay', 'migrations', 'v*_*.py'))
     # Check script path is valid
     if script not in migrations:
-      await inter.send("Script not found! You can only choose a script from the autocomplete list.")
+      await inter.response.send_message(
+        "Script not found! You can only choose a script from the autocomplete list."
+      )
       return
     # Begin the migration
     module = importlib.import_module(re.sub(r'[/\\]', '.', script[:-3]), 'main')
@@ -234,25 +242,28 @@ class System(commands.Cog):
       with contextlib.redirect_stdout(f):
         module.migrate(self.bot.config)
     except Exception as e:
-      await inter.send(f"Exception encountered while running migration;```{e}```")
+      await inter.response.send_message(f"Exception encountered while running migration;```{e}```")
     else:
-      await inter.send(f"Migration succeeded with the following output;```{f.getvalue()}```")
+      await inter.response.send_message(
+        f"Migration succeeded with the following output;```{f.getvalue()}```"
+      )
     self.bot.config.save()
 
   @migrate.autocomplete('script')
-  async def migrate_ac(self, inter:disnake.CommandInteraction, search:str):
+  async def migrate_ac(self, _:discord.Interaction, search:str) -> list[app_commands.Choice[str]]:
     """ Return a list of matching migration scripts """
     migrations:list[str] = []
     if os.path.exists('migrations'):
       migrations += glob.glob(os.path.join('migrations', 'v*_*.py'))
     if os.path.exists(os.path.join('overlay', 'migrations')):
       migrations += glob.glob(os.path.join('overlay', 'migrations', 'v*_*.py'))
-    return [m for m in migrations if search in m]
+    return [app_commands.Choice(name=m, value=m) for m in migrations if search in m]
 
-  @commands.default_member_permissions(administrator=True)
-  @commands.slash_command()
+  @app_commands.command()
+  @app_commands.default_permissions(administrator=True)
+  @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
   async def delete_message(
-    self, inter:disnake.CommandInteraction, channel_id:str, message_id:str
+    self, inter:discord.Interaction, channel_id:str, message_id:str
   ):
     """ Deletes a message """
     self.bot.auth.superusers(inter)
@@ -261,25 +272,26 @@ class System(commands.Cog):
       channel = await self.bot.fetch_channel(int(channel_id))
       message = await channel.fetch_message(int(message_id))
     except TypeError:
-      await inter.send("Provided ids are invalid!")
+      await inter.response.send_message("Provided ids are invalid!")
       return
-    except disnake.NotFound:
-      await inter.send("Message/channel id does not match!")
+    except discord.NotFound:
+      await inter.response.send_message("Message/channel id does not match!")
       return
 
     try:
       await message.delete()
-    except disnake.Forbidden:
-      await inter.send("Bot is missing permissions!")
+    except discord.Forbidden:
+      await inter.response.send_message("Bot is missing permissions!")
       return
 
-    await inter.send("Deleted message successfully!")
+    await inter.response.send_message("Deleted message successfully!")
 
-  @commands.default_member_permissions(administrator=True)
-  @commands.slash_command()
+  @app_commands.command()
+  @app_commands.default_permissions(administrator=True)
+  @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
   @commands.cooldown(1, 1)
   async def die(
-    self, inter:disnake.CommandInteraction, saveconfig:bool = False, restart:bool = False
+    self, inter:discord.Interaction, saveconfig:bool = False, restart:bool = False
   ):
     """
     Log out and shut down
@@ -289,13 +301,13 @@ class System(commands.Cog):
     saveconfig: Write the last known state of the config file on shutdown
     """
     self.bot.auth.superusers(inter)
-    await inter.send(self.bot.babel(inter, 'admin', 'die_success', restart=restart))
+    await inter.response.send_message(self.bot.babel(inter, 'admin', 'die_success', restart=restart))
     if saveconfig:
       self.bot.config.save()
     self.bot.restart = restart
     await self.bot.close()
 
 
-def setup(bot:MerelyBot):
+async def setup(bot:MerelyBot):
   """ Bind this cog to the bot """
-  bot.add_cog(System(bot))
+  await bot.add_cog(System(bot))

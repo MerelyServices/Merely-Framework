@@ -6,8 +6,9 @@ from __future__ import annotations
 
 import random
 from typing import TYPE_CHECKING
-import disnake
-from disnake.ext import commands
+import discord
+from discord import app_commands
+from discord.ext import commands
 
 if TYPE_CHECKING:
   from main import MerelyBot
@@ -31,8 +32,8 @@ class Dice(commands.Cog):
   def __init__(self, bot:MerelyBot):
     self.bot = bot
 
-  @commands.slash_command()
-  async def dice(self, inter:disnake.CommandInteraction, sides:str = 6):
+  @app_commands.command()
+  async def dice(self, inter:disnake.Interaction, sides:str = 6):
     """
     Roll an n-sided dice
 
@@ -48,11 +49,11 @@ class Dice(commands.Cog):
           self.babel(inter, 'roll_result', i=i+1, r=random.choice(range(1, int(n) + 1)))
         )
       except (ValueError, IndexError):
-        return await inter.send(self.babel(inter, 'roll_error'))
+        return await inter.response.send_message(self.babel(inter, 'roll_error'))
 
-    await inter.send('\n'.join(result))
+    await inter.response.send_message('\n'.join(result))
 
 
-def setup(bot:MerelyBot):
+async def setup(bot:MerelyBot):
   """ Bind this cog to the bot """
-  bot.add_cog(Dice(bot))
+  await bot.add_cog(Dice(bot))

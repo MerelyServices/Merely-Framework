@@ -7,8 +7,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Iterable
 import asyncio
-import disnake
-from disnake.ext import commands
+import discord
+from discord import app_commands
+from discord.ext import commands
 import emoji as ej
 import re
 
@@ -262,7 +263,7 @@ class ReactRoles(commands.Cog):
     def __init__(
         self,
         parent:ReactRoles,
-        inter: disnake.GuildCommandInteraction,
+        inter: disnake.Interaction,
         prompt:str
       ):
       super().__init__(timeout=300)
@@ -300,7 +301,7 @@ class ReactRoles(commands.Cog):
       await self.msg.edit(view=self)
 
     @disnake.ui.button(style=disnake.ButtonStyle.green, emoji='❔')
-    async def add_reaction_button(self, _:disnake.Button, inter:disnake.MessageInteraction):
+    async def add_reaction_button(self, _:disnake.Button, inter:disnake.Interaction):
       """ Sends the command needed to add a reaction (and associated roles) """
       self.parent.bot.auth.admins(inter)
 
@@ -310,7 +311,7 @@ class ReactRoles(commands.Cog):
       )
 
     @disnake.ui.button(style=disnake.ButtonStyle.primary, emoji='💾', disabled=True)
-    async def save_button(self, _:disnake.Button, inter:disnake.MessageInteraction):
+    async def save_button(self, _:disnake.Button, inter:disnake.Interaction):
       """ Saves the reactrole message to storage so it will start to take effect """
       self.parent.bot.auth.admins(inter)
 
@@ -339,11 +340,11 @@ class ReactRoles(commands.Cog):
   # Commands
 
   @commands.guild_only()
-  @commands.slash_command(name='reactrole_add')
-  @commands.default_member_permissions(administrator=True)
+  @app_commands.command(name='reactrole_add')
+  @app_commands.default_permissions(administrator=True)
   async def reactrole_edit_add(
     self,
-    inter:disnake.CommandInteraction,
+    inter:disnake.Interaction,
     emoji:str,
     role1:disnake.Role,
     role2:Optional[disnake.Role] = None,
@@ -394,7 +395,7 @@ class ReactRoles(commands.Cog):
     await inter.response.send_message(self.babel(inter, 'emoji_added'), ephemeral=True)
 
   @reactrole_edit_add.autocomplete('emoji')
-  def ac_emoji(self, inter:disnake.CommandInteraction, search:str):
+  def ac_emoji(self, inter:disnake.Interaction, search:str):
     """ Autocomplete for emoji search """
     search = search.strip()
     lang = self.bot.babel.resolve_lang(inter.user.id, inter.guild_id, inter)[0]
@@ -413,9 +414,9 @@ class ReactRoles(commands.Cog):
 
   @commands.bot_has_permissions(read_messages=True, manage_messages=True, add_reactions=True)
   @commands.guild_only()
-  @commands.slash_command()
-  @commands.default_member_permissions(administrator=True)
-  async def reactrole(self, inter:disnake.CommandInteraction, prompt:str):
+  @app_commands.command()
+  @app_commands.default_permissions(administrator=True)
+  async def reactrole(self, inter:disnake.Interaction, prompt:str):
     """
       Grant members roles whenever they react to a message
 

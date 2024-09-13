@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import copy
 from typing import TYPE_CHECKING
-import disnake
-from disnake.ext import commands
+import discord
+from discord import app_commands
+from discord.ext import commands
 
 if TYPE_CHECKING:
   from main import MerelyBot
@@ -186,7 +187,7 @@ class ControlPanel(commands.Cog):
     return out
 
   @commands.Cog.listener('on_message_interaction')
-  async def on_panel_interaction(self, inter:disnake.MessageInteraction):
+  async def on_panel_interaction(self, inter:disnake.Interaction):
     if inter.message.id in self.panels:
       await self.panels[inter.message.id].callback_all(inter)
     return
@@ -219,7 +220,7 @@ class ControlPanel(commands.Cog):
 
   class ControlPanelView(disnake.ui.View):
     def __init__(
-      self, inter:disnake.CommandInteraction, parent:ControlPanel, settings:list[Setting]
+      self, inter:disnake.Interaction, parent:ControlPanel, settings:list[Setting]
     ):
       super().__init__(timeout=300)
 
@@ -264,7 +265,7 @@ class ControlPanel(commands.Cog):
         for item in items:
           self.add_item(item)
 
-    async def callback_all(self, inter:disnake.MessageInteraction | disnake.ModalInteraction):
+    async def callback_all(self, inter:disnake.Interaction | disnake.ModalInteraction):
       id = inter.data.custom_id
       reset = False
       if id.endswith('_reset') and id[0:-len('_reset')] in self.settings:
@@ -334,8 +335,8 @@ class ControlPanel(commands.Cog):
 
   # Commands
 
-  @commands.slash_command()
-  async def controlpanel(self, inter:disnake.CommandInteraction):
+  @app_commands.command()
+  async def controlpanel(self, inter:disnake.Interaction):
     """ Opens the control panel so you can change bot preferences for this guild and yourself """
     settings = self.discover_settings(inter)
     panel = self.ControlPanelView(inter, self, settings)
@@ -350,6 +351,6 @@ class ControlPanel(commands.Cog):
     self.panels[msg.id] = panel
 
 
-def setup(bot:MerelyBot):
+async def setup(bot:MerelyBot):
   """ Bind this cog to the bot """
-  bot.add_cog(ControlPanel(bot))
+  await bot.add_cog(ControlPanel(bot))

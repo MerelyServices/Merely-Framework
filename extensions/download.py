@@ -5,8 +5,9 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-import disnake
-from disnake.ext import commands
+import discord
+from discord import app_commands
+from discord.ext import commands
 import subprocess, os, glob, asyncio, shlex
 from urllib.parse import urlparse
 
@@ -62,8 +63,8 @@ class Example(commands.Cog):
       os.remove(f)
 
   @commands.has_permissions(send_messages=True)
-  @commands.slash_command()
-  async def download(self, inter:disnake.CommandInteraction, media_url:str):
+  @app_commands.command()
+  async def download(self, inter:disnake.Interaction, media_url:str):
     """
       Download a video file and send it back as a message
 
@@ -72,7 +73,7 @@ class Example(commands.Cog):
       media_url: A link to almost any web page with a video. Doesn't work if payment is required.
     """
     if not uri_validator(media_url):
-      await inter.send("Media URL appears to be invalid. Not downloading.")
+      await inter.response.send_message("Media URL appears to be invalid. Not downloading.")
       return
     await inter.response.defer(with_message=True)
     filenumber = self.runtime_counter
@@ -101,6 +102,6 @@ class Example(commands.Cog):
       await inter.edit_original_message("Download failed;\n" + logs)
 
 
-def setup(bot:MerelyBot):
+async def setup(bot:MerelyBot):
   """ Bind this cog to the bot """
-  bot.add_cog(Example(bot))
+  await bot.add_cog(Example(bot))

@@ -11,13 +11,13 @@ from configparser import ConfigParser
 from typing import Optional, TYPE_CHECKING
 from config import Config
 from glob import glob
-import disnake
+import discord
 
 if TYPE_CHECKING:
   from .main import MerelyBot
 
 Resolvable = (
-  disnake.Interaction | disnake.Message | disnake.User | disnake.Member | disnake.Guild
+  discord.Interaction | discord.Message | discord.User | discord.Member | discord.Guild
   | tuple[int, int | None]
 )
 
@@ -93,7 +93,7 @@ class Babel():
       else:
         print("WARN: unable to resolve language dependancy chain.")
 
-  def localeconv(self, locale:disnake.Locale) -> str:
+  def localeconv(self, locale:discord.Locale) -> str:
     """ Converts a Discord API locale to a babel locale """
     return self.prefix + str(locale).replace('-US', '').replace('-UK', '')
 
@@ -101,7 +101,7 @@ class Babel():
     self,
     user_id:Optional[int] = None,
     guild_id:Optional[int] = None,
-    inter:Optional[disnake.Interaction] = None,
+    inter:Optional[discord.Interaction] = None,
     debug:bool = False
   ) -> tuple[list]:
     """ Creates a priority list of languages and reasons why they apply to this user or guild """
@@ -161,18 +161,20 @@ class Babel():
   ) -> str:
     """ Determine the locale and resolve the closest translated string """
     inter = None
-    if isinstance(target, (disnake.Interaction, disnake.Message)):
+    if isinstance(target, discord.Interaction):
+      author_id = target.user.id
+      guild_id = target.guild.id if target.guild else None
+      inter = target
+    elif isinstance(target, discord.Message):
       author_id = target.author.id
-      guild_id = target.guild.id if hasattr(target, 'guild') and target.guild else None
-      if isinstance(target, disnake.Interaction):
-        inter = target
-    elif isinstance(target, disnake.User):
+      guild_id = target.guild.id if target.guild else None
+    elif isinstance(target, discord.User):
       author_id = target.id
       guild_id = None
-    elif isinstance(target, disnake.Member):
+    elif isinstance(target, discord.Member):
       author_id = target.id
       guild_id = target.guild.id
-    elif isinstance(target, disnake.Guild):
+    elif isinstance(target, discord.Guild):
       author_id = None
       guild_id = target.id
     else:
@@ -241,9 +243,9 @@ class Babel():
     # Pre-fetch the slash command (if it exists)
     cmd = None
     if bot:
-      cmd = bot.get_global_command_named(command)
+      cmd = bot.tree.get_command(command)
 
-    if isinstance(cmd, disnake.APISlashCommand):
+    if isinstance(cmd, discord.APISlashCommand):
       # Use slash command references if they can be found
       return '</'+cmd.name+':'+str(cmd.id)+'>'
     else:
