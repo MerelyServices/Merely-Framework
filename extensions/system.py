@@ -60,13 +60,8 @@ class System(commands.Cog):
 
   @app_commands.command()
   @app_commands.default_permissions(administrator=True)
-  @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
-  async def module(
-    self,
-    inter:discord.Interaction,
-    action:Actions,
-    module:Optional[str] = None
-  ):
+  @app_commands.allowed_contexts(guilds=True, private_channels=False)
+  async def module(self, inter:discord.Interaction, action:Actions, module:Optional[str] = None):
     """
     Manage modules of the bot in real time
 
@@ -75,7 +70,6 @@ class System(commands.Cog):
     action: The action you want to perform
     module: The target cog which will be affected, leave empty for a list of loaded Cogs
     """
-
     self.bot.auth.superusers(inter)
 
     active_extensions = [
@@ -145,13 +139,13 @@ class System(commands.Cog):
             self.babel(inter, 'extension_disable_success', extension=module),
             ephemeral=True
           )
-          await self.bot.tree.sync()
         elif action == Actions.load:
           await self.bot.load_extension(module_match)
           await inter.response.send_message(
             self.babel(inter, 'extension_load_success', extension=module),
             ephemeral=True
           )
+          await self.bot.tree.sync()
         elif action == Actions.unload:
           await self.bot.unload_extension(module_match)
           await inter.response.send_message(
@@ -214,7 +208,7 @@ class System(commands.Cog):
 
   @app_commands.command()
   @app_commands.default_permissions(administrator=True)
-  @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+  @app_commands.allowed_contexts(guilds=True, private_channels=False)
   async def migrate(self, inter:discord.Interaction, script:str):
     """
     Manually trigger a config migration script
@@ -223,6 +217,8 @@ class System(commands.Cog):
     ----------
     script: The filename of the migration script you would like to trigger
     """
+    self.bot.auth.superusers(inter)
+
     # For security, generate a list of approved scripts
     migrations:list[str] = []
     if os.path.exists('migrations'):
@@ -261,7 +257,7 @@ class System(commands.Cog):
 
   @app_commands.command()
   @app_commands.default_permissions(administrator=True)
-  @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+  @app_commands.allowed_contexts(guilds=True, private_channels=False)
   async def delete_message(
     self, inter:discord.Interaction, channel_id:str, message_id:str
   ):
@@ -288,7 +284,7 @@ class System(commands.Cog):
 
   @app_commands.command()
   @app_commands.default_permissions(administrator=True)
-  @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=False)
+  @app_commands.allowed_contexts(guilds=True, private_channels=False)
   @commands.cooldown(1, 1)
   async def die(
     self, inter:discord.Interaction, saveconfig:bool = False, restart:bool = False
@@ -301,6 +297,7 @@ class System(commands.Cog):
     saveconfig: Write the last known state of the config file on shutdown
     """
     self.bot.auth.superusers(inter)
+
     await inter.response.send_message(self.bot.babel(inter, 'admin', 'die_success', restart=restart))
     if saveconfig:
       self.bot.config.save()

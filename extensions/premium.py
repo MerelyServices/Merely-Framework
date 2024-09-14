@@ -31,8 +31,8 @@ class Premium(commands.Cog):
     """ Shorthand for self.bot.babel(scope, key, **values) """
     return self.bot.babel(target, self.SCOPE, key, **values)
 
-  premiumguild: disnake.Guild
-  premiumroles: set[disnake.Role]
+  premiumguild: discord.Guild
+  premiumroles: set[discord.Role]
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
@@ -94,15 +94,15 @@ class Premium(commands.Cog):
     if not self.premiumroles:
       raise Exception("The designated premium role was not found!")
 
-  async def check_premium(self, user:disnake.User | disnake.Member):
+  async def check_premium(self, user:discord.User | discord.Member):
     try:
       member = await self.premiumguild.fetch_member(user.id)
-    except disnake.NotFound:
+    except discord.NotFound:
       return False
     else:
       return list(self.premiumroles & set(member.roles))
 
-  async def check_premium_slash_command(self, inter:disnake.Interaction):
+  async def check_premium_slash_command(self, inter:discord.Interaction):
     restricted = self.config['restricted_commands'].split(' ')
     premium_users = [int(u) for u in self.config['premium_users'].split(' ') if u]
     if inter.application_command.name in restricted:
@@ -114,9 +114,9 @@ class Premium(commands.Cog):
       return False # user is not premium
     return True # command is not restricted
 
-  def error_embed(self, inter:disnake.Interaction) -> disnake.Embed:
+  def error_embed(self, inter:discord.Interaction) -> discord.Embed:
     rolelist = self.bot.babel.string_list(inter, [r.name for r in self.premiumroles], True)
-    embed = disnake.Embed(
+    embed = discord.Embed(
       title=self.babel(inter, 'required_title'),
       description=self.babel(inter, 'required_error', role=rolelist)
     )
@@ -128,7 +128,7 @@ class Premium(commands.Cog):
     return embed
 
   @app_commands.command()
-  async def premium(self, inter:disnake.Interaction):
+  async def premium(self, inter:discord.Interaction):
     """
       Learn more about premium.
     """
@@ -146,7 +146,7 @@ class Premium(commands.Cog):
       fulldesc += '\n### ' + self.babel(inter, 'feature_custom')
       fulldesc += '\n' + self.babel(inter, 'feature_custom_desc')
 
-    embed = disnake.Embed(title=self.babel(inter, 'name'), description=fulldesc)
+    embed = discord.Embed(title=self.babel(inter, 'name'), description=fulldesc)
 
     if self.config['patreon'] or self.config['other']:
       embed.url = (
@@ -159,12 +159,12 @@ class Premium(commands.Cog):
 
     buttons = []
     if self.bot.config['help']['serverinv']:
-      buttons.append(disnake.ui.Button(
+      buttons.append(discord.ui.Button(
         emoji='1️⃣',
         label=self.babel(inter, 'join_server_cta'),
         url=self.bot.config['help']['serverinv']
       ))
-      buttons.append(disnake.ui.Button(
+      buttons.append(discord.ui.Button(
         emoji='2️⃣',
         label=self.babel(inter, 'subscribe_cta'),
         url=embed.url

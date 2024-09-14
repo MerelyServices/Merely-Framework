@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+import asyncio
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -32,19 +33,17 @@ class Error(commands.Cog):
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
+    bot.tree.error(self.handle_error)
 
-  @commands.Cog.listener('on_user_command_error')
-  @commands.Cog.listener('on_message_command_error')
-  @commands.Cog.listener('on_slash_command_error')
   async def handle_error(
     self,
-    inter:disnake.Interaction,
-    error:commands.CommandError
+    inter:discord.Interaction,
+    error:app_commands.AppCommandError
   ):
     """ Report to the user what went wrong """
     print("error detected")
     try:
-      if isinstance(error, commands.CommandOnCooldown):
+      if isinstance(error, app_commands.CommandOnCooldown):
         if error.cooldown.get_retry_after() > 5:
           await inter.response.send_message(
             self.babel(inter, 'cooldown', t=int(error.cooldown.get_retry_after())),
@@ -56,37 +55,41 @@ class Error(commands.Cog):
       kwargs = {'ephemeral': True}
       if isinstance(
         error,
-        (commands.CommandNotFound, commands.BadArgument, commands.MissingRequiredArgument)
+        (app_commands.CommandNotFound, commands.BadArgument, commands.MissingRequiredArgument)
       ):
         if 'Help' in self.bot.cogs:
-          await self.bot.cogs['Help'].help(inter, inter.application_command.name, **kwargs)
+          await self.bot.cogs['Help'].help(inter, inter.command.name, **kwargs)
         else:
           await inter.response.send_message(self.babel(inter, 'missingrequiredargument'), **kwargs)
         return
-      if isinstance(error, commands.NoPrivateMessage):
+      if isinstance(error, app_commands.NoPrivateMessage):
         await inter.response.send_message(self.babel(inter, 'noprivatemessage'), **kwargs)
         return
       if isinstance(error, commands.PrivateMessageOnly):
         await inter.response.send_message(self.babel(inter, 'privatemessageonly'), **kwargs)
         return
-      if isinstance(error, (commands.BotMissingPermissions, commands.MissingPermissions)):
+      if isinstance(error, (app_commands.BotMissingPermissions, app_commands.MissingPermissions)):
         permlist = self.bot.babel.string_list(inter, [f'`{p}`' for p in error.missing_permissions])
-        me = isinstance(error, commands.BotMissingPermissions)
-        await inter.response.send_message(self.babel(inter, 'missingperms', me=me, perms=permlist), **kwargs)
+        me = isinstance(error, app_commands.BotMissingPermissions)
+        await inter.response.send_message(
+          self.babel(inter, 'missingperms', me=me, perms=permlist), **kwargs
+        )
         return
-      if isinstance(error, commands.CommandInvokeError):
+      if isinstance(error, app_commands.CommandInvokeError):
         if isinstance(error.original, self.bot.auth.AuthError):
           await inter.response.send_message(str(error.original), **kwargs)
           return
-        await inter.response.send_message(self.babel(inter, 'commanderror', error=str(error.original)), **kwargs)
+        await inter.response.send_message(
+          self.babel(inter, 'commanderror', error=str(error.original)), **kwargs
+        )
         raise error.original
-      elif isinstance(error, (commands.CheckFailure, commands.CheckAnyFailure)):
+      elif isinstance(error, (app_commands.CheckFailure, commands.CheckAnyFailure)):
         print("Unhandled error;", error)
         return
-    except disnake.InteractionTimedOut:
+    except asyncio.TimeoutError:
       print(
         "Unable to handle error in command",
-        inter.application_command.name,
+        inter.command.name if inter.command else 'UNKNOWN COMMAND',
         "because the interaction timed out."
       )
       print(error)

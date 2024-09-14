@@ -39,17 +39,17 @@ class ReactRoles(commands.Cog):
     if not bot.config.has_section(self.SCOPE):
       bot.config.add_section(self.SCOPE)
 
-    self.watching:dict[int, disnake.Message] = {}
+    self.watching:dict[int, discord.Message] = {}
     self.drafts = {}
 
   # Utility functions
 
-  async def get_roles(self, guild:disnake.Guild, configid:str) -> set[disnake.Role] | None:
+  async def get_roles(self, guild:discord.Guild, configid:str) -> set[discord.Role] | None:
     if configid in self.config:
       roleids = [
         int(r) for r in self.config[configid].split(' ')
       ]
-      roles:set[disnake.Role] = set()
+      roles:set[discord.Role] = set()
       for roleid in roleids:
         try:
           roles.add(guild.get_role(roleid))
@@ -60,9 +60,9 @@ class ReactRoles(commands.Cog):
 
   async def change_roles(
     self,
-    member:disnake.Member,
-    give:set[disnake.Role] = set(),
-    take:set[disnake.Role] = set(),
+    member:discord.Member,
+    give:set[discord.Role] = set(),
+    take:set[discord.Role] = set(),
     reason='reactroles',
     dm=True
   ) -> int:
@@ -84,13 +84,13 @@ class ReactRoles(commands.Cog):
         await member.add_roles(*give, reason=reason)
       if len(take):
         await member.remove_roles(*take, reason=reason)
-    except disnake.Forbidden:
+    except discord.Forbidden:
       if dm:
         try:
           await member.send(self.babel(member, 'role_change_failed_perms'))
-        except disnake.Forbidden:
+        except discord.Forbidden:
           pass
-    except disnake.HTTPException:
+    except discord.HTTPException:
       pass
     else:
       try:
@@ -103,17 +103,17 @@ class ReactRoles(commands.Cog):
             given=self.bot.babel.string_list(member, [role.name for role in give]) if give else False,
             server=member.guild.name
           ))
-      except disnake.HTTPException:
+      except discord.HTTPException:
         pass
     return len(give)+len(take)
 
-  async def catchup(self, messages:Iterable[disnake.Message]):
+  async def catchup(self, messages:Iterable[discord.Message]):
     """ Give and take roles as needed to catch up to reality """
     changecount = 0
     guilds = set(m.guild for m in messages)
     for guild in guilds:
       members = await guild.fetch_members().flatten()
-      pendingchanges: dict[disnake.Member, dict[bool, set[disnake.Role]]]
+      pendingchanges: dict[discord.Member, dict[bool, set[discord.Role]]]
       pendingchanges = {m: {True: set(), False: set()} for m in members}
 
       for msg in messages:
@@ -162,11 +162,11 @@ class ReactRoles(commands.Cog):
     deleted = 0
     for key in self.config.keys():
       chid,msgid = key.split('_')[:2]
-      msg: disnake.Message
+      msg: discord.Message
       try:
         ch = await self.bot.fetch_channel(chid)
         msg = await ch.fetch_message(msgid)
-      except disnake.NotFound:
+      except discord.NotFound:
         self.config.pop(key)
         deleted += 1
       except Exception as e:
@@ -179,7 +179,7 @@ class ReactRoles(commands.Cog):
       self.bot.config.save()
 
   @commands.Cog.listener("on_message_delete")
-  async def revoke_tracking_message(self, message:disnake.Message):
+  async def revoke_tracking_message(self, message:discord.Message):
     """ Remove message from config so it won't attempt to load it again """
     for k in self.config.keys():
       if k.split('_')[1] == str(message.id):
@@ -196,7 +196,7 @@ class ReactRoles(commands.Cog):
     """ Grant the user their role """
     if data.user_id == self.bot.user.id or data.guild_id is None:
       return
-    if isinstance(data.member, disnake.Member):
+    if isinstance(data.member, discord.Member):
       emojiid = data.emoji if data.emoji.is_unicode_emoji() else data.emoji.id
       if data.channel_id in self.drafts and data.message_id == self.drafts[data.channel_id].msg.id:
         # Don't allow reactions until the draft is published
@@ -258,12 +258,12 @@ class ReactRoles(commands.Cog):
   class ReactRoleEditorView(disnake.ui.View):
     """ Draft ReactRole message state and editor """
     #TODO: make it possible to reopen this editor later
-    msg:disnake.Message
+    msg:discord.Message
 
     def __init__(
         self,
         parent:ReactRoles,
-        inter: disnake.Interaction,
+        inter: discord.Interaction,
         prompt:str
       ):
       super().__init__(timeout=300)
@@ -271,12 +271,12 @@ class ReactRoles(commands.Cog):
       self.parent = parent
       self.inter = inter
       self.prompt = prompt
-      self.react_roles: dict[disnake.Emoji | str, list[disnake.Role]] = {}
+      self.react_roles: dict[discord.Emoji | str, list[discord.Role]] = {}
 
       self.add_reaction_button.label = parent.babel(inter, 'add_reaction')
       self.save_button.label = parent.babel(inter, 'save_button')
 
-    async def add_reactroles(self, emoji:disnake.Emoji | str, roles:list[disnake.Role]):
+    async def add_reactroles(self, emoji:discord.Emoji | str, roles:list[discord.Role]):
       self.timeout = 300
       self.react_roles[emoji] = roles
       await self.msg.add_reaction(emoji)
@@ -284,7 +284,7 @@ class ReactRoles(commands.Cog):
         self.save_button.disabled = False
         await self.msg.edit(view=self)
 
-    async def remove_reactroles(self, emoji:disnake.Emoji | str):
+    async def remove_reactroles(self, emoji:discord.Emoji | str):
       self.timeout = 300
       self.react_roles.pop(emoji)
       await self.msg.reply(self.parent.babel(self.msg.guild, 'emoji_removed', emoji=emoji))
@@ -300,8 +300,8 @@ class ReactRoles(commands.Cog):
       self.save_button.disabled = True
       await self.msg.edit(view=self)
 
-    @disnake.ui.button(style=disnake.ButtonStyle.green, emoji='❔')
-    async def add_reaction_button(self, _:disnake.Button, inter:disnake.Interaction):
+    @disnake.ui.button(style=discord.ButtonStyle.green, emoji='❔')
+    async def add_reaction_button(self, _:disnake.Button, inter:discord.Interaction):
       """ Sends the command needed to add a reaction (and associated roles) """
       self.parent.bot.auth.admins(inter)
 
@@ -310,8 +310,8 @@ class ReactRoles(commands.Cog):
         ephemeral=True
       )
 
-    @disnake.ui.button(style=disnake.ButtonStyle.primary, emoji='💾', disabled=True)
-    async def save_button(self, _:disnake.Button, inter:disnake.Interaction):
+    @disnake.ui.button(style=discord.ButtonStyle.primary, emoji='💾', disabled=True)
+    async def save_button(self, _:disnake.Button, inter:discord.Interaction):
       """ Saves the reactrole message to storage so it will start to take effect """
       self.parent.bot.auth.admins(inter)
 
@@ -333,22 +333,22 @@ class ReactRoles(commands.Cog):
       self.save_button.disabled = True
       self.add_reaction_button.disabled = True
       try:
-        await self.msg.edit(self.parent.bot.babel(self.msg.guild, 'error', 'timeoutview'))
-      except disnake.HTTPException:
+        await self.msg.edit(content=self.parent.bot.babel(self.msg.guild, 'error', 'timeoutview'))
+      except discord.HTTPException:
         pass
 
   # Commands
 
-  @commands.guild_only()
+  @app_commands.guild_only()
   @app_commands.command(name='reactrole_add')
   @app_commands.default_permissions(administrator=True)
   async def reactrole_edit_add(
     self,
-    inter:disnake.Interaction,
+    inter:discord.Interaction,
     emoji:str,
-    role1:disnake.Role,
-    role2:Optional[disnake.Role] = None,
-    role3:Optional[disnake.Role] = None
+    role1:discord.Role,
+    role2:Optional[discord.Role] = None,
+    role3:Optional[discord.Role] = None
   ):
     """
     Add a reaction and the corresponding roles to a prompt in edit mode.
@@ -367,7 +367,7 @@ class ReactRoles(commands.Cog):
     if inter.channel_id not in self.drafts:
       await inter.response.send_message(self.babel(inter, 'no_draft'), ephemeral=True)
       return
-    foundemoji:disnake.Emoji | str
+    foundemoji:discord.Emoji | str
     if ej.is_emoji(emoji.split()[0]):
       # Emoji keyboard emoji
       foundemoji = emoji.split()[0]
@@ -376,7 +376,7 @@ class ReactRoles(commands.Cog):
       match:re.Match[str]
       try:
         foundemoji = await inter.guild.fetch_emoji(int(match.groups()[0]))
-      except disnake.NotFound:
+      except discord.NotFound:
         await inter.response.send_message(self.babel(inter, 'no_emoji'), ephemeral=True)
         return
     elif match := [e for e in inter.guild.emojis if e.name == emoji.replace(':', '')]:
@@ -395,7 +395,7 @@ class ReactRoles(commands.Cog):
     await inter.response.send_message(self.babel(inter, 'emoji_added'), ephemeral=True)
 
   @reactrole_edit_add.autocomplete('emoji')
-  def ac_emoji(self, inter:disnake.Interaction, search:str):
+  async def ac_emoji(self, inter:discord.Interaction, search:str):
     """ Autocomplete for emoji search """
     search = search.strip()
     lang = self.bot.babel.resolve_lang(inter.user.id, inter.guild_id, inter)[0]
@@ -413,10 +413,10 @@ class ReactRoles(commands.Cog):
     return results[:25]
 
   @commands.bot_has_permissions(read_messages=True, manage_messages=True, add_reactions=True)
-  @commands.guild_only()
+  @app_commands.guild_only()
   @app_commands.command()
   @app_commands.default_permissions(administrator=True)
-  async def reactrole(self, inter:disnake.Interaction, prompt:str):
+  async def reactrole(self, inter:discord.Interaction, prompt:str):
     """
       Grant members roles whenever they react to a message
 

@@ -41,30 +41,38 @@ class Language(commands.Cog):
     if 'show_in_controlpanel' not in self.config:
       self.config['show_in_controlpanel'] = 'True'
 
-  def controlpanel_settings(self, inter:disnake.Interaction):
+  def controlpanel_settings(self, inter:discord.Interaction):
     # ControlPanel integration
     langlist = list(self.bot.babel.langs.keys())
     if not self.config.getboolean('show_in_controlpanel', fallback=True):
       return []
-    out = [
-      Selectable(self.SCOPE, str(inter.user.id), 'user_language_override', langlist)
-    ]
+    out = [Selectable(
+      self.SCOPE,
+      str(inter.user.id),
+      'user_language_override',
+      [discord.SelectOption(label=val) for val in langlist]
+    )]
     if inter.guild and inter.permissions.administrator:
-      out.append(Selectable(self.SCOPE, str(inter.guild_id), 'guild_language_override', langlist))
+      out.append(Selectable(
+        self.SCOPE,
+        str(inter.guild_id),
+        'guild_language_override',
+        [discord.SelectOption(label=val) for val in langlist]
+      ))
     return out
 
   @app_commands.command()
-  async def language(self, _:disnake.Interaction):
+  async def language(self, _:discord.Interaction):
     """
     Changes the language this bot speaks to you, or to a server you administrate
     """
 
   @language.sub_command(name='list')
-  async def language_list(self, inter:disnake.Interaction):
+  async def language_list(self, inter:discord.Interaction):
     """
     Lists all available languages this bot can be translated to
     """
-    embed = disnake.Embed(
+    embed = discord.Embed(
       title=self.babel(inter, 'list_title'),
       description=self.babel(inter, 'set_howto') +
       '\n' + (
@@ -93,7 +101,7 @@ class Language(commands.Cog):
     await inter.response.send_message(embed=embed)
 
   @language.sub_command(name='get')
-  async def language_get(self, inter:disnake.Interaction):
+  async def language_get(self, inter:discord.Interaction):
     """
     Get the language the bot is using with you right now and the reason why it was selected
     """
@@ -111,7 +119,7 @@ class Language(commands.Cog):
         origin = 'inherit'
       #BABEL: -origin_reason_,origin_reason_author,origin_reason_guild,origin_reason_default
       #BABEL: origin_reason_author_locale,origin_reason_guild_locale,origin_reason_inherit
-      embeds.append(disnake.Embed(
+      embeds.append(discord.Embed(
         title=f"{self.bot.babel.langs[lang].get('meta', 'name')} ({lang})",
         description=self.babel(inter, 'origin_reason_'+origin, backup=backup),
         color=int(self.bot.config['main']['themecolor'], 16)
@@ -123,7 +131,7 @@ class Language(commands.Cog):
   @language.sub_command(name='set')
   async def language_set(
     self,
-    inter:disnake.Interaction,
+    inter:discord.Interaction,
     language:str
   ):
     """
@@ -139,7 +147,7 @@ class Language(commands.Cog):
       if language != 'default':
         language = self.config.get('prefix', fallback='')+language
       if (
-        isinstance(inter.user, disnake.User) or
+        isinstance(inter.user, discord.User) or
         not inter.user.guild_permissions.administrator
       ):
         usermode = True
@@ -173,7 +181,7 @@ class Language(commands.Cog):
         )
 
   @language_set.autocomplete('language')
-  def language_set_ac(self, _:disnake.Interaction, search:str):
+  async def language_set_ac(self, _:discord.Interaction, search:str):
     """ Suggests languages that are already available """
     matches = []
     prefix = self.config['prefix']

@@ -62,9 +62,11 @@ class Example(commands.Cog):
     for f in files:
       os.remove(f)
 
-  @commands.has_permissions(send_messages=True)
   @app_commands.command()
-  async def download(self, inter:disnake.Interaction, media_url:str):
+  @app_commands.allowed_contexts(guilds=True, private_channels=True)
+  @app_commands.allowed_installs(guilds=True, users=True)
+  @commands.has_permissions(send_messages=True)
+  async def download(self, inter:discord.Interaction, media_url:str):
     """
       Download a video file and send it back as a message
 
@@ -75,7 +77,7 @@ class Example(commands.Cog):
     if not uri_validator(media_url):
       await inter.response.send_message("Media URL appears to be invalid. Not downloading.")
       return
-    await inter.response.defer(with_message=True)
+    await inter.response.defer(thinking=True)
     filenumber = self.runtime_counter
     self.runtime_counter += 1
     dlp = await asyncio.create_subprocess_shell(' '.join((
@@ -97,9 +99,9 @@ class Example(commands.Cog):
       logs += '```'+stderr.decode()+'```\n'
     filepath = os.path.join('tmp', f'{filenumber}.mp4')
     if os.path.exists(filepath):
-      await inter.edit_original_message(file=disnake.File(filepath))
+      await inter.edit_original_response(attachments=(discord.File(filepath),))
     else:
-      await inter.edit_original_message("Download failed;\n" + logs)
+      await inter.edit_original_response("Download failed;\n" + logs)
 
 
 async def setup(bot:MerelyBot):

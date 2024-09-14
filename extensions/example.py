@@ -36,28 +36,30 @@ class Example(commands.Cog):
     if not bot.config.has_section(self.SCOPE):
       bot.config.add_section(self.SCOPE)
 
-  def controlpanel_settings(self, inter:disnake.Interaction):
+  def controlpanel_settings(self, inter:discord.Interaction):
     # ControlPanel integration - use this when you want to allow users / guilds to change preferences
     return [
       Toggleable(self.SCOPE, 'toggle', 'toggle', False),
       Listable(self.SCOPE, 'list', 'list', str(inter.user.id)),
-      Selectable(self.SCOPE, 'select', 'select', ['a', 'b', 'c']),
+      Selectable(self.SCOPE, 'select', 'select', [
+        discord.SelectOption(label=val) for val in ['a', 'b', 'c']
+      ]),
       Stringable(self.SCOPE, 'string', 'string')
     ]
 
-  def controlpanel_theme(self) -> tuple[str, disnake.ButtonStyle]:
+  def controlpanel_theme(self) -> tuple[str, discord.ButtonStyle]:
     # Controlpanel custom theme for buttons
-    return (self.SCOPE, disnake.ButtonStyle.gray)
+    return (self.SCOPE, discord.ButtonStyle.gray)
 
   @commands.Cog.listener()
-  async def on_member_join(self, member:disnake.Member):
+  async def on_member_join(self, member:discord.Member):
     """ Record to log when a member joins """
     # Using the guild as the language target. Usually you just use inter instead.
     print(self.babel(member.guild, 'joined', user=member.name))
     # babel will return "{JOINED: user=member.name}" until a string is added to en.ini
 
   @app_commands.command()
-  async def example(self, inter:disnake.Interaction, echo:str):
+  async def example(self, inter:discord.Interaction, echo:str):
     """ Just a simple echo command """
     await inter.response.send_message(echo, ephemeral=True)
 

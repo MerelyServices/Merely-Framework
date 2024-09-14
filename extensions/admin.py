@@ -110,7 +110,7 @@ class Admin(commands.Cog):
       strict: A strict clean, when enabled, deletes all messages by all users
     """
     try:
-      await inter.response.defer(with_message=True)
+      await inter.response.defer(thinking=True)
       if clean_to:
         deleted = await inter.channel.purge(
           limit=number if number else 1000,

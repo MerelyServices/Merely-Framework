@@ -33,7 +33,8 @@ class Dice(commands.Cog):
     self.bot = bot
 
   @app_commands.command()
-  async def dice(self, inter:disnake.Interaction, sides:str = 6):
+  @app_commands.default_permissions(send_messages=True)
+  async def dice(self, inter:discord.Interaction, sides:str = '6'):
     """
     Roll an n-sided dice
 

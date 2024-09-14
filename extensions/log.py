@@ -79,6 +79,9 @@ class Log(commands.Cog):
   @commands.Cog.listener('on_interaction')
   async def log_slash_command(self, inter:discord.Interaction):
     """ Record slash command calls """
+    #TODO: maybe log button presses too?
+    if inter.type != discord.InteractionType.application_command:
+      return
     if 'options' not in inter.data:
       return
     truncate = self.bot.utilities.truncate
@@ -100,11 +103,25 @@ class Log(commands.Cog):
     if not inter.response.is_done():
       return
     responses:list[discord.Message] = []
+    if not inter.is_expired():
+      return # This interaction isn't complete yet
     originalmsg = await inter.original_response()
+    # Prevent errors if message history won't be available
+    if isinstance(inter.channel, discord.DMChannel):
+      if self.bot.user not in inter.channel.recipients: # This is somebody else's DMs
+        return
+    elif inter.guild:
+      member = inter.guild.get_member(self.bot.user.id)
+      if member is None: # This is somebody else's server
+        # Curiously, the API seems to create a fake member just so this state isn't reached
+        return
+      if not inter.channel.permissions_for(member).read_message_history:
+        # Can't read message history here
+        return
     async for msg in inter.channel.history(after=originalmsg):
       if msg.author == self.bot.user and\
-         msg.reference and\
-         msg.reference.message_id == originalmsg.id:
+        msg.reference and\
+        msg.reference.message_id == originalmsg.id:
         responses.append(msg)
     for response in responses:
       logentry = self.wrap(response.content, response.author, response.channel)

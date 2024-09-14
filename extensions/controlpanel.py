@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 import copy
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 class Setting():
   bot:MerelyBot
-  buttonstyle:disnake.ButtonStyle
+  buttonstyle:discord.ButtonStyle
   pos:int
 
   def __init__(self, scope:str, key:str, babel_key:str):
@@ -50,7 +50,7 @@ class Setting():
       self.bot.config.set(self.scope, self.key, value)
     self.bot.config.save()
 
-  def generate_components(self, target:Resolvable) -> list[disnake.ui.Item]:
+  def generate_components(self, target:Resolvable, callback:Callable) -> list[discord.ui.Item]:
     raise Exception("Setting.generate_components() must be overriden.")
 
 
@@ -73,16 +73,17 @@ class Toggleable(Setting):
     value = converter.get(self.get('_default'), 'True')
     self.set(value)
 
-  def generate_components(self, target:Resolvable) -> list[disnake.ui.Item]:
+  def generate_components(self, target:Resolvable, callback:Callable) -> list[discord.ui.Item]:
     """ Toggle button for settings which can only be true or false """
     value = self.get(str(self.default))
-    b1 = disnake.ui.Button(
+    b1 = discord.ui.Button(
       style=self.buttonstyle,
       label=f'{self.label(target)}: {value}',
       custom_id=self.id,
       emoji='⚪' if value is None else ('🟢' if value == 'True' else '⭕'),
       row=self.pos
     )
+    b1.callback = callback
     return [b1]
 
 
@@ -108,41 +109,44 @@ class Listable(Toggleable):
 
 
 class Selectable(Setting):
-  def __init__(self, scope:str, key:str, babel_key:str, possible_values:list[str]):
+  def __init__(self, scope:str, key:str, babel_key:str, possible_values:list[discord.SelectOption]):
     """ Creates a selectable setting. *unset* will be added to possible_values. """
     super().__init__(scope, key, babel_key)
     self.possible_values = possible_values
 
-  def generate_components(self, target:Resolvable) -> list[disnake.ui.Item]:
+  def generate_components(self, target:Resolvable, callback:Callable) -> list[discord.ui.Item]:
     """ Select button for settings which can only have pre-determined values """
     value = self.get('*unset*')
-    select = disnake.ui.Select(
+    select = discord.ui.Select(
       custom_id=self.id,
       placeholder=self.bot.utilities.truncate(f'{self.label(target)}: {value}', 40),
       min_values=1,
       max_values=1,
-      options=['*unset*'] + self.possible_values
+      options=[discord.SelectOption(label='*unset*')] + self.possible_values
     )
+    select.callback = callback
     return [select]
 
 
 class Stringable(Setting):
-  def generate_components(self, target:Resolvable) -> list[disnake.ui.Item]:
+  def generate_components(self, target:Resolvable, callback:Callable) -> list[discord.ui.Item]:
     value = self.get('*unset*')
-    b1 = disnake.ui.Button(
+    b1 = discord.ui.Button(
       style=self.buttonstyle,
       label=self.bot.utilities.truncate(f'{self.label(target)}: {value}', 40),
       custom_id=self.id,
       emoji='✏️',
       row=self.pos
     )
-    b2 = disnake.ui.Button(
+    b2 = discord.ui.Button(
       style=self.buttonstyle,
       label='',
       custom_id=self.id+'_reset',
       emoji="🔁",
       row=self.pos
     )
+    b1.callback = callback
+    b2.callback = callback
     return [b1, b2]
 
 
@@ -162,8 +166,7 @@ class ControlPanel(commands.Cog):
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
-    self.section_styles:dict[str, disnake.ButtonStyle] = {}
-    self.panels = {}
+    self.section_styles:dict[str, discord.ButtonStyle] = {}
     # ensure config file has required data
     #if not bot.config.has_section(self.SCOPE):
     #  bot.config.add_section(self.SCOPE)
@@ -175,10 +178,10 @@ class ControlPanel(commands.Cog):
     for cog in self.bot.cogs:
       fn = getattr(self.bot.cogs[cog], 'controlpanel_theme', None)
       if callable(fn):
-        data:tuple[str, disnake.ButtonStyle] = fn()
+        data:tuple[str, discord.ButtonStyle] = fn()
         self.section_styles[data[0]] = data[1]
 
-  def discover_settings(self, inter:disnake.Interaction) -> list[Setting]:
+  def discover_settings(self, inter:discord.Interaction) -> list[Setting]:
     out = []
     for cog in self.bot.cogs:
       fn = getattr(self.bot.cogs[cog], 'controlpanel_settings', None)
@@ -186,15 +189,9 @@ class ControlPanel(commands.Cog):
         out += fn(inter)
     return out
 
-  @commands.Cog.listener('on_message_interaction')
-  async def on_panel_interaction(self, inter:disnake.Interaction):
-    if inter.message.id in self.panels:
-      await self.panels[inter.message.id].callback_all(inter)
-    return
-
   # Modals
 
-  class StringEditModal(disnake.ui.Modal):
+  class StringEditModal(discord.ui.Modal):
     """ Just provides a text box for editing the value of a stringable setting """
     def __init__(self, parent:ControlPanel.ControlPanelView, setting:Stringable):
       self.parent = parent
@@ -202,25 +199,28 @@ class ControlPanel(commands.Cog):
       super().__init__(
         title=setting.label(parent.origin),
         custom_id=setting.id,
-        components=[disnake.ui.TextInput(
-          label=setting.label(parent.origin),
-          custom_id='value',
-          placeholder=self.parent.parent.bot.utilities.truncate(setting.get(''), 100),
-          value=setting.get(''),
-          style=disnake.TextInputStyle.single_line,
-          min_length=0
-        )],
         timeout=300
       )
 
-    async def callback(self, inter:disnake.ModalInteraction):
-      await self.parent.callback_all(inter)
+      self.textfield = discord.ui.TextInput(
+        label=setting.label(parent.origin),
+        custom_id='value',
+        placeholder=self.parent.parent.bot.utilities.truncate(setting.get(''), 100),
+        default=setting.get(''),
+        style=discord.TextStyle.short,
+        min_length=0
+      )
+      self.add_item(self.textfield)
+
+    async def callback(self, inter:discord.Interaction):
+      #TODO: this isn't firing
+      await self.parent.callback_all(inter, self.textfield.value)
 
   # Views
 
-  class ControlPanelView(disnake.ui.View):
+  class ControlPanelView(discord.ui.View):
     def __init__(
-      self, inter:disnake.Interaction, parent:ControlPanel, settings:list[Setting]
+      self, inter:discord.Interaction, parent:ControlPanel, settings:list[Setting]
     ):
       super().__init__(timeout=300)
 
@@ -231,7 +231,7 @@ class ControlPanel(commands.Cog):
       rowcap:dict[int, int] = {}
 
       for setting in settings:
-        buttonstyle = parent.section_styles.get(setting.scope, disnake.ButtonStyle.primary)
+        buttonstyle = parent.section_styles.get(setting.scope, discord.ButtonStyle.primary)
         if setting.scope not in sections:
           sections.append(setting.scope)
         sectionnumber = sections.index(setting.scope)
@@ -260,13 +260,13 @@ class ControlPanel(commands.Cog):
         localsetting.bot = self.parent.bot
         localsetting.buttonstyle = buttonstyle
         localsetting.pos = pos
-        items = localsetting.generate_components(inter)
+        items = localsetting.generate_components(inter, self.callback_all)
         self.settings[localsetting.id] = localsetting
         for item in items:
           self.add_item(item)
 
-    async def callback_all(self, inter:disnake.Interaction | disnake.ModalInteraction):
-      id = inter.data.custom_id
+    async def callback_all(self, inter:discord.Interaction, value:str | None = None):
+      id = inter.data['custom_id']
       reset = False
       if id.endswith('_reset') and id[0:-len('_reset')] in self.settings:
         reset = True
@@ -292,18 +292,18 @@ class ControlPanel(commands.Cog):
 
       if reset:
         setting.set(None)
-      elif isinstance(inter, disnake.ModalInteraction):
+      elif value:
         # Callback from string edit modal
-        setting.set(inter.text_values['value'])
+        setting.set(value)
       elif type(setting).__name__ in (Toggleable.__name__, Listable.__name__):
         # Toggle-style button was pressed
         setting.toggle()
       elif type(setting).__name__ == Selectable.__name__:
         # Selection was made
-        if inter.data.values[0] == '*unset*':
+        if inter.data['values'][0] == '*unset*':
           setting.set(None)
         else:
-          setting.set(inter.data.values[0])
+          setting.set(inter.data['values'][0])
       elif type(setting).__name__ == Stringable.__name__:
         # String edit button was pressed
         await inter.response.send_modal(self.parent.StringEditModal(self, setting))
@@ -311,18 +311,18 @@ class ControlPanel(commands.Cog):
       else:
         raise TypeError(setting)
 
-      comps = setting.generate_components(inter)
+      comps = setting.generate_components(inter, self.callback_all)
       for comp in comps:
         oldcompindex = [
           i for i,c in enumerate(self.children)
           if (
-            isinstance(c, (disnake.ui.Button, disnake.ui.Select)) and c.custom_id == comp.custom_id
+            isinstance(c, (discord.ui.Button, discord.ui.Select)) and c.custom_id == comp.custom_id
           )
         ][0]
-        if isinstance(self.children[oldcompindex], disnake.ui.Button):
+        if isinstance(self.children[oldcompindex], discord.ui.Button):
           self.children[oldcompindex].label = comp.label
           self.children[oldcompindex].emoji = comp.emoji
-        elif isinstance(self.children[oldcompindex], disnake.ui.Select):
+        elif isinstance(self.children[oldcompindex], discord.ui.Select):
           self.children[oldcompindex].placeholder = comp.placeholder
       self.timeout = 300
       await inter.response.edit_message(view=self)
@@ -330,13 +330,13 @@ class ControlPanel(commands.Cog):
     async def on_timeout(self):
       try:
         await self.origin.delete_original_response()
-      except disnake.HTTPException:
+      except discord.HTTPException:
         pass # Message was probably dismissed, don't worry about it
 
   # Commands
 
   @app_commands.command()
-  async def controlpanel(self, inter:disnake.Interaction):
+  async def controlpanel(self, inter:discord.Interaction):
     """ Opens the control panel so you can change bot preferences for this guild and yourself """
     settings = self.discover_settings(inter)
     panel = self.ControlPanelView(inter, self, settings)
@@ -347,8 +347,6 @@ class ControlPanel(commands.Cog):
       view=panel,
       ephemeral=True
     )
-    msg = await inter.original_response()
-    self.panels[msg.id] = panel
 
 
 async def setup(bot:MerelyBot):

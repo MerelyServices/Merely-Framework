@@ -94,7 +94,7 @@ class Help(commands.Cog):
         return cmd
     return None
 
-  def get_docs(self, inter:disnake.Interaction, cmd:str):
+  def get_docs(self, inter:discord.Interaction, cmd:str):
     """ find documentation for this command in babel """
     matchedcommand = self.find_command(cmd)
     # return usage information for a specific command
@@ -122,7 +122,7 @@ class Help(commands.Cog):
   @app_commands.command()
   async def help(
     self,
-    inter:disnake.Interaction,
+    inter:discord.Interaction,
     command:Optional[str] = None,
     **kwargs
   ):
@@ -164,7 +164,7 @@ class Help(commands.Cog):
 
     else:
       # show the generic help embed with a variety of featured commands
-      embed = disnake.Embed(
+      embed = discord.Embed(
         title=self.babel(inter, 'title'),
         description=self.babel(inter, 'introduction',
                                videoexamples=bool(self.config['helpurlvideoexamples']),
@@ -195,7 +195,7 @@ class Help(commands.Cog):
       )
 
   @help.autocomplete('command')
-  def ac_command(self, _:disnake.Interaction, command:str):
+  async def ac_command(self, _:discord.Interaction, command:str):
     """ find any commands that contain the provided string """
     matches = []
     hide = self.config.get('hidden_commands', fallback='').split(', ')
@@ -208,12 +208,12 @@ class Help(commands.Cog):
     return matches[0:25]
 
   @app_commands.command()
-  async def about(self, inter:disnake.Interaction):
+  async def about(self, inter:discord.Interaction):
     """
     General information about this bot, including an invite link
     """
 
-    embed = disnake.Embed(
+    embed = discord.Embed(
       title=self.babel(inter, 'about_title'),
       description=self.babel(inter, 'bot_description'),
       color=int(self.bot.config['main']['themecolor'], 16),
@@ -265,7 +265,7 @@ class Help(commands.Cog):
     )
 
   @app_commands.command()
-  async def changes(self, inter:disnake.Interaction, search:Optional[str] = None):
+  async def changes(self, inter:discord.Interaction, search:Optional[str] = None):
     """
     See what has changed in recent updates
 
@@ -290,7 +290,7 @@ class Help(commands.Cog):
 
     logurl = self.config['changelogurl'] if self.config['changelogurl'] else ''
 
-    embed = disnake.Embed(
+    embed = discord.Embed(
       title=self.babel(inter, 'changelog_title'),
       description=(
         self.babel(inter, 'changelog_description', ver=search) +
@@ -310,7 +310,7 @@ class Help(commands.Cog):
     )
 
   @changes.autocomplete('search')
-  def ac_version(self, _:disnake.Interaction, search:str):
+  async def ac_version(self, _:discord.Interaction, search:str):
     """ find any matching versions """
     matches = []
     iver = '0'
