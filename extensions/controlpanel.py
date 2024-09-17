@@ -212,8 +212,7 @@ class ControlPanel(commands.Cog):
       )
       self.add_item(self.textfield)
 
-    async def callback(self, inter:discord.Interaction):
-      #TODO: this isn't firing
+    async def on_submit(self, inter:discord.Interaction):
       await self.parent.callback_all(inter, self.textfield.value)
 
   # Views

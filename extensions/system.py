@@ -60,7 +60,7 @@ class System(commands.Cog):
 
   @app_commands.command()
   @app_commands.default_permissions(administrator=True)
-  @app_commands.allowed_contexts(guilds=True, private_channels=False)
+  @app_commands.guild_only()
   async def module(self, inter:discord.Interaction, action:Actions, module:Optional[str] = None):
     """
     Manage modules of the bot in real time
@@ -145,21 +145,21 @@ class System(commands.Cog):
             self.babel(inter, 'extension_load_success', extension=module),
             ephemeral=True
           )
-          await self.bot.tree.sync()
+          await self.bot.sync_commands()
         elif action == Actions.unload:
           await self.bot.unload_extension(module_match)
           await inter.response.send_message(
             self.babel(inter, 'extension_unload_success', extension=module),
             ephemeral=True
           )
-          await self.bot.tree.sync()
+          await self.bot.sync_commands()
         elif action == Actions.reload:
           await self.bot.reload_extension(module_match)
           await inter.response.send_message(
             self.babel(inter, 'extension_reload_success', extension=module),
             ephemeral=True
           )
-          await self.bot.tree.sync()
+          await self.bot.sync_commands()
         else:
           raise commands.BadArgument()
         cogmodules = {cog.lower().replace('_', ''): cog for cog in self.bot.cogs}
@@ -208,7 +208,7 @@ class System(commands.Cog):
 
   @app_commands.command()
   @app_commands.default_permissions(administrator=True)
-  @app_commands.allowed_contexts(guilds=True, private_channels=False)
+  @app_commands.guild_only()
   async def migrate(self, inter:discord.Interaction, script:str):
     """
     Manually trigger a config migration script
@@ -257,7 +257,7 @@ class System(commands.Cog):
 
   @app_commands.command()
   @app_commands.default_permissions(administrator=True)
-  @app_commands.allowed_contexts(guilds=True, private_channels=False)
+  @app_commands.guild_only()
   async def delete_message(
     self, inter:discord.Interaction, channel_id:str, message_id:str
   ):
@@ -284,7 +284,7 @@ class System(commands.Cog):
 
   @app_commands.command()
   @app_commands.default_permissions(administrator=True)
-  @app_commands.allowed_contexts(guilds=True, private_channels=False)
+  @app_commands.guild_only()
   @commands.cooldown(1, 1)
   async def die(
     self, inter:discord.Interaction, saveconfig:bool = False, restart:bool = False

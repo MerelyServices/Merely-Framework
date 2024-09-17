@@ -116,7 +116,19 @@ class MerelyBot(commands.AutoShardedBot):
   async def setup_hook(self) -> None:
     """ Sync registered commands """
     await self.autoload_extensions()
+    await self.sync_commands()
+
+  async def sync_commands(self) -> None:
+    """ Sync all commands, including guild specific commands """
     await self.tree.sync()
+    if bot.config['auth']['botadmin_guilds']:
+      guilds = bot.config['auth']['botadmin_guilds']
+      botadmin_guilds = [discord.Object(guild) for guild in guilds.split(' ')]
+      for guild in botadmin_guilds:
+        await self.tree.sync(guild=guild)
+        #TODO: track removed botadmin guilds and sync with them once too
+    # Update appcommand cache in babel so commands can be mentioned
+    await self.babel.cache_appcommands(self)
 
   async def autoload_extensions(self):
     """ Search the filesystem for extensions, list them in config, load them if enabled """

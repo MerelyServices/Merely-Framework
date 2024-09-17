@@ -12,6 +12,7 @@ from typing import Optional, TYPE_CHECKING
 from config import Config
 from glob import glob
 import discord
+from discord import app_commands
 
 if TYPE_CHECKING:
   from .main import MerelyBot
@@ -34,6 +35,9 @@ class Babel():
   filter_conditional: re.Pattern
   filter_configreference: re.Pattern
   filter_commandreference: re.Pattern
+
+  # App command data - for mentioning
+  appcommands: list[app_commands.AppCommand]
 
   @property
   def defaultlang(self) -> str:
@@ -92,6 +96,9 @@ class Babel():
         self.baselang = newbaselang
       else:
         print("WARN: unable to resolve language dependancy chain.")
+
+  async def cache_appcommands(self, bot:MerelyBot):
+    self.appcommands = await bot.tree.fetch_commands()
 
   def localeconv(self, locale:discord.Locale) -> str:
     """ Converts a Discord API locale to a babel locale """
@@ -239,18 +246,14 @@ class Babel():
 
     return match
 
-  def mention_command(self, command:str, bot:Optional[MerelyBot] = None):
-    # Pre-fetch the slash command (if it exists)
-    cmd = None
-    if bot:
-      cmd = bot.tree.get_command(command)
-
-    if isinstance(cmd, discord.APISlashCommand):
-      # Use slash command references if they can be found
-      return '</'+cmd.name+':'+str(cmd.id)+'>'
+  def mention_command(self, command_name:str):
+    """ Finds the API slash command and mentions it """
+    mentionables = [a for a in self.appcommands if a.name == command_name]
+    if mentionables:
+      #TODO: the first match might not always be the right one...
+      return mentionables[0].mention
     else:
-      # If the text prefix can't be seen, assume this is a missing slash command
-      return '/'+command
+      return '/'+command_name
 
   def string_list(self, target:Resolvable, items:list[str], or_mode:bool = False) -> str:
     """ Takes list items, and joins them together in a regionally correct way """

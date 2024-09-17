@@ -74,15 +74,13 @@ class Announce(commands.Cog):
       self.config['subscription_history'] = ''
 
     # Restrict usage of these commands to specified guilds
-    #TODO: figure out why this code is working in system, but not here
-    """if bot.config['auth']['botadmin_guilds']:
+    if bot.config['auth']['botadmin_guilds']:
       guilds = bot.config['auth']['botadmin_guilds']
       botadmin_guilds = [int(guild) for guild in guilds.split(' ')]
       for cmd in self.get_app_commands():
         cmd._guild_ids = botadmin_guilds
     elif not bot.quiet:
       print("  WARN: No botadmin_guilds defined, so all servers will be able to see system commands!")
-    """
 
   def controlpanel_settings(self, inter:discord.Interaction):
     # ControlPanel integration
@@ -407,7 +405,7 @@ class Announce(commands.Cog):
 
   @app_commands.command()
   @app_commands.default_permissions(administrator=True)
-  @app_commands.allowed_contexts(guilds=True, private_channels=False)
+  @app_commands.guild_only()
   @commands.bot_has_permissions(read_messages=True, send_messages=True)
   async def announce(self, inter:discord.Interaction, simulate:bool = False):
     """
