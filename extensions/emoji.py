@@ -43,13 +43,8 @@ class Emoji(commands.Cog):
     """
     emojiname = search.split(' ', maxsplit=1)[0].replace(':','').lower()
 
-    if '(' in search:
-      try:
-        guild = self.bot.get_guild(int(search.split('(')[1][:-1]))
-      except ValueError:
-        matches = []
-      else:
-        matches = [e for e in guild.emojis if emojiname == e.name.lower()] if guild else []
+    if search.isdigit():
+      matches = [e for e in self.bot.emojis if e.id == int(search)]
     else:
       matches = [e for e in self.bot.emojis if emojiname == e.name.lower()]
 
@@ -62,8 +57,8 @@ class Emoji(commands.Cog):
   async def ac_emoji(self, _:discord.Interaction, search:str):
     """ Autocomplete for emoji search """
     results = [
-      f':{e.name}: ({e.guild_id})'
-      for e in self.bot.emojis if search.replace(':','').lower() in e.name.lower()
+      app_commands.Choice(name=f':{e.name}: ({e.guild.name})', value=str(e.id))
+      for e in self.bot.emojis if search.replace(':','').lower() in e.name.lower() + e.guild.name
     ]
     return results[:25]
 
