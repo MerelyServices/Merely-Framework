@@ -184,8 +184,8 @@ class System(commands.Cog):
   async def module_ac(self, inter:discord.Interaction, search:str) -> list[app_commands.Choice[str]]:
     """ Suggests modules based on the list in config """
     extension_list = None
-    if 'options' in inter.data and 'action' in inter.data['options']:
-      if inter.data['options']['action']['value'] in [Actions.reload, Actions.unload]:
+    if 'action' in inter.data.get('options', {}):
+      if inter.data.get('options').get('action').get('value') in [Actions.reload, Actions.unload]:
         extension_list = [
           e.replace('extensions.','').replace('overlay.','').strip('_')
           for e in self.bot.extensions.keys()

@@ -85,9 +85,14 @@ class Log(commands.Cog):
     if 'options' not in inter.data:
       return
     truncate = self.bot.utilities.truncate
-    options = [f"{opt['name']}:{truncate(str(opt['value']), 30)}" for opt in inter.data['options']]
+    options = []
+    for raw_option in inter.data.get('options', []):
+      options.append(
+        raw_option['name'] + (':'+truncate(raw_option['value'], 30) if 'value' in raw_option else '')
+      )
+    cmdname = inter.command.root_parent.name if inter.command.root_parent else inter.command.name
     logentry = self.wrap(
-      f"/{inter.command.name} {' '.join(options)}",
+      f"/{cmdname} {' '.join(options)}",
       inter.user,
       inter.channel
     )

@@ -215,7 +215,7 @@ class Babel():
     for commandquery in commandqueries:
       match = match.replace(
         '{p:'+commandquery+'}',
-        self.mention_command(commandquery, target.bot if hasattr(target, 'bot') else None)
+        self.mention_command(commandquery)
       )
 
     # Fill in conditionals

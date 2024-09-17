@@ -265,7 +265,7 @@ class ControlPanel(commands.Cog):
           self.add_item(item)
 
     async def callback_all(self, inter:discord.Interaction, value:str | None = None):
-      id = inter.data['custom_id']
+      id = inter.data.get('custom_id')
       reset = False
       if id.endswith('_reset') and id[0:-len('_reset')] in self.settings:
         reset = True
@@ -299,10 +299,10 @@ class ControlPanel(commands.Cog):
         setting.toggle()
       elif type(setting).__name__ == Selectable.__name__:
         # Selection was made
-        if inter.data['values'][0] == '*unset*':
+        if inter.data.get('values')[0] == '*unset*':
           setting.set(None)
         else:
-          setting.set(inter.data['values'][0])
+          setting.set(inter.data.get('values')[0])
       elif type(setting).__name__ == Stringable.__name__:
         # String edit button was pressed
         await inter.response.send_modal(self.parent.StringEditModal(self, setting))

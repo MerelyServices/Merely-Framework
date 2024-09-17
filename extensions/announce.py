@@ -348,7 +348,7 @@ class Announce(commands.Cog):
       # Prevent any random users from pressing the button
       self.parent.bot.auth.superusers(inter)
 
-      if inter.data['custom_id'].endswith('_sim'):
+      if inter.data.get('custom_id').endswith('_sim'):
         self.set_simulate()
 
       # Disable buttons
@@ -365,7 +365,7 @@ class Announce(commands.Cog):
       # Prevent any random users from pressing the button
       self.parent.bot.auth.superusers(inter)
 
-      if inter.data['custom_id'].endswith('_sim'):
+      if inter.data.get('custom_id').endswith('_sim'):
         self.set_simulate()
 
       # Disable resume button once again

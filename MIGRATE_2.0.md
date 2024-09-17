@@ -19,6 +19,19 @@ The way command groups work is very different. In Discord.py, you need to explic
 - You might also need to manually add the group as a command using `add_command`.
 
 ---
+### `Bot` will attempt to add `**kwargs` to commands
+This means no calling commands internally with additional arguments
+- For Merely Framework, this means calling `bot.cogs['Help'].help(cmd, ephemeral=True)` is no longer possible.
+  - Our solution; `send_message(bot.cogs['Help].resolve_help(cmd), ephemeral=True)`
+
+---
+### `Command.autocomplete` must return a list of `app_commands.Choice`s
+A plus-side of this pattern is all choices have a name and value.
+
+---
+### `Client.slash_commands` is now `Client.tree.walk_commands()`
+
+---
 ### Modal components can't be declared in `__init__`
 Instead, create component class variables directly
 
@@ -32,8 +45,8 @@ Refer to this https://github.com/Rapptz/discord.py/issues/7823#issuecomment-1086
 ---
 ### `inter.data` is now a low level component in Discord.py and offers no hand-holding
 Data must be retreived manually, or just talk to the existing components as their state changes
-- `inter.data.values` is now `inter.data['values']`
-- `inter.data.custom_id` is now `inter.data['custom_id']`
+- `inter.data.values` is now `inter.data.get('values')`
+- `inter.data.custom_id` is now `inter.data.get('custom_id')`
 
 ---
 ### Most interaction events are not available
