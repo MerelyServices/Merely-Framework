@@ -130,7 +130,7 @@ class MerelyBot(commands.AutoShardedBot):
     # Update appcommand cache in babel so commands can be mentioned
     await self.babel.cache_appcommands(self)
     if not self.quiet:
-      print("  - Synced commands")
+      print("Finished syncing commands")
 
   async def autoload_extensions(self):
     """ Search the filesystem for extensions, list them in config, load them if enabled """

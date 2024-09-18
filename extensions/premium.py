@@ -71,11 +71,12 @@ class Premium(commands.Cog):
     self.premiumroles = set()
 
     # Add command checker
+    self.original_interaction_check = self.bot.tree.interaction_check
     self.bot.tree.interaction_check = self.check_premium_slash_command
 
   def cog_unload(self):
     # Revert checker to default
-    self.bot.tree.interaction_check = app_commands.CommandTree.interaction_check
+    self.bot.tree.interaction_check = self.original_interaction_check
 
   # Event listeners
 
