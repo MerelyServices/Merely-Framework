@@ -61,13 +61,12 @@ class Language(commands.Cog):
       ))
     return out
 
-  @app_commands.command()
-  async def language(self, _:discord.Interaction):
-    """
-    Changes the language this bot speaks to you, or to a server you administrate
-    """
+  language = app_commands.Group(
+    name='language',
+    description="Changes the language this bot speaks to you, or to a server you administrate"
+  )
 
-  @language.sub_command(name='list')
+  @language.command(name='list')
   async def language_list(self, inter:discord.Interaction):
     """
     Lists all available languages this bot can be translated to
@@ -100,7 +99,7 @@ class Language(commands.Cog):
 
     await inter.response.send_message(embed=embed)
 
-  @language.sub_command(name='get')
+  @language.command(name='get')
   async def language_get(self, inter:discord.Interaction):
     """
     Get the language the bot is using with you right now and the reason why it was selected
@@ -128,7 +127,7 @@ class Language(commands.Cog):
 
     await inter.response.send_message(embeds=embeds)
 
-  @language.sub_command(name='set')
+  @language.command(name='set')
   async def language_set(
     self,
     inter:discord.Interaction,
@@ -144,8 +143,10 @@ class Language(commands.Cog):
     if not language == 'default' and re.match(r'[a-z]{2}(-[A-Z]{2})?$', language) is None:
       await inter.response.send_message(self.babel(inter, 'set_failed_invalid_pattern'))
     else:
+      prefix = self.config.get('prefix', fallback='')
       if language != 'default':
-        language = self.config.get('prefix', fallback='')+language
+        if not language.startswith(prefix):
+          language = prefix + language
       if (
         isinstance(inter.user, discord.User) or
         not inter.user.guild_permissions.administrator
@@ -187,10 +188,13 @@ class Language(commands.Cog):
     prefix = self.config['prefix']
     for lang in self.bot.babel.langs.keys():
       if lang.startswith(prefix) and search in lang:
-        matches.append(lang.replace(prefix, ''))
-    if len(matches) > 24:
-      matches = matches[:23] + ['...']
-    return (['default'] if 'default'.startswith(search) else []) + matches
+        langname = lang.replace(prefix, '')
+        matches.append(app_commands.Choice(name=langname, value=lang))
+    if len(matches) > 25:
+      matches = matches[:24] + [app_commands.Choice(name='...', value='')]
+    if 'default'.startswith(search):
+      matches.insert(0, app_commands.Choice(name='default', value='default'))
+    return matches
 
 
 async def setup(bot:MerelyBot):
