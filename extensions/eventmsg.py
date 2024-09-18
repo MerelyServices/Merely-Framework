@@ -6,9 +6,8 @@
 
 from __future__ import annotations
 
-import hashlib
+import hashlib, enum
 from datetime import datetime
-from enum import Enum
 from typing import Optional, Union, TYPE_CHECKING
 import discord
 from discord import app_commands
@@ -78,7 +77,8 @@ class Event():
     return int(hashlib.md5(self.name, usedforsecurity=False), 16)
 
 
-class Events(Enum, Event):
+@enum.unique
+class Events(enum.Enum):
   # Built-in disnake events, most require members scope
   WELCOME = Event(
     'on_member_join',
@@ -164,7 +164,7 @@ class Events(Enum, Event):
   )
 
 
-class Action(Enum):
+class Action(enum.Enum):
   """ Actions that can be performed on an event """
   NOTHING = 0
   SEND_MESSAGE = 1
@@ -280,7 +280,7 @@ class EventMsg(commands.Cog):
 
       self.eventview = eventview
 
-    async def callback(self, inter:discord.Interaction, /):
+    async def on_submit(self, inter:discord.Interaction, /):
       """ Handle the new message content """
       self.eventview.message = inter.text_values['message']
       await self.eventview.update(inter)
@@ -451,14 +451,14 @@ class EventMsg(commands.Cog):
       allowed_mentions=[]
     )
 
-  @commands.bot_has_permissions(read_messages=True, manage_messages=True)
-  @app_commands.guild_only()
-  @app_commands.command()
-  @app_commands.default_permissions(administrator=True)
-  async def welcome(self, _):
-    """ An automation that posts a message whenever a member joins """
+  welcome = app_commands.Group(
+    name='welcome',
+    description="An automation that posts a message whenever a user joins",
+    guild_only=True,
+    default_permissions=discord.Permissions(administrator=True)
+  )
 
-  @welcome.sub_command(name='get')
+  @welcome.command(name='get')
   async def welcome_get(self, inter:discord.Interaction):
     """ Gets the current welcome message. Otherwise, gives instructions on how to set one """
     if f'{inter.guild.id}_welcome' in self.config:
@@ -475,7 +475,7 @@ class EventMsg(commands.Cog):
         ephemeral=True
       )
 
-  @welcome.sub_command(name='set')
+  @welcome.command(name='set')
   async def welcome_set(self, inter:discord.Interaction, message:str):
     """
       Sets the welcome message based on your input.
@@ -491,7 +491,7 @@ class EventMsg(commands.Cog):
       ephemeral=True
     )
 
-  @welcome.sub_command(name='clear')
+  @welcome.command(name='clear')
   async def welcome_clear(self, inter:discord.Interaction):
     """ Clears the welcome message """
     if f'{inter.guild.id}_welcome' in self.config:
@@ -507,14 +507,14 @@ class EventMsg(commands.Cog):
         ephemeral=True
       )
 
-  @commands.bot_has_permissions(read_messages=True, manage_messages=True)
-  @app_commands.guild_only()
-  @app_commands.command()
-  @app_commands.default_permissions(administrator=True)
-  async def farewell(self, _):
-    """ An automation that posts a message whenever a user leaves """
+  farewell = app_commands.Group(
+    name='farewell',
+    description="An automation that posts a message whenever a user leaves",
+    guild_only=True,
+    default_permissions=discord.Permissions(administrator=True)
+  )
 
-  @farewell.sub_command(name='get')
+  @farewell.command(name='get')
   async def farewell_get(self, inter:discord.Interaction):
     """ Gets the current farewell message. Otherwise, gives instructions on how to set one """
     if f'{inter.guild.id}_farewell' in self.config:
@@ -531,7 +531,7 @@ class EventMsg(commands.Cog):
         ephemeral=True
       )
 
-  @farewell.sub_command(name='set')
+  @farewell.command(name='set')
   async def farewell_set(self, inter:discord.Interaction, message:str):
     """
       Sets the welcome message based on your input.
@@ -544,7 +544,7 @@ class EventMsg(commands.Cog):
     self.bot.config.save()
     await inter.response.send_message(self.bot.babel(inter, 'greeter', 'farewell_set_success'))
 
-  @farewell.sub_command(name='clear')
+  @farewell.command(name='clear')
   async def farewell_clear(self, inter:discord.Interaction):
     """ Clears the farewell message """
     if f'{inter.guild.id}_farewell' in self.config:
