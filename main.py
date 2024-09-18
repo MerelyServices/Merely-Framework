@@ -129,6 +129,8 @@ class MerelyBot(commands.AutoShardedBot):
         #TODO: track removed botadmin guilds and sync with them once too
     # Update appcommand cache in babel so commands can be mentioned
     await self.babel.cache_appcommands(self)
+    if not self.quiet:
+      print("  - Synced commands")
 
   async def autoload_extensions(self):
     """ Search the filesystem for extensions, list them in config, load them if enabled """

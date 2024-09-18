@@ -70,9 +70,14 @@ class Premium(commands.Cog):
     self.premiumguild = None
     self.premiumroles = set()
 
-    bot.add_app_command_check(
-      self.check_premium_slash_command, slash_commands=True, user_commands=True
-    )
+    # Add command checker
+    self.bot.tree.interaction_check = self.check_premium_slash_command
+
+  def cog_unload(self):
+    # Revert checker to default
+    self.bot.tree.interaction_check = app_commands.CommandTree.interaction_check
+
+  # Event listeners
 
   @commands.Cog.listener('on_connect')
   async def cache_role(self):
@@ -94,6 +99,8 @@ class Premium(commands.Cog):
     if not self.premiumroles:
       raise Exception("The designated premium role was not found!")
 
+  # Utils
+
   async def check_premium(self, user:discord.User | discord.Member):
     try:
       member = await self.premiumguild.fetch_member(user.id)
@@ -102,10 +109,16 @@ class Premium(commands.Cog):
     else:
       return list(self.premiumroles & set(member.roles))
 
-  async def check_premium_slash_command(self, inter:discord.Interaction):
+  # Checks
+
+  async def check_premium_slash_command(self, inter:discord.Interaction) -> bool:
+    #TODO: maybe check other interaction types too?
+    if inter.type != discord.InteractionType.application_command:
+      return True
+
     restricted = self.config['restricted_commands'].split(' ')
     premium_users = [int(u) for u in self.config['premium_users'].split(' ') if u]
-    if inter.application_command.name in restricted:
+    if inter.command.name in restricted:
       if inter.user.id in premium_users:
         return True # user is automatically premium through config
       if await self.check_premium(inter.user):
@@ -118,14 +131,41 @@ class Premium(commands.Cog):
     rolelist = self.bot.babel.string_list(inter, [r.name for r in self.premiumroles], True)
     embed = discord.Embed(
       title=self.babel(inter, 'required_title'),
-      description=self.babel(inter, 'required_error', role=rolelist)
+      description=self.babel(inter, 'required_error')
     )
     embed.url = (
       self.config['patreon'] if self.config['patreon']
       else self.config['other']
     )
     embed.set_thumbnail(url=self.config['icon'])
+    embed.set_footer(text=self.babel(inter, 'required_advice', role=rolelist))
     return embed
+
+  # Views
+
+  class PremiumView(discord.ui.View):
+    def __init__(self, inter:discord.Interaction, parent:Premium):
+      super().__init__(timeout=None)
+
+      url = None
+      if parent.config['patreon'] or parent.config['other']:
+        url = (
+          parent.config['patreon'] if parent.config['patreon']
+          else parent.config['other']
+        )
+
+      self.add_item(discord.ui.Button(
+        emoji='1️⃣',
+        label=parent.babel(inter, 'join_server_cta'),
+        url=parent.bot.config['help']['serverinv']
+      ))
+      self.add_item(discord.ui.Button(
+        emoji='2️⃣',
+        label=parent.babel(inter, 'subscribe_cta'),
+        url=url
+      ))
+
+  # Commands
 
   @app_commands.command()
   async def premium(self, inter:discord.Interaction):
@@ -157,20 +197,10 @@ class Premium(commands.Cog):
       embed.set_thumbnail(url=self.config['icon'])
     embed.set_footer(text=self.babel(inter, 'fine_print'))
 
-    buttons = []
-    if self.bot.config['help']['serverinv']:
-      buttons.append(discord.ui.Button(
-        emoji='1️⃣',
-        label=self.babel(inter, 'join_server_cta'),
-        url=self.bot.config['help']['serverinv']
-      ))
-      buttons.append(discord.ui.Button(
-        emoji='2️⃣',
-        label=self.babel(inter, 'subscribe_cta'),
-        url=embed.url
-      ))
-
-    await inter.response.send_message(embed=embed, components=buttons)
+    await inter.response.send_message(
+      embed=embed,
+      view=self.PremiumView(inter, self) if self.bot.config['help']['serverinv'] else None
+    )
 
 
 async def setup(bot:MerelyBot):
