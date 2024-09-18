@@ -246,14 +246,23 @@ class Babel():
 
     return match
 
-  def mention_command(self, command_name:str):
+  def mention_command(self, search:str):
     """ Finds the API slash command and mentions it """
-    mentionables = [a for a in self.appcommands if a.name == command_name]
+    mentionables:list[app_commands.AppCommand] = []
+    for cmd in self.appcommands:
+      if ' ' in search:
+        splitsearch = search.split()
+        subcommands = [sc for sc in cmd.options if isinstance(sc, app_commands.AppCommandGroup)]
+        if cmd.name == splitsearch[0] and splitsearch[1] in [sc.name for sc in subcommands]:
+          mentionables.append([sc for sc in subcommands if sc.name == splitsearch[1]][0])
+      if search == cmd.name:
+        mentionables.append(cmd)
+        continue
     if mentionables:
       #TODO: the first match might not always be the right one...
       return mentionables[0].mention
     else:
-      return '/'+command_name
+      return '/'+search
 
   def string_list(self, target:Resolvable, items:list[str], or_mode:bool = False) -> str:
     """ Takes list items, and joins them together in a regionally correct way """

@@ -58,7 +58,10 @@ class Error(commands.Cog):
         (app_commands.CommandNotFound, commands.BadArgument, commands.MissingRequiredArgument)
       ):
         if 'Help' in self.bot.cogs:
-          await self.bot.cogs['Help'].help(inter, inter.command.name, **kwargs)
+          await inter.response.send_message(
+            self.bot.cogs['Help'].resolve_docs(inter, inter.command.name),
+            **kwargs
+          )
         else:
           await inter.response.send_message(self.babel(inter, 'missingrequiredargument'), **kwargs)
         return

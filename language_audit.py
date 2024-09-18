@@ -91,8 +91,11 @@ def main(lang=None):
           found_scopekeys.add(key)
       filebuffer = re.sub(COMMENT_OVERRIDE, '', filebuffer, 1)
 
-  for cmd in bot.slash_commands:
-    docname = f'command_{cmd.body.name.split()[0]}_help'
+  for cmd in bot.walk_commands():
+    if cmd.root_parent:
+      docname = f'command_{cmd.root_parent.name}_help'
+    else:
+      docname = f'command_{cmd.name}_help'
     for entry in cmp_scopekeys:
       if entry.endswith(docname):
         found_scopekeys.add(entry)
