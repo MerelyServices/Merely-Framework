@@ -79,7 +79,7 @@ class Event():
 
 @enum.unique
 class Events(enum.Enum):
-  # Built-in disnake events, most require members scope
+  # Built-in discord events, most require members scope
   WELCOME = Event(
     'on_member_join',
     "{member.mention} has joined {guild.name}!",

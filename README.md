@@ -30,13 +30,13 @@ The best way to contribute is to create your own discord bot using this framewor
 I have built a website which makes it easier to translate my projects, including Merely-Framework. [Babel Translator](https://translate.yiays.com).
 
 ### Code contribution
-Merely-Framework is written in Python with the help of the disnake API wrapper (like discord.py). Refer to the [Project roadmap](https://github.com/orgs/MerelyServices/projects/1) for future features we'd like to implement. All contributions are welcome and support can be given in the [Discord server](https://discord.gg/wfKx24kDUR).
+Merely-Framework is written in Python with the help of the Discord.py API wrapper. Refer to the [Project roadmap](https://github.com/orgs/MerelyServices/projects/1) for future features we'd like to implement. All contributions are welcome and support can be given in the [Discord server](https://discord.gg/wfKx24kDUR).
 
 ### Design
 Merely is a highly customizable and extensible framework for discord bots. through the config file, people can enable and disable extensions, change the bot name, and configure extensions. Developers can even write their own extensions to further extend the Merely Framework.
 
 ### Code structure
-Extensions should operate entirely independant of each other and should rarely need to communicate with each other. Extensions must inherit from the [disnake.ext.commands.Cog](https://docs.disnake.dev/en/latest/ext/commands/api.html#cog) class and bind themselves on import. Effort should be made to avoid clashes with existing commands. [extensions/example.py](extensions/example.py) should demonstrate all of this.
+Extensions should operate entirely independant of each other and should rarely need to communicate with each other. Extensions must inherit from the [discord.ext.commands.Cog](https://discordpy.readthedocs.io/en/latest/ext/commands/api.html#cog) class and bind themselves on import. Effort should be made to avoid clashes with existing commands. [extensions/example.py](extensions/example.py) should demonstrate all of this.
 
 #### Writing a different bot using the framework
 If you would like to make a bot that changes functionality of existing commands or strings, you may want to use an overlay. Create a folder named 'overlay' in this directory, refer to the [source code for ConfessionBot](https://github.com/yiays/ConfessionBot/tree/beta) to see an example of how an overlay is structured. *Note that babel is given a language file prefix so Merely Language files can still be inherited from.*
