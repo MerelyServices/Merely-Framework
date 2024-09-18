@@ -128,17 +128,14 @@ class Language(commands.Cog):
     await inter.response.send_message(embeds=embeds)
 
   @language.command(name='set')
+  @app_commands.describe(language="An ISO language code for your language and dialect")
   async def language_set(
     self,
     inter:discord.Interaction,
     language:str
   ):
     """
-    Change the language that this bot uses with you or a server you manage
-
-    Parameters
-    ----------
-    language: An ISO language code for your language and dialect
+      Change the language that this bot uses with you or a server you manage
     """
     if not language == 'default' and re.match(r'[a-z]{2}(-[A-Z]{2})?$', language) is None:
       await inter.response.send_message(self.babel(inter, 'set_failed_invalid_pattern'))

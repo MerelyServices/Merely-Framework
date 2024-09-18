@@ -404,16 +404,13 @@ class Announce(commands.Cog):
   # Commands
 
   @app_commands.command()
+  @app_commands.describe(simulate="Send a typing status instead of a message in order to test")
   @app_commands.default_permissions(administrator=True)
   @app_commands.guild_only()
   @commands.bot_has_permissions(read_messages=True, send_messages=True)
   async def announce(self, inter:discord.Interaction, simulate:bool = False):
     """
       Sends an announcement to server owners and other subscribed users
-
-      Parameters
-      ----------
-      simulate: Send a typing status instead of a message in order to test
     """
     self.bot.auth.superusers(inter)
 

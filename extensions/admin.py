@@ -69,17 +69,14 @@ class Admin(commands.Cog):
         await message.delete()
 
   @app_commands.command()
-  @commands.bot_has_permissions(read_messages=True, manage_messages=True)
+  @app_commands.describe(mode="Choose whether to have janitor enabled or disabled in this channel")
   @app_commands.default_permissions(administrator=True)
+  @commands.bot_has_permissions(read_messages=True, manage_messages=True)
   async def janitor(
     self, inter:discord.Interaction, mode:JanitorMode
   ):
     """
       Add or remove janitor from this channel. Janitor deletes messages after 30 seconds
-
-      Parameters:
-      -----------
-      mode: Choose whether to have janitor enabled or disabled in this channel
     """
     if mode != JanitorMode.DISABLED:
       self.config[f'{inter.channel.id}_janitor'] = str(int(mode))
@@ -91,8 +88,13 @@ class Admin(commands.Cog):
       await inter.response.send_message(self.babel(inter, 'janitor_unset_success'))
 
   @app_commands.command()
-  @commands.bot_has_permissions(read_messages=True, manage_messages=True)
+  @app_commands.describe(
+    number="The number of messages to search through, defaults to 50",
+    clean_to="Searches through message history until this message is reached",
+    strict="A strict clean, when enabled, deletes all messages by all users"
+  )
   @app_commands.default_permissions(moderate_members=True)
+  @commands.bot_has_permissions(read_messages=True, manage_messages=True)
   async def clean(
     self,
     inter:discord.Interaction,
@@ -102,12 +104,6 @@ class Admin(commands.Cog):
   ):
     """
       Clean messages from this channel. By default, this only deletes messages to and from this bot.
-
-      Parameters:
-      -----------
-      number: The number of messages to search through, defaults to 50
-      clean_to: Searches through message history until this message is reached
-      strict: A strict clean, when enabled, deletes all messages by all users
     """
     try:
       await inter.response.defer(thinking=True)

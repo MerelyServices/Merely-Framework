@@ -29,6 +29,10 @@ This means no calling commands internally with additional arguments
 A plus-side of this pattern is all choices have a name and value.
 
 ---
+### Command parameters can no longer be described in the command docstring
+Instead, use `@app_commands.describe(**kwargs)`.
+
+---
 ### `Client.slash_commands` is now `Client.tree.walk_commands()`
 
 ---
@@ -37,6 +41,15 @@ Instead, create component class variables directly
 
 ---
 ### `Modal.callback` is now `Modal.on_submit`
+
+---
+### `View`s are required, raw components are not available
+This means you must always have a full lifecycle for your views planned; if the View is meant to survive restarts, you need to use `MerelyBot.config` and `@commands.Cog.listener('on_ready')` to rehydrate it.
+- Be considerate when using the on_ready event! Consider adding a `asyncio.sleep()` so not all on_ready events fire at the same time.
+
+---
+### `Button.callback` has a different signature
+`Interaction` is before `Button` now
 
 ---
 ### Context menu commands cannot be created inside a Cog

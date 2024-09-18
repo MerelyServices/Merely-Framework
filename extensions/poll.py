@@ -369,8 +369,25 @@ class Poll(commands.Cog):
           poll.remove()
 
   @app_commands.command()
-  @commands.bot_has_permissions(read_messages=True, send_messages=True, add_reactions=True)
+  @app_commands.describe(
+    title="The subject of the poll, appears above the options",
+    answer1="Option A. Required",
+    answer2="Option B. Required",
+    answer3="Option C. Not required.",
+    answer4="Option D. Not required.",
+    answer5="Option E. Not required.",
+    answer6="Option F. Not required.",
+    answer7="Option G. Not required.",
+    answer8="Option H. Not required.",
+    answer9="Option I. Not required.",
+    answer10="Option J. Not required.",
+    expiry_days="Number of days until the poll expires. Summed with other expiry fields.",
+    expiry_hours="Number of hours until the poll expires. Summed with other expiry fields.",
+    expiry_minutes="Number of minutes until the poll expires. Summed with other expiry fields.",
+    expiry_seconds="Number of seconds until the poll expires. Summed with other expiry fields."
+  )
   @app_commands.guild_only()
+  @commands.bot_has_permissions(read_messages=True, send_messages=True, add_reactions=True)
   async def poll(
     self,
     inter:discord.Interaction,
@@ -392,26 +409,8 @@ class Poll(commands.Cog):
   ):
     """
       Creates a poll with up to 10 options and an expiry time
-
-      Parameters
-      ----------
-      title: The subject of the poll, appears above the options
-      answer1: Option A. Required
-      answer2: Option B. Required
-      answer3: Option C. Not required.
-      answer4: Option D. Not required.
-      answer5: Option E. Not required.
-      answer6: Option F. Not required.
-      answer7: Option G. Not required.
-      answer8: Option H. Not required.
-      answer9: Option I. Not required.
-      answer10: Option J. Not required.
-      expiry_days: Number of days until the poll expires. Summed with other expiry fields.
-      expiry_hours: Number of hours until the poll expires. Summed with other expiry fields.
-      expiry_minutes: Number of minutes until the poll expires. Summed with other expiry fields.
-      expiry_seconds: Number of seconds until the poll expires. Summed with other expiry fields.
     """
-    # Remove duplicate answers and unset answers while preserving the specified order
+    # Remove duplicate and unset answers while preserving the specified order
     raw_answers = [
       answer1, answer2, answer3, answer4, answer5, answer6, answer7, answer8, answer9, answer10
     ]

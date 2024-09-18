@@ -339,8 +339,14 @@ class ReactRoles(commands.Cog):
 
   # Commands
 
-  @app_commands.guild_only()
   @app_commands.command(name='reactrole_add')
+  @app_commands.describe(
+    emoji="The emoij to be used",
+    role1="The first role to be given to users that react with this emoji",
+    role2="The second role to be given to users that react with this emoji",
+    role3="The third role to be given to users that react with this emoji"
+  )
+  @app_commands.guild_only()
   @app_commands.default_permissions(administrator=True)
   async def reactrole_edit_add(
     self,
@@ -351,14 +357,7 @@ class ReactRoles(commands.Cog):
     role3:Optional[discord.Role] = None
   ):
     """
-    Add a reaction and the corresponding roles to a prompt in edit mode.
-
-    Parameters
-    ----------
-    emoji: The emoij to be used
-    role1: The first role to be given to users that react with this emoji
-    role2: The second role to be given to users that react with this emoji
-    role3: The third role to be given to users that react with this emoji
+      Add a reaction and the corresponding roles to a prompt in edit mode.
     """
     emoji = emoji.strip()
     lang = self.bot.babel.resolve_lang(inter.user.id, inter.guild_id, inter)[0]
@@ -412,17 +411,14 @@ class ReactRoles(commands.Cog):
     ]
     return results[:25]
 
-  @commands.bot_has_permissions(read_messages=True, manage_messages=True, add_reactions=True)
-  @app_commands.guild_only()
   @app_commands.command()
+  @app_commands.describe(topic="The content of the message that users will react to")
+  @app_commands.guild_only()
   @app_commands.default_permissions(administrator=True)
-  async def reactrole(self, inter:discord.Interaction, prompt:str):
+  @commands.bot_has_permissions(read_messages=True, manage_messages=True, add_reactions=True)
+  async def reactrole(self, inter:discord.Interaction, topic:str):
     """
       Grant members roles whenever they react to a message
-
-      Parameters
-      ----------
-      prompt: The content of the message that users will react to
     """
     if inter.channel_id in self.drafts:
       await inter.response.send_message(self.babel(inter, 'draft_in_progress'))

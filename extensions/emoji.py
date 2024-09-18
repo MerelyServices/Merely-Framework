@@ -33,13 +33,10 @@ class Emoji(commands.Cog):
     self.bot = bot
 
   @app_commands.command()
+  @app_commands.describe(search="Start typing to refine your search")
   async def emoji(self, inter:discord.Interaction, search:str):
     """
     Searches emojis from all servers merely is a part of for one to use
-
-    Parameters
-    ----------
-    search: Type to refine your search
     """
     emojiname = search.split(' ', maxsplit=1)[0].replace(':','').lower()
 

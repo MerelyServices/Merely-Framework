@@ -108,13 +108,15 @@ class Help(commands.Cog):
     reslang = self.bot.babel.resolve_lang(
       inter.user.id, inter.guild.id if inter.guild else None, inter
     )
+    commandname = (command.root_parent.name + ' ' if command.root_parent else '') + command.name
     for reflang in reslang:
       reflang = self.bot.babel.langs[reflang]
       for key in reflang.keys():
-        if f'command_{command.name}_help' in reflang[key]:
+        if f"command_{commandname.replace(' ', '_')}_help" in reflang[key]:
           docsrc = (
-            self.bot.babel(inter, key, f'command_{command.name}_help', cmd=command.name)
-            .splitlines()
+            self.bot.babel(
+              inter, key, f"command_{commandname.replace(' ', '_')}_help", cmd=commandname
+            ).splitlines()
           )
           docs = f'**{docsrc[0]}**'
           if len(docsrc) > 1:
@@ -124,7 +126,14 @@ class Help(commands.Cog):
               docs += '\n*'+line+'*'
           return docs
     # Return the docstring otherwise
-    return command.__doc__
+    mentionline = (
+      f'**{self.bot.babel.mention_command(command.name)}' + (' ' if command.parameters else '')
+    )
+    autodoc = command.description + ('\n' if command.parameters else '')
+    for param in command.parameters:
+      mentionline += f'({param.name})' if param.required else f'[{param.name}]'
+      autodoc += '\n' + f'*{param.name}: {param.description}*'
+    return mentionline + '**\n' + autodoc
 
   def resolve_docs(self, inter:discord.Interaction, search:str):
     """
@@ -161,13 +170,10 @@ class Help(commands.Cog):
       return self.babel(inter, 'no_command', cmd=search)
 
   @app_commands.command()
+  @app_commands.describe(command="Name any command you'd like specific help with")
   async def help(self, inter:discord.Interaction, command:Optional[str]):
     """
       A repository of all the information you should need to use this bot
-
-      Parameters
-      ----------
-      command: Name any command you'd like specific help with
     """
     if command:
       await inter.response.send_message(self.resolve_docs(inter, command))
@@ -275,13 +281,12 @@ class Help(commands.Cog):
     )
 
   @app_commands.command()
+  @app_commands.describe(
+    search="Find the version a change occured in, or search for a version number"
+  )
   async def changes(self, inter:discord.Interaction, search:Optional[str] = None):
     """
-    See what has changed in recent updates
-
-    Parameters
-    ----------
-    search: Find the version a change occured in, or search for a version number
+      See what has changed in recent updates
     """
     changes = self.config['changelog'].splitlines()
     fchanges = ["**"+i.replace('> ','')+"**" if i.startswith('> ') else i for i in changes]

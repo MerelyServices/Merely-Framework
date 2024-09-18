@@ -63,16 +63,15 @@ class Example(commands.Cog):
       os.remove(f)
 
   @app_commands.command()
+  @app_commands.describe(
+    media_url="A link to almost any web page with a video. Doesn't work if payment is required."
+  )
   @app_commands.allowed_contexts(guilds=True, private_channels=True)
   @app_commands.allowed_installs(guilds=True, users=True)
   @commands.has_permissions(send_messages=True)
   async def download(self, inter:discord.Interaction, media_url:str):
     """
       Download a video file and send it back as a message
-
-      Parameters
-      ----------
-      media_url: A link to almost any web page with a video. Doesn't work if payment is required.
     """
     if not uri_validator(media_url):
       await inter.response.send_message("Media URL appears to be invalid. Not downloading.")

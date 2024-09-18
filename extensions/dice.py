@@ -33,14 +33,13 @@ class Dice(commands.Cog):
     self.bot = bot
 
   @app_commands.command()
+  @app_commands.describe(
+    sides="The number of sides on your dice, separate with commas for multiple dice"
+  )
   @app_commands.default_permissions(send_messages=True)
   async def dice(self, inter:discord.Interaction, sides:str = '6'):
     """
     Roll an n-sided dice
-
-    Parameters
-    ----------
-    sides: The number of sides on your dice, separate with commas for multiple dice
     """
 
     result = []

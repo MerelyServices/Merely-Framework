@@ -397,6 +397,11 @@ class EventMsg(commands.Cog):
       #await self.msg.edit(content=self.parent.bot.babel(self.msg.guild, 'error', 'timeoutview'))
 
   @app_commands.command()
+  @app_commands.describe(
+    channel="The target channel where the event message will be sent",
+    event="The event for the bot to watch for",
+    action="The action the bot will take in response"
+  )
   @app_commands.default_permissions(moderate_members=True)
   @commands.bot_has_permissions(read_messages=True, manage_messages=True)
   async def eventmessage(
@@ -408,12 +413,6 @@ class EventMsg(commands.Cog):
   ):
     """
     Set up a message/action to take whenever something happens on the server.
-
-    Parameters
-    ----------
-    channel: The target channel where the event message will be sent
-    event: The event for the bot to watch for
-    action: The action the bot will take in response
     """
     # Default state
     usage = ''
@@ -476,13 +475,10 @@ class EventMsg(commands.Cog):
       )
 
   @welcome.command(name='set')
+  @app_commands.describe(message="The message that will be sent when a member joins.")
   async def welcome_set(self, inter:discord.Interaction, message:str):
     """
       Sets the welcome message based on your input.
-
-      Parameters
-      ----------
-      message: The message that will be sent when a member joins.
     """
     self.config[f'{inter.guild.id}_welcome'] = f"{inter.channel.id}, {message}"
     self.bot.config.save()
@@ -532,13 +528,10 @@ class EventMsg(commands.Cog):
       )
 
   @farewell.command(name='set')
+  @app_commands.describe(message="The message that will be sent when a member joins.")
   async def farewell_set(self, inter:discord.Interaction, message:str):
     """
       Sets the welcome message based on your input.
-
-      Parameters
-      ----------
-      message: The message that will be sent when a member joins.
     """
     self.config[f'{inter.guild.id}_farewell'] = f"{inter.channel.id}, {message}"
     self.bot.config.save()

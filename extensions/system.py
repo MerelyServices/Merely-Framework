@@ -59,16 +59,15 @@ class System(commands.Cog):
   # Commands
 
   @app_commands.command()
+  @app_commands.describe(
+    action="The action you want to perform",
+    module="The target cog which will be affected, leave empty for a list of loaded Cogs"
+  )
   @app_commands.default_permissions(administrator=True)
   @app_commands.guild_only()
   async def module(self, inter:discord.Interaction, action:Actions, module:Optional[str] = None):
     """
-    Manage modules of the bot in real time
-
-    Parameters
-    ----------
-    action: The action you want to perform
-    module: The target cog which will be affected, leave empty for a list of loaded Cogs
+      Manage modules of the bot in real time
     """
     self.bot.auth.superusers(inter)
 
@@ -207,15 +206,12 @@ class System(commands.Cog):
     ][:25]
 
   @app_commands.command()
+  @app_commands.describe(script="The filename of the migration script you would like to trigger")
   @app_commands.default_permissions(administrator=True)
   @app_commands.guild_only()
   async def migrate(self, inter:discord.Interaction, script:str):
     """
-    Manually trigger a config migration script
-
-    Parameters
-    ----------
-    script: The filename of the migration script you would like to trigger
+      Manually trigger a config migration script
     """
     self.bot.auth.superusers(inter)
 
@@ -283,6 +279,7 @@ class System(commands.Cog):
     await inter.response.send_message("Deleted message successfully!")
 
   @app_commands.command()
+  @app_commands.describe(saveconfig="Write the last known state of the config file on shutdown")
   @app_commands.default_permissions(administrator=True)
   @app_commands.guild_only()
   @commands.cooldown(1, 1)
@@ -290,11 +287,7 @@ class System(commands.Cog):
     self, inter:discord.Interaction, saveconfig:bool = False, restart:bool = False
   ):
     """
-    Log out and shut down
-
-    Parameters
-    ----------
-    saveconfig: Write the last known state of the config file on shutdown
+      Log out and shut down
     """
     self.bot.auth.superusers(inter)
 
