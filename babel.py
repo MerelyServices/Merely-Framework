@@ -11,13 +11,14 @@ from configparser import ConfigParser
 from typing import Optional, TYPE_CHECKING
 from config import Config
 from glob import glob
-import disnake
+import discord
+from discord import app_commands
 
 if TYPE_CHECKING:
   from .main import MerelyBot
 
 Resolvable = (
-  disnake.Interaction | disnake.Message | disnake.User | disnake.Member | disnake.Guild
+  discord.Interaction | discord.Message | discord.User | discord.Member | discord.Guild
   | tuple[int, int | None]
 )
 
@@ -34,6 +35,9 @@ class Babel():
   filter_conditional: re.Pattern
   filter_configreference: re.Pattern
   filter_commandreference: re.Pattern
+
+  # App command data - for mentioning
+  appcommands: list[app_commands.AppCommand]
 
   @property
   def defaultlang(self) -> str:
@@ -93,7 +97,10 @@ class Babel():
       else:
         print("WARN: unable to resolve language dependancy chain.")
 
-  def localeconv(self, locale:disnake.Locale) -> str:
+  async def cache_appcommands(self, bot:MerelyBot):
+    self.appcommands = await bot.tree.fetch_commands()
+
+  def localeconv(self, locale:discord.Locale) -> str:
     """ Converts a Discord API locale to a babel locale """
     return self.prefix + str(locale).replace('-US', '').replace('-UK', '')
 
@@ -101,12 +108,12 @@ class Babel():
     self,
     user_id:Optional[int] = None,
     guild_id:Optional[int] = None,
-    inter:Optional[disnake.Interaction] = None,
+    inter:Optional[discord.Interaction] = None,
     debug:bool = False
-  ) -> tuple[list]:
+  ) -> list[str] | tuple[list[str], list[str]]:
     """ Creates a priority list of languages and reasons why they apply to this user or guild """
-    langs = []
-    dbg_origins = []
+    langs:list[str] = []
+    debug_origins:list[str] = []
 
     def resolv(locale:str, origin:str):
       """ Find the specific babel lang struct for this locale """
@@ -117,14 +124,14 @@ class Babel():
         # A language file was found
         langs.append(locale)
         if debug:
-          dbg_origins.append(origin)
+          debug_origins.append(origin)
         # Follow the inheritance chain
         locale = self.langs[langs[-1]].get('meta', 'inherit', fallback=None)
         # Loop interrupts if this chain has been followed before
         while locale and locale not in langs and locale in self.langs:
           langs.append(locale)
           if debug:
-            dbg_origins.append('inherit '+origin)
+            debug_origins.append('inherit '+origin)
           locale = self.langs[langs[-1]].get('meta', 'inherit', fallback=None)
 
     # Manually set language for user
@@ -149,7 +156,7 @@ class Babel():
 
     if not debug:
       return langs
-    return langs, dbg_origins
+    return langs, debug_origins
 
   def __call__(
     self,
@@ -161,18 +168,20 @@ class Babel():
   ) -> str:
     """ Determine the locale and resolve the closest translated string """
     inter = None
-    if isinstance(target, (disnake.Interaction, disnake.Message)):
+    if isinstance(target, discord.Interaction):
+      author_id = target.user.id
+      guild_id = target.guild.id if target.guild else None
+      inter = target
+    elif isinstance(target, discord.Message):
       author_id = target.author.id
-      guild_id = target.guild.id if hasattr(target, 'guild') and target.guild else None
-      if isinstance(target, disnake.Interaction):
-        inter = target
-    elif isinstance(target, disnake.User):
+      guild_id = target.guild.id if target.guild else None
+    elif isinstance(target, discord.User):
       author_id = target.id
       guild_id = None
-    elif isinstance(target, disnake.Member):
+    elif isinstance(target, discord.Member):
       author_id = target.id
       guild_id = target.guild.id
-    elif isinstance(target, disnake.Guild):
+    elif isinstance(target, discord.Guild):
       author_id = None
       guild_id = target.id
     else:
@@ -206,7 +215,7 @@ class Babel():
     for commandquery in commandqueries:
       match = match.replace(
         '{p:'+commandquery+'}',
-        self.mention_command(commandquery, target.bot if hasattr(target, 'bot') else None)
+        self.mention_command(commandquery)
       )
 
     # Fill in conditionals
@@ -237,18 +246,23 @@ class Babel():
 
     return match
 
-  def mention_command(self, command:str, bot:Optional[MerelyBot] = None):
-    # Pre-fetch the slash command (if it exists)
-    cmd = None
-    if bot:
-      cmd = bot.get_global_command_named(command)
-
-    if isinstance(cmd, disnake.APISlashCommand):
-      # Use slash command references if they can be found
-      return '</'+cmd.name+':'+str(cmd.id)+'>'
+  def mention_command(self, search:str):
+    """ Finds the API slash command and mentions it """
+    mentionables:list[app_commands.AppCommand] = []
+    for cmd in self.appcommands:
+      if ' ' in search:
+        splitsearch = search.split()
+        subcommands = [sc for sc in cmd.options if isinstance(sc, app_commands.AppCommandGroup)]
+        if cmd.name == splitsearch[0] and splitsearch[1] in [sc.name for sc in subcommands]:
+          mentionables.append([sc for sc in subcommands if sc.name == splitsearch[1]][0])
+      if search == cmd.name:
+        mentionables.append(cmd)
+        continue
+    if mentionables:
+      #TODO: the first match might not always be the right one...
+      return mentionables[0].mention
     else:
-      # If the text prefix can't be seen, assume this is a missing slash command
-      return '/'+command
+      return '/'+search
 
   def string_list(self, target:Resolvable, items:list[str], or_mode:bool = False) -> str:
     """ Takes list items, and joins them together in a regionally correct way """

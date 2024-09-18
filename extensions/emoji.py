@@ -6,8 +6,9 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-import disnake
-from disnake.ext import commands
+import discord
+from discord import app_commands
+from discord.ext import commands
 
 if TYPE_CHECKING:
   from main import MerelyBot
@@ -31,42 +32,34 @@ class Emoji(commands.Cog):
   def __init__(self, bot:MerelyBot):
     self.bot = bot
 
-  @commands.slash_command()
-  async def emoji(self, inter:disnake.CommandInteraction, search:str):
+  @app_commands.command()
+  @app_commands.describe(search="Start typing to refine your search")
+  async def emoji(self, inter:discord.Interaction, search:str):
     """
     Searches emojis from all servers merely is a part of for one to use
-
-    Parameters
-    ----------
-    search: Type to refine your search
     """
     emojiname = search.split(' ', maxsplit=1)[0].replace(':','').lower()
 
-    if '(' in search:
-      try:
-        guild = self.bot.get_guild(int(search.split('(')[1][:-1]))
-      except ValueError:
-        matches = []
-      else:
-        matches = [e for e in guild.emojis if emojiname == e.name.lower()] if guild else []
+    if search.isdigit():
+      matches = [e for e in self.bot.emojis if e.id == int(search)]
     else:
       matches = [e for e in self.bot.emojis if emojiname == e.name.lower()]
 
     if matches:
-      await inter.send(matches[0])
+      await inter.response.send_message(matches[0])
     else:
-      await inter.send(self.babel(inter, 'not_found'))
+      await inter.response.send_message(self.babel(inter, 'not_found'))
 
   @emoji.autocomplete('search')
-  def ac_emoji(self, _:disnake.CommandInteraction, search:str):
+  async def ac_emoji(self, _:discord.Interaction, search:str):
     """ Autocomplete for emoji search """
     results = [
-      f':{e.name}: ({e.guild_id})'
-      for e in self.bot.emojis if search.replace(':','').lower() in e.name.lower()
+      app_commands.Choice(name=f':{e.name}: ({e.guild.name})', value=str(e.id))
+      for e in self.bot.emojis if search.replace(':','').lower() in e.name.lower() + e.guild.name
     ]
     return results[:25]
 
 
-def setup(bot:MerelyBot):
+async def setup(bot:MerelyBot):
   """ Bind this cog to the bot """
-  bot.add_cog(Emoji(bot))
+  await bot.add_cog(Emoji(bot))

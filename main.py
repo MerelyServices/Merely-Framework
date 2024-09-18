@@ -7,17 +7,17 @@
 import sys, time, os, re, glob, importlib
 from itertools import groupby
 from packaging import version
-import disnake
-from disnake.ext import commands
+import discord
+from discord.ext import commands
 from config import Config
 from babel import Babel
 from utilities import Utilities
 from auth import Auth
 
 
-class MerelyBot(commands.AutoShardedInteractionBot):
+class MerelyBot(commands.AutoShardedBot):
   """
-    An extension of disnake.commands.AutoShardedInteractionBot with added features
+    An extension of discord.commands.AutoShardedBot with added features
 
     This includes a babel module for localised strings, a config module, automatic extension
     loading, config-defined intents, and logging.
@@ -83,7 +83,7 @@ class MerelyBot(commands.AutoShardedInteractionBot):
       self.automigrate_config()
 
     # set intents
-    intents = disnake.Intents.none()
+    intents = discord.Intents.none()
     intents.guilds = self.config.getboolean('intents', 'guilds')
     intents.members = self.config.get('intents', 'members') not in ('none', 'False')
     intents.moderation = self.config.getboolean('intents', 'moderation')
@@ -102,25 +102,37 @@ class MerelyBot(commands.AutoShardedInteractionBot):
     intents.dm_typing = 'dm' in self.config.get('intents', 'typing')
 
     # set cache policy
-    cachepolicy = disnake.MemberCacheFlags.from_intents(intents)
+    cachepolicy = discord.MemberCacheFlags.from_intents(intents)
     if self.config.get('intents', 'members') in ('uncached', 'none', 'False'):
-      cachepolicy = disnake.MemberCacheFlags.none()
+      cachepolicy = discord.MemberCacheFlags.none()
       self.member_cache = False
 
-    # set sync policy
-    syncflags = commands.CommandSyncFlags.default()
-    if self.verbose:
-      syncflags.sync_commands_debug = True
-
     super().__init__(
+      '/',
       intents=intents,
-      member_cache_flags=cachepolicy,
-      command_sync_flags=syncflags
+      member_cache_flags=cachepolicy
     )
 
-    self.autoload_extensions()
+  async def setup_hook(self) -> None:
+    """ Sync registered commands """
+    await self.autoload_extensions()
+    await self.sync_commands()
 
-  def autoload_extensions(self):
+  async def sync_commands(self) -> None:
+    """ Sync all commands, including guild specific commands """
+    await self.tree.sync()
+    if bot.config['auth']['botadmin_guilds']:
+      guilds = bot.config['auth']['botadmin_guilds']
+      botadmin_guilds = [discord.Object(guild) for guild in guilds.split(' ')]
+      for guild in botadmin_guilds:
+        await self.tree.sync(guild=guild)
+        #TODO: track removed botadmin guilds and sync with them once too
+    # Update appcommand cache in babel so commands can be mentioned
+    await self.babel.cache_appcommands(self)
+    if not self.quiet:
+      print("Finished syncing commands")
+
+  async def autoload_extensions(self):
     """ Search the filesystem for extensions, list them in config, load them if enabled """
     # a natural sort is used to make it possible to prioritize extensions by filename
     # add underscores to extension filenames to increase their priority
@@ -151,7 +163,7 @@ class MerelyBot(commands.AutoShardedInteractionBot):
                 sep='',
                 end=''
               )
-            self.load_extension(
+            await self.load_extension(
               'overlay.extensions.'+extfile if extpath.startswith('overlay')
               else 'extensions.'+extfile
             )
@@ -206,7 +218,7 @@ class Logger(object):
     self.terminal = sys.stderr if err else sys.stdout
     self.err = err
 
-  def write(self, message):
+  def write(self, message:str):
     """ Write output to log file """
     mfolder = os.path.join('logs', time.strftime("%m-%y"))
     if not os.path.exists(mfolder):

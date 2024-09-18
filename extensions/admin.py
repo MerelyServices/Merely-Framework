@@ -9,8 +9,9 @@ from __future__ import annotations
 import asyncio
 from enum import Enum
 from typing import Optional, TYPE_CHECKING
-import disnake
-from disnake.ext import commands
+import discord
+from discord import app_commands
+from discord.ext import commands
 
 if TYPE_CHECKING:
   from main import MerelyBot
@@ -44,7 +45,7 @@ class Admin(commands.Cog):
     if not bot.config.has_section(self.SCOPE):
       bot.config.add_section(self.SCOPE)
 
-  def check_delete(self, message:disnake.Message, strict:bool = False):
+  def check_delete(self, message:discord.Message, strict:bool = False):
     """ Criteria for message deletion """
     return (
       not message.flags.ephemeral and
@@ -53,13 +54,13 @@ class Admin(commands.Cog):
         (
           message.author == self.bot.user or
           message.content.startswith('<@'+str(self.bot.user.id)+'>') or
-          message.type == disnake.MessageType.pins_add
+          message.type == discord.MessageType.pins_add
         )
       )
     )
 
   @commands.Cog.listener("on_message")
-  async def janitor_autodelete(self, message:disnake.Message):
+  async def janitor_autodelete(self, message:discord.Message):
     """janitor service, deletes messages after 30 seconds"""
     if f"{message.channel.id}_janitor" in self.config:
       strict = int(self.config.get(f"{message.channel.id}_janitor"))
@@ -67,67 +68,63 @@ class Admin(commands.Cog):
         await asyncio.sleep(30)
         await message.delete()
 
+  @app_commands.command()
+  @app_commands.describe(mode="Choose whether to have janitor enabled or disabled in this channel")
+  @app_commands.default_permissions(administrator=True)
   @commands.bot_has_permissions(read_messages=True, manage_messages=True)
-  @commands.slash_command()
-  @commands.default_member_permissions(administrator=True)
   async def janitor(
-    self, inter:disnake.GuildCommandInteraction, mode:JanitorMode
+    self, inter:discord.Interaction, mode:JanitorMode
   ):
     """
       Add or remove janitor from this channel. Janitor deletes messages after 30 seconds
-
-      Parameters:
-      -----------
-      mode: Choose whether to have janitor enabled or disabled in this channel
     """
     if mode != JanitorMode.DISABLED:
       self.config[f'{inter.channel.id}_janitor'] = str(int(mode))
       self.bot.config.save()
-      await inter.send(self.babel(inter, 'janitor_set_success'))
+      await inter.response.send_message(self.babel(inter, 'janitor_set_success'))
     else:
       self.config.pop(f'{inter.channel.id}_janitor')
       self.bot.config.save()
-      await inter.send(self.babel(inter, 'janitor_unset_success'))
+      await inter.response.send_message(self.babel(inter, 'janitor_unset_success'))
 
+  @app_commands.command()
+  @app_commands.describe(
+    number="The number of messages to search through, defaults to 50",
+    clean_to="Searches through message history until this message is reached",
+    strict="A strict clean, when enabled, deletes all messages by all users"
+  )
+  @app_commands.default_permissions(moderate_members=True)
   @commands.bot_has_permissions(read_messages=True, manage_messages=True)
-  @commands.slash_command()
-  @commands.default_member_permissions(moderate_members=True)
   async def clean(
     self,
-    inter:disnake.GuildCommandInteraction,
-    number:Optional[int] = commands.Param(None, gt=0, le=10000),
-    clean_to:Optional[disnake.Message] = None,
+    inter:discord.Interaction,
+    number:Optional[app_commands.Range[int, 1, 10000]],
+    clean_to:Optional[app_commands.Range[float, 10000000000000000]] = None,
     strict:bool = False
   ):
     """
       Clean messages from this channel. By default, this only deletes messages to and from this bot.
-
-      Parameters:
-      -----------
-      number: The number of messages to search through, defaults to 50
-      clean_to: Searches through message history until this message is reached
-      strict: A strict clean, when enabled, deletes all messages by all users
     """
     try:
-      await inter.response.defer(with_message=True)
+      await inter.response.defer(thinking=True)
       if clean_to:
         deleted = await inter.channel.purge(
           limit=number if number else 1000,
           check=lambda m: self.check_delete(m, strict),
-          before=await inter.original_message(),
+          before=await inter.original_response(),
           after=clean_to
         )
       else:
         deleted = await inter.channel.purge(
           limit=number if number else 50,
           check=lambda m: self.check_delete(m, strict),
-          before=await inter.original_message()
+          before=await inter.original_response()
         )
-      await inter.send(self.babel(inter, 'clean_success', n=len(deleted)))
-    except disnake.errors.Forbidden:
-      await inter.send(self.babel(inter, 'clean_failed'))
+      await inter.response.send_message(self.babel(inter, 'clean_success', n=len(deleted)))
+    except discord.errors.Forbidden:
+      await inter.response.send_message(self.babel(inter, 'clean_failed'))
 
 
-def setup(bot:MerelyBot):
+async def setup(bot:MerelyBot):
   """ Bind this cog to the bot """
-  bot.add_cog(Admin(bot))
+  await bot.add_cog(Admin(bot))

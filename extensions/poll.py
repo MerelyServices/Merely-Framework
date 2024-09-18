@@ -9,8 +9,9 @@ from __future__ import annotations
 from time import time
 import re
 from typing import Optional, TYPE_CHECKING
-import disnake
-from disnake.ext import tasks, commands
+import discord
+from discord import app_commands
+from discord.ext import tasks, commands
 
 if TYPE_CHECKING:
   from main import MerelyBot
@@ -30,7 +31,7 @@ class LivePoll():
   votes:list[int]
   expiry:int
   expired:bool = False
-  message:disnake.Message
+  message:discord.Message
 
   EMOJIS = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟']
 
@@ -56,14 +57,14 @@ class LivePoll():
     self.votes = votes
     self.expiry = int(expiry)
 
-  def save(self, message:disnake.Message):
+  def save(self, message:discord.Message):
     """ Writes poll to config and stores message in memory """
     self.message = message
     configkey = f'{message.channel.id}_{message.id}_expiry'+('_expired' if self.expired else '')
     self.parent.config[configkey] = str(self.expiry)
     self.parent.bot.config.save()
 
-  def load(self, message:disnake.Message):
+  def load(self, message:discord.Message):
     """ Loads poll from config and stores message in memory """
     self.message = message
     self.get_expiry()
@@ -76,7 +77,7 @@ class LivePoll():
     if save:
       self.parent.bot.config.save()
 
-  def expiry_to_time(self, guild:disnake.Guild, precisionlimit:int = 1) -> str:
+  def expiry_to_time(self, guild:discord.Guild, precisionlimit:int = 1) -> str:
     """ Converts countdown seconds into a nicely formatted sentence """
     # Import current locale strings
     TIMENAMES = self.parent.babel(guild, 'timenames').split(',')
@@ -122,9 +123,9 @@ class LivePoll():
         timelist=timelist
       )
 
-  def generate_embed(self, guild:disnake.Guild):
+  def generate_embed(self, guild:discord.Guild):
     """ Generates a poll embed based on the object data """
-    embed = disnake.Embed(title=self.title)
+    embed = discord.Embed(title=self.title)
     if self.counter > 0:
       # Counting down
       if self.counter > 60:
@@ -256,7 +257,7 @@ class Poll(commands.Cog):
           try:
             channel = await self.bot.fetch_channel(channel_id)
             message = await channel.fetch_message(message_id)
-          except (disnake.NotFound, disnake.Forbidden):
+          except (discord.NotFound, discord.Forbidden):
             self.config.pop(key)
             save = True
             continue
@@ -280,9 +281,9 @@ class Poll(commands.Cog):
   async def poll_react(
     self,
     e:(
-      disnake.RawReactionActionEvent |
-      disnake.RawReactionClearEvent |
-      disnake.RawReactionClearEmojiEvent
+      discord.RawReactionActionEvent |
+      discord.RawReactionClearEvent |
+      discord.RawReactionClearEmojiEvent
     )
   ):
     """ Handle changes to the reaction list of a poll """
@@ -290,9 +291,9 @@ class Poll(commands.Cog):
        (not hasattr(e, 'user_id') or e.user_id != self.bot.user.id):
       poll = self.livepolls[e.message_id]
       if poll.expiry > time():
-        if isinstance(e, disnake.RawReactionActionEvent):
+        if isinstance(e, discord.RawReactionActionEvent):
           poll.votes[poll.EMOJIS.index(str(e.emoji))] += 1 if e.event_type == 'REACTION_ADD' else -1
-        elif isinstance(e, disnake.RawReactionClearEmojiEvent):
+        elif isinstance(e, discord.RawReactionClearEmojiEvent):
           poll.votes[poll.EMOJIS.index(str(e.emoji))] = 0
         else:
           poll.votes = [0 for _ in poll.answers]
@@ -301,7 +302,7 @@ class Poll(commands.Cog):
           await poll.redraw()
 
   @commands.Cog.listener('on_message_delete')
-  async def poll_delete(self, message:disnake.Message):
+  async def poll_delete(self, message:discord.Message):
     if message.id in self.livepolls:
       self.livepolls[message.id].remove()
       self.livepolls.pop(message.id)
@@ -367,12 +368,29 @@ class Poll(commands.Cog):
           self.livepolls.pop(poll.message.id)
           poll.remove()
 
+  @app_commands.command()
+  @app_commands.describe(
+    title="The subject of the poll, appears above the options",
+    answer1="Option A. Required",
+    answer2="Option B. Required",
+    answer3="Option C. Not required.",
+    answer4="Option D. Not required.",
+    answer5="Option E. Not required.",
+    answer6="Option F. Not required.",
+    answer7="Option G. Not required.",
+    answer8="Option H. Not required.",
+    answer9="Option I. Not required.",
+    answer10="Option J. Not required.",
+    expiry_days="Number of days until the poll expires. Summed with other expiry fields.",
+    expiry_hours="Number of hours until the poll expires. Summed with other expiry fields.",
+    expiry_minutes="Number of minutes until the poll expires. Summed with other expiry fields.",
+    expiry_seconds="Number of seconds until the poll expires. Summed with other expiry fields."
+  )
+  @app_commands.guild_only()
   @commands.bot_has_permissions(read_messages=True, send_messages=True, add_reactions=True)
-  @commands.guild_only()
-  @commands.slash_command()
   async def poll(
     self,
-    inter:disnake.CommandInteraction,
+    inter:discord.Interaction,
     title:str,
     answer1:str,
     answer2:str,
@@ -391,26 +409,8 @@ class Poll(commands.Cog):
   ):
     """
       Creates a poll with up to 10 options and an expiry time
-
-      Parameters
-      ----------
-      title: The subject of the poll, appears above the options
-      answer1: Option A. Required
-      answer2: Option B. Required
-      answer3: Option C. Not required.
-      answer4: Option D. Not required.
-      answer5: Option E. Not required.
-      answer6: Option F. Not required.
-      answer7: Option G. Not required.
-      answer8: Option H. Not required.
-      answer9: Option I. Not required.
-      answer10: Option J. Not required.
-      expiry_days: Number of days until the poll expires. Summed with other expiry fields.
-      expiry_hours: Number of hours until the poll expires. Summed with other expiry fields.
-      expiry_minutes: Number of minutes until the poll expires. Summed with other expiry fields.
-      expiry_seconds: Number of seconds until the poll expires. Summed with other expiry fields.
     """
-    # Remove duplicate answers and unset answers while preserving the specified order
+    # Remove duplicate and unset answers while preserving the specified order
     raw_answers = [
       answer1, answer2, answer3, answer4, answer5, answer6, answer7, answer8, answer9, answer10
     ]
@@ -435,6 +435,6 @@ class Poll(commands.Cog):
     await poll.add_reacts()
 
 
-def setup(bot:MerelyBot):
+async def setup(bot:MerelyBot):
   """ Bind this cog to the bot """
-  bot.add_cog(Poll(bot))
+  await bot.add_cog(Poll(bot))

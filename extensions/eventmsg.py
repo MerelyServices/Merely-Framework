@@ -6,11 +6,12 @@
 
 from __future__ import annotations
 
+import hashlib, enum
 from datetime import datetime
-from enum import Enum
 from typing import Optional, Union, TYPE_CHECKING
-import disnake
-from disnake.ext import commands
+import discord
+from discord import app_commands
+from discord.ext import commands
 
 if TYPE_CHECKING:
   from main import MerelyBot
@@ -21,8 +22,8 @@ getdatecomponent = [
   {
     'label': "Edit date",
     'custom_id': 'edit_date',
-    'style': disnake.ButtonStyle.secondary,
-    'emoji': disnake.PartialEmoji(name='📅')
+    'style': discord.ButtonStyle.secondary,
+    'emoji': discord.PartialEmoji(name='📅')
   }
 ]
 
@@ -69,95 +70,101 @@ class Event():
     self.variables = variables
     self.components = components # Additional custom components for this event
 
+  def __str__(self) -> str:
+    return self.name
 
-Events = {
-  # Built-in disnake events, most require members scope
-  'WELCOME': Event(
+  def __hash__(self) -> int:
+    return int(hashlib.md5(self.name, usedforsecurity=False), 16)
+
+
+@enum.unique
+class Events(enum.Enum):
+  # Built-in discord events, most require members scope
+  WELCOME = Event(
     'on_member_join',
     "{member.mention} has joined {guild.name}!",
     ('member.mention', 'member.name', 'guild.name')
   ),
-  'FAREWELL': Event(
+  FAREWELL = Event(
     'on_member_leave',
     "{member.name}#{member.discriminator} has left {guild.name}.",
     ('member.name', 'member.discriminator', 'guild.name')
   ),
-  'ROLE_GAIN': Event(
+  ROLE_GAIN = Event(
     'on_member_update role add',
     "{member.mention} has been given the role {role.name}!",
     ('member.mention', 'member.name', 'role.name')
   ),
-  'ROLE_LOSE': Event(
+  ROLE_LOSE = Event(
     'on_member_update role remove',
     "{member.mention} has lost the role {role.name}!",
     ('member.mention', 'member.name', 'role.name')
   ),
-  'MESSAGE': Event(
+  MESSAGE = Event(
     'on_message',
     "{member.name} just posted in {channel.mention}",
     ('member.name', 'channel.mention')
   ), # Requires message content scope
-  'NEW_EMOJI': Event(
+  NEW_EMOJI = Event(
     'on_guild_emojis_update',
     "A new emoji has just been added; {emoji} - use it with :{emoji.name}:!",
     ('emoji', 'emoji.name')
   ),
-  'BAN': Event(
+  BAN = Event(
     'on_member_ban',
     "{user.name}#{user.discriminator} has been banned! Reason: {ban.reason}.",
     ('user.name', 'user.discriminator', 'ban.reason')
   ),
-  'UNBAN': Event(
+  UNBAN = Event(
     'on_member_unban',
     "{user.name}#{user.disciminator}'s ban has been lifted!",
     ('user.name', 'user.discriminator')
   ),
   # Time system
-  'DAILY': Event(
+  DAILY = Event(
     'on_day',
     "Daily post - {date.date}",
     ('date.date',),
     getdatecomponent
   ),
-  'WEEKLY': Event(
+  WEEKLY = Event(
     'on_week',
     "Weekly post - {date.week}",
     ('date.date', 'date.week'),
     getdatecomponent
   ),
-  'MONTHLY': Event(
+  MONTHLY = Event(
     'on_month',
     "Monthly post - {date.month}",
     ('date.date', 'date.month'),
     getdatecomponent
   ),
-  'QUARTERLY': Event(
+  QUARTERLY = Event(
     'on_quarter',
     "Quarterly post - Q{date.quarter}{date.shortyear}",
     ('date.date', 'date.quarter', 'date.year', 'date.shortyear'),
     getdatecomponent
   ),
-  'YEARLY': Event(
+  YEARLY = Event(
     'on_year',
     "Yearly post - {date.year}",
     ('date.date', 'date.year', 'date.shortyear'),
     getdatecomponent
   ),
   # XP system, does nothing unless XP module is enabled
-  'XP_UP': Event(
+  XP_UP = Event(
     'on_xp_up',
     "{member.mention} has gained XP; level {xp.level}, {xp} XP.",
     ('member.mention', 'member.name', 'xp.level', 'xp')
   ),
-  'LEVEL_UP': Event(
+  LEVEL_UP = Event(
     'on_level_up',
     "{member.mention} is now level {xp.level}!",
     ('member.mention', 'member.name', 'xp.level', 'xp')
   )
-}
 
 
-class Action(Enum):
+class Action(enum.Enum):
   """ Actions that can be performed on an event """
   NOTHING = 0
   SEND_MESSAGE = 1
@@ -214,7 +221,7 @@ class EventMsg(commands.Cog):
     newmessage = message
     for evar in event.variables:
       currentval: Optional[Union[
-        disnake.Member,disnake.User,disnake.Guild,disnake.Role,disnake.Emoji,Date
+        discord.Member,discord.User,discord.Guild,discord.Role,discord.Emoji,Date
       ]] = None
       evarparts = evar.split('.')
       if evarparts[0] in kwargs and kwargs[evarparts[0]] is not None:
@@ -235,7 +242,7 @@ class EventMsg(commands.Cog):
     return newmessage
 
   @commands.Cog.listener("on_raw_member_join")
-  async def on_welcome(self, member:disnake.Member):
+  async def on_welcome(self, member:discord.Member):
     """welcome service, shows a custom welcome message to new users"""
     if f"{member.guild.id}_welcome" in self.config:
       data = self.config[f"{member.guild.id}_welcome"].split(', ')
@@ -245,7 +252,7 @@ class EventMsg(commands.Cog):
       )
 
   @commands.Cog.listener("on_raw_member_leave")
-  async def on_farewell(self, payload:disnake.RawGuildMemberRemoveEvent):
+  async def on_farewell(self, payload:discord.RawMemberRemoveEvent):
     """farewell service, shows a custom farewell message whenever someone leaves"""
     if f"{payload.guild_id}_farewell" in self.config:
       data = self.config[f"{payload.guild_id}_farewell"].split(', ')
@@ -254,41 +261,41 @@ class EventMsg(commands.Cog):
       await channel.send(', '.join(data[1:])
                          .format(f"{payload.user.name}#{payload.user.discriminator}", guild.name))
 
-  class EventMessageEditor(disnake.ui.Modal):
+  class EventMessageEditor(discord.ui.Modal):
     """ Modal simply provides a text box to change the event message """
     def __init__(self, eventview:"EventMsg.EventEditView"):
       """ Create modal with the current message content """
       super().__init__(
         title="Edit event message",
         custom_id=f'{eventview.eid}_editor',
-        components=[disnake.ui.TextInput(
+        components=[discord.ui.TextInput(
           label="Message",
           custom_id='message',
           placeholder=eventview.message,
-          value=eventview.message,
-          style=disnake.TextInputStyle.paragraph,
+          default=eventview.message,
+          style=discord.TextStyle.paragraph,
           min_length=1
         )]
       )
 
       self.eventview = eventview
 
-    async def callback(self, inter:disnake.ModalInteraction, /):
+    async def on_submit(self, inter:discord.Interaction, /):
       """ Handle the new message content """
       self.eventview.message = inter.text_values['message']
       await self.eventview.update(inter)
 
-  class EventEditView(disnake.ui.View):
+  class EventEditView(discord.ui.View):
     """ Controls and state for an EventMessage """
     def __init__(
       self,
       parent:"EventMsg",
-      inter:disnake.GuildCommandInteraction,
+      inter:discord.Interaction,
       event:Event,
       action:Action,
       message:str,
       xp:int,
-      channel:disnake.TextChannel,
+      channel:discord.TextChannel,
       usage:str
     ):
       """ Create all buttons """
@@ -310,7 +317,7 @@ class EventMsg(commands.Cog):
           self.add_item(parent.bot.utilities.CallbackButton(
             callback=self.edit_click,
             label="Edit",
-            style=disnake.ButtonStyle.secondary,
+            style=discord.ButtonStyle.secondary,
             custom_id=f'{self.eid}_edit',
             emoji='✏️'
           ))
@@ -341,12 +348,12 @@ class EventMsg(commands.Cog):
         callback=self.submit_click,
         label="Submit",
         custom_id=f"{self.eid}_submit",
-        style=disnake.ButtonStyle.primary,
+        style=discord.ButtonStyle.primary,
         emoji='✅',
         disabled=True
       ))
 
-    async def update(self, inter:disnake.ModalInteraction):
+    async def update(self, inter:discord.Interaction):
       """ Refresh the view, reflecting any changes made to variables """
       state = self.parent.babel(inter, 'event_controlpanel',
                                 message=self.message,
@@ -354,7 +361,7 @@ class EventMsg(commands.Cog):
                                 xp=self.xp,
                                 usage=self.usage)
 
-      submitbtn:disnake.Button = [
+      submitbtn:discord.Button = [
         child for child in self.children if child.custom_id == f'{self.eid}_submit'
       ][0]
       if self.message:
@@ -364,15 +371,15 @@ class EventMsg(commands.Cog):
 
       await inter.response.edit_message(state, components=self.children)
 
-    async def edit_click(self, inter:disnake.MessageInteraction):
+    async def edit_click(self, inter:discord.Interaction):
       """ Opens the event message editor """
       await inter.response.send_modal(EventMsg.EventMessageEditor(self))
 
-    async def submit_click(self, inter:disnake.MessageInteraction):
+    async def submit_click(self, inter:discord.Interaction):
       """ Saves event to storage and finishes the interaction """
       pass
 
-    async def custom_click(self, inter:disnake.MessageInteraction):
+    async def custom_click(self, inter:discord.Interaction):
       """ Code to handle any other user input (Button or Select) """
       if inter.component.custom_id == 'edit_date':
         pass
@@ -387,30 +394,26 @@ class EventMsg(commands.Cog):
       for item in self.children:
         if 'disabled' in item:
           item.disabled = True
-      #await self.msg.edit(self.parent.bot.babel(self.msg.guild, 'error', 'timeoutview'))
+      #await self.msg.edit(content=self.parent.bot.babel(self.msg.guild, 'error', 'timeoutview'))
 
+  @app_commands.command()
+  @app_commands.describe(
+    channel="The target channel where the event message will be sent",
+    event="The event for the bot to watch for",
+    action="The action the bot will take in response"
+  )
+  @app_commands.default_permissions(moderate_members=True)
   @commands.bot_has_permissions(read_messages=True, manage_messages=True)
-  @commands.slash_command()
-  @commands.default_member_permissions(moderate_members=True)
   async def eventmessage(
     self,
-    inter:disnake.GuildCommandInteraction,
-    channel:disnake.TextChannel,
-    raw_event:str = commands.Param(name='event', choices=list(Events)),
-    raw_action:Action = commands.Param(name='action')
+    inter:discord.Interaction,
+    channel:discord.TextChannel,
+    event:Events,
+    action:Action
   ):
     """
     Set up a message/action to take whenever something happens on the server.
-
-    Parameters
-    ----------
-    channel: The target channel where the event message will be sent
-    event: The event for the bot to watch for
-    action: The action the bot will take in response
     """
-    event = Events[raw_event]
-    action = Action(raw_action)
-
     # Default state
     usage = ''
     message = ''
@@ -447,15 +450,15 @@ class EventMsg(commands.Cog):
       allowed_mentions=[]
     )
 
-  @commands.bot_has_permissions(read_messages=True, manage_messages=True)
-  @commands.guild_only()
-  @commands.slash_command()
-  @commands.default_member_permissions(administrator=True)
-  async def welcome(self, _):
-    """ An automation that posts a message whenever a member joins """
+  welcome = app_commands.Group(
+    name='welcome',
+    description="An automation that posts a message whenever a user joins",
+    guild_only=True,
+    default_permissions=discord.Permissions(administrator=True)
+  )
 
-  @welcome.sub_command(name='get')
-  async def welcome_get(self, inter:disnake.CommandInteraction):
+  @welcome.command(name='get')
+  async def welcome_get(self, inter:discord.Interaction):
     """ Gets the current welcome message. Otherwise, gives instructions on how to set one """
     if f'{inter.guild.id}_welcome' in self.config:
       data = self.config[f"{inter.guild.id}_welcome"].split(', ')
@@ -471,14 +474,11 @@ class EventMsg(commands.Cog):
         ephemeral=True
       )
 
-  @welcome.sub_command(name='set')
-  async def welcome_set(self, inter:disnake.CommandInteraction, message:str):
+  @welcome.command(name='set')
+  @app_commands.describe(message="The message that will be sent when a member joins.")
+  async def welcome_set(self, inter:discord.Interaction, message:str):
     """
       Sets the welcome message based on your input.
-
-      Parameters
-      ----------
-      message: The message that will be sent when a member joins.
     """
     self.config[f'{inter.guild.id}_welcome'] = f"{inter.channel.id}, {message}"
     self.bot.config.save()
@@ -487,8 +487,8 @@ class EventMsg(commands.Cog):
       ephemeral=True
     )
 
-  @welcome.sub_command(name='clear')
-  async def welcome_clear(self, inter:disnake.CommandInteraction):
+  @welcome.command(name='clear')
+  async def welcome_clear(self, inter:discord.Interaction):
     """ Clears the welcome message """
     if f'{inter.guild.id}_welcome' in self.config:
       self.config.pop(f'{inter.guild.id}_welcome')
@@ -503,15 +503,15 @@ class EventMsg(commands.Cog):
         ephemeral=True
       )
 
-  @commands.bot_has_permissions(read_messages=True, manage_messages=True)
-  @commands.guild_only()
-  @commands.slash_command()
-  @commands.default_member_permissions(administrator=True)
-  async def farewell(self, _):
-    """ An automation that posts a message whenever a user leaves """
+  farewell = app_commands.Group(
+    name='farewell',
+    description="An automation that posts a message whenever a user leaves",
+    guild_only=True,
+    default_permissions=discord.Permissions(administrator=True)
+  )
 
-  @farewell.sub_command(name='get')
-  async def farewell_get(self, inter:disnake.CommandInteraction):
+  @farewell.command(name='get')
+  async def farewell_get(self, inter:discord.Interaction):
     """ Gets the current farewell message. Otherwise, gives instructions on how to set one """
     if f'{inter.guild.id}_farewell' in self.config:
       data = self.config[f"{inter.guild.id}_farewell"].split(', ')
@@ -527,21 +527,18 @@ class EventMsg(commands.Cog):
         ephemeral=True
       )
 
-  @farewell.sub_command(name='set')
-  async def farewell_set(self, inter:disnake.CommandInteraction, message:str):
+  @farewell.command(name='set')
+  @app_commands.describe(message="The message that will be sent when a member joins.")
+  async def farewell_set(self, inter:discord.Interaction, message:str):
     """
       Sets the welcome message based on your input.
-
-      Parameters
-      ----------
-      message: The message that will be sent when a member joins.
     """
     self.config[f'{inter.guild.id}_farewell'] = f"{inter.channel.id}, {message}"
     self.bot.config.save()
     await inter.response.send_message(self.bot.babel(inter, 'greeter', 'farewell_set_success'))
 
-  @farewell.sub_command(name='clear')
-  async def farewell_clear(self, inter:disnake.CommandInteraction):
+  @farewell.command(name='clear')
+  async def farewell_clear(self, inter:discord.Interaction):
     """ Clears the farewell message """
     if f'{inter.guild.id}_farewell' in self.config:
       self.config.pop(f'{inter.guild.id}_farewell')
@@ -551,6 +548,6 @@ class EventMsg(commands.Cog):
       await inter.response.send_message(self.bot.babel(inter, 'greeter', 'farewell_clear_failure'))
 
 
-def setup(bot:MerelyBot):
+async def setup(bot:MerelyBot):
   """ Bind this cog to the bot """
-  bot.add_cog(EventMsg(bot))
+  await bot.add_cog(EventMsg(bot))

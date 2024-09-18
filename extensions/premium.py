@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import asyncio
 from typing import TYPE_CHECKING
-import disnake
-from disnake.ext import commands
+import discord
+from discord import app_commands
+from discord.ext import commands
 
 if TYPE_CHECKING:
   from main import MerelyBot
@@ -30,8 +31,8 @@ class Premium(commands.Cog):
     """ Shorthand for self.bot.babel(scope, key, **values) """
     return self.bot.babel(target, self.SCOPE, key, **values)
 
-  premiumguild: disnake.Guild
-  premiumroles: set[disnake.Role]
+  premiumguild: discord.Guild
+  premiumroles: set[discord.Role]
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
@@ -69,9 +70,15 @@ class Premium(commands.Cog):
     self.premiumguild = None
     self.premiumroles = set()
 
-    bot.add_app_command_check(
-      self.check_premium_slash_command, slash_commands=True, user_commands=True
-    )
+    # Add command checker
+    self.original_interaction_check = self.bot.tree.interaction_check
+    self.bot.tree.interaction_check = self.check_premium_slash_command
+
+  def cog_unload(self):
+    # Revert checker to default
+    self.bot.tree.interaction_check = self.original_interaction_check
+
+  # Event listeners
 
   @commands.Cog.listener('on_connect')
   async def cache_role(self):
@@ -93,41 +100,76 @@ class Premium(commands.Cog):
     if not self.premiumroles:
       raise Exception("The designated premium role was not found!")
 
-  async def check_premium(self, user:disnake.User | disnake.Member):
+  # Utils
+
+  async def check_premium(self, user:discord.User | discord.Member):
     try:
       member = await self.premiumguild.fetch_member(user.id)
-    except disnake.NotFound:
+    except discord.NotFound:
       return False
     else:
       return list(self.premiumroles & set(member.roles))
 
-  async def check_premium_slash_command(self, inter:disnake.CommandInteraction):
+  # Checks
+
+  async def check_premium_slash_command(self, inter:discord.Interaction) -> bool:
+    #TODO: maybe check other interaction types too?
+    if inter.type != discord.InteractionType.application_command:
+      return True
+
     restricted = self.config['restricted_commands'].split(' ')
     premium_users = [int(u) for u in self.config['premium_users'].split(' ') if u]
-    if inter.application_command.name in restricted:
-      if inter.author.id in premium_users:
+    if inter.command.name in restricted:
+      if inter.user.id in premium_users:
         return True # user is automatically premium through config
-      if await self.check_premium(inter.author):
+      if await self.check_premium(inter.user):
         return True # user is premium
       await inter.response.send_message(embed=self.error_embed(inter), ephemeral=True)
       return False # user is not premium
     return True # command is not restricted
 
-  def error_embed(self, inter:disnake.Interaction) -> disnake.Embed:
+  def error_embed(self, inter:discord.Interaction) -> discord.Embed:
     rolelist = self.bot.babel.string_list(inter, [r.name for r in self.premiumroles], True)
-    embed = disnake.Embed(
+    embed = discord.Embed(
       title=self.babel(inter, 'required_title'),
-      description=self.babel(inter, 'required_error', role=rolelist)
+      description=self.babel(inter, 'required_error')
     )
     embed.url = (
       self.config['patreon'] if self.config['patreon']
       else self.config['other']
     )
     embed.set_thumbnail(url=self.config['icon'])
+    embed.set_footer(text=self.babel(inter, 'required_advice', role=rolelist))
     return embed
 
-  @commands.slash_command()
-  async def premium(self, inter:disnake.CommandInteraction):
+  # Views
+
+  class PremiumView(discord.ui.View):
+    def __init__(self, inter:discord.Interaction, parent:Premium):
+      super().__init__(timeout=None)
+
+      url = None
+      if parent.config['patreon'] or parent.config['other']:
+        url = (
+          parent.config['patreon'] if parent.config['patreon']
+          else parent.config['other']
+        )
+
+      self.add_item(discord.ui.Button(
+        emoji='1️⃣',
+        label=parent.babel(inter, 'join_server_cta'),
+        url=parent.bot.config['help']['serverinv']
+      ))
+      self.add_item(discord.ui.Button(
+        emoji='2️⃣',
+        label=parent.babel(inter, 'subscribe_cta'),
+        url=url
+      ))
+
+  # Commands
+
+  @app_commands.command()
+  async def premium(self, inter:discord.Interaction):
     """
       Learn more about premium.
     """
@@ -145,7 +187,7 @@ class Premium(commands.Cog):
       fulldesc += '\n### ' + self.babel(inter, 'feature_custom')
       fulldesc += '\n' + self.babel(inter, 'feature_custom_desc')
 
-    embed = disnake.Embed(title=self.babel(inter, 'name'), description=fulldesc)
+    embed = discord.Embed(title=self.babel(inter, 'name'), description=fulldesc)
 
     if self.config['patreon'] or self.config['other']:
       embed.url = (
@@ -156,22 +198,12 @@ class Premium(commands.Cog):
       embed.set_thumbnail(url=self.config['icon'])
     embed.set_footer(text=self.babel(inter, 'fine_print'))
 
-    buttons = []
-    if self.bot.config['help']['serverinv']:
-      buttons.append(disnake.ui.Button(
-        emoji='1️⃣',
-        label=self.babel(inter, 'join_server_cta'),
-        url=self.bot.config['help']['serverinv']
-      ))
-      buttons.append(disnake.ui.Button(
-        emoji='2️⃣',
-        label=self.babel(inter, 'subscribe_cta'),
-        url=embed.url
-      ))
-
-    await inter.response.send_message(embed=embed, components=buttons)
+    await inter.response.send_message(
+      embed=embed,
+      view=self.PremiumView(inter, self) if self.bot.config['help']['serverinv'] else None
+    )
 
 
-def setup(bot:MerelyBot):
+async def setup(bot:MerelyBot):
   """ Bind this cog to the bot """
-  bot.add_cog(Premium(bot))
+  await bot.add_cog(Premium(bot))

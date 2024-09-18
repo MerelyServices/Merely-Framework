@@ -5,8 +5,9 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-import disnake
-from disnake.ext import commands
+import discord
+from discord import app_commands
+from discord.ext import commands
 import subprocess, os, glob, asyncio, shlex
 from urllib.parse import urlparse
 
@@ -61,20 +62,21 @@ class Example(commands.Cog):
     for f in files:
       os.remove(f)
 
+  @app_commands.command()
+  @app_commands.describe(
+    media_url="A link to almost any web page with a video. Doesn't work if payment is required."
+  )
+  @app_commands.allowed_contexts(guilds=True, private_channels=True)
+  @app_commands.allowed_installs(guilds=True, users=True)
   @commands.has_permissions(send_messages=True)
-  @commands.slash_command()
-  async def download(self, inter:disnake.CommandInteraction, media_url:str):
+  async def download(self, inter:discord.Interaction, media_url:str):
     """
       Download a video file and send it back as a message
-
-      Parameters
-      ----------
-      media_url: A link to almost any web page with a video. Doesn't work if payment is required.
     """
     if not uri_validator(media_url):
-      await inter.send("Media URL appears to be invalid. Not downloading.")
+      await inter.response.send_message("Media URL appears to be invalid. Not downloading.")
       return
-    await inter.response.defer(with_message=True)
+    await inter.response.defer(thinking=True)
     filenumber = self.runtime_counter
     self.runtime_counter += 1
     dlp = await asyncio.create_subprocess_shell(' '.join((
@@ -96,11 +98,11 @@ class Example(commands.Cog):
       logs += '```'+stderr.decode()+'```\n'
     filepath = os.path.join('tmp', f'{filenumber}.mp4')
     if os.path.exists(filepath):
-      await inter.edit_original_message(file=disnake.File(filepath))
+      await inter.edit_original_response(attachments=(discord.File(filepath),))
     else:
-      await inter.edit_original_message("Download failed;\n" + logs)
+      await inter.edit_original_response("Download failed;\n" + logs)
 
 
-def setup(bot:MerelyBot):
+async def setup(bot:MerelyBot):
   """ Bind this cog to the bot """
-  bot.add_cog(Example(bot))
+  await bot.add_cog(Example(bot))
