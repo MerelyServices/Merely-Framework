@@ -110,10 +110,10 @@ class Babel():
     guild_id:Optional[int] = None,
     inter:Optional[discord.Interaction] = None,
     debug:bool = False
-  ) -> tuple[list]:
+  ) -> list[str] | tuple[list[str], list[str]]:
     """ Creates a priority list of languages and reasons why they apply to this user or guild """
-    langs = []
-    dbg_origins = []
+    langs:list[str] = []
+    debug_origins:list[str] = []
 
     def resolv(locale:str, origin:str):
       """ Find the specific babel lang struct for this locale """
@@ -124,14 +124,14 @@ class Babel():
         # A language file was found
         langs.append(locale)
         if debug:
-          dbg_origins.append(origin)
+          debug_origins.append(origin)
         # Follow the inheritance chain
         locale = self.langs[langs[-1]].get('meta', 'inherit', fallback=None)
         # Loop interrupts if this chain has been followed before
         while locale and locale not in langs and locale in self.langs:
           langs.append(locale)
           if debug:
-            dbg_origins.append('inherit '+origin)
+            debug_origins.append('inherit '+origin)
           locale = self.langs[langs[-1]].get('meta', 'inherit', fallback=None)
 
     # Manually set language for user
@@ -156,7 +156,7 @@ class Babel():
 
     if not debug:
       return langs
-    return langs, dbg_origins
+    return langs, debug_origins
 
   def __call__(
     self,

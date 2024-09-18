@@ -11,7 +11,6 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import emoji as ej
-import re
 
 if TYPE_CHECKING:
   from main import MerelyBot
@@ -112,7 +111,7 @@ class ReactRoles(commands.Cog):
     changecount = 0
     guilds = set(m.guild for m in messages)
     for guild in guilds:
-      members = await guild.fetch_members().flatten()
+      members = [m for m in await guild.fetch_members()]
       pendingchanges: dict[discord.Member, dict[bool, set[discord.Role]]]
       pendingchanges = {m: {True: set(), False: set()} for m in members}
 
@@ -128,7 +127,7 @@ class ReactRoles(commands.Cog):
                 if not reacts:
                   continue
                 react = reacts[0]
-                reactors = await react.users().flatten()
+                reactors = [u for u in await react.users()]
                 for member in members:
                   if member == self.bot.user or member.bot:
                     continue
@@ -166,13 +165,13 @@ class ReactRoles(commands.Cog):
       try:
         ch = await self.bot.fetch_channel(chid)
         msg = await ch.fetch_message(msgid)
+        self.watching[msg.id] = msg
       except discord.NotFound:
         self.config.pop(key)
         deleted += 1
       except Exception as e:
         print(f"failed to get reactionrole message {msgid} from channel {chid}. {e}")
         continue
-      self.watching[msg.id] = msg
     changes = await self.catchup(self.watching.values())
     print("reactroles catchup ended. Delta: ", changes, "Deletes: ", deleted)
     if deleted:
@@ -183,6 +182,8 @@ class ReactRoles(commands.Cog):
     """ Remove message from config so it won't attempt to load it again """
     for k in self.config.keys():
       if k.split('_')[1] == str(message.id):
+        if not self.bot.quiet:
+          print("Removed", k, "from reactroles config.")
         self.config.pop(k)
         self.bot.config.save()
         break
@@ -192,7 +193,7 @@ class ReactRoles(commands.Cog):
       self.drafts.pop(message.channel.id)
 
   @commands.Cog.listener("on_raw_reaction_add")
-  async def reactrole_reaction_add(self, data:disnake.RawReactionActionEvent):
+  async def reactrole_reaction_add(self, data:discord.RawReactionActionEvent):
     """ Grant the user their role """
     if data.user_id == self.bot.user.id or data.guild_id is None:
       return
@@ -208,7 +209,7 @@ class ReactRoles(commands.Cog):
         await self.change_roles(data.member, give=roles)
 
   @commands.Cog.listener("on_raw_reaction_remove")
-  async def reactrole_reaction_remove(self, data:disnake.RawReactionActionEvent):
+  async def reactrole_reaction_remove(self, data:discord.RawReactionActionEvent):
     """ Take back roles """
     if data.guild_id is None:
       return
@@ -235,12 +236,12 @@ class ReactRoles(commands.Cog):
   @commands.Cog.listener("on_raw_reaction_clear")
   @commands.Cog.listener("on_raw_reaction_clear_emoji")
   async def reactrole_reaction_clear(
-    self, data:(disnake.RawReactionClearEvent | disnake.RawReactionClearEmojiEvent)
+    self, data:(discord.RawReactionClearEvent | discord.RawReactionClearEmojiEvent)
   ):
     if data.channel_id in self.drafts and data.message_id == self.drafts[data.channel_id].msg.id:
       # Remove reactroles if the original reaction is removed while in draft mode
       #NOTE: This will cause issues if another way to remove reactroles is added
-      if isinstance(data, disnake.RawReactionClearEmojiEvent):
+      if isinstance(data, discord.RawReactionClearEmojiEvent):
         if data.emoji.is_unicode_emoji():
           emoji = str(data.emoji)
         else:
@@ -255,7 +256,7 @@ class ReactRoles(commands.Cog):
 
   # Views
 
-  class ReactRoleEditorView(disnake.ui.View):
+  class ReactRoleEditorView(discord.ui.View):
     """ Draft ReactRole message state and editor """
     #TODO: make it possible to reopen this editor later
     msg:discord.Message
@@ -300,18 +301,18 @@ class ReactRoles(commands.Cog):
       self.save_button.disabled = True
       await self.msg.edit(view=self)
 
-    @disnake.ui.button(style=discord.ButtonStyle.green, emoji='❔')
-    async def add_reaction_button(self, _:disnake.Button, inter:discord.Interaction):
+    @discord.ui.button(style=discord.ButtonStyle.green, emoji='❔')
+    async def add_reaction_button(self, inter:discord.Interaction, _:discord.Button):
       """ Sends the command needed to add a reaction (and associated roles) """
       self.parent.bot.auth.admins(inter)
 
       await inter.response.send_message(
-        self.parent.babel(inter, 'howto_add_reaction', cmd='/reactrole_add'),
+        self.parent.babel(inter, 'howto_add_reaction', cmd='reactrole_add'),
         ephemeral=True
       )
 
-    @disnake.ui.button(style=discord.ButtonStyle.primary, emoji='💾', disabled=True)
-    async def save_button(self, _:disnake.Button, inter:discord.Interaction):
+    @discord.ui.button(style=discord.ButtonStyle.primary, emoji='💾', disabled=True)
+    async def save_button(self, inter:discord.Interaction, _:discord.Button):
       """ Saves the reactrole message to storage so it will start to take effect """
       self.parent.bot.auth.admins(inter)
 
@@ -333,9 +334,26 @@ class ReactRoles(commands.Cog):
       self.save_button.disabled = True
       self.add_reaction_button.disabled = True
       try:
-        await self.msg.edit(content=self.parent.bot.babel(self.msg.guild, 'error', 'timeoutview'))
+        await self.msg.edit(
+          content=self.parent.bot.babel(self.msg.guild, 'error', 'timeoutview'),
+          view=self
+        )
       except discord.HTTPException:
         pass
+
+  # Utilities
+
+  def find_locale(self, inter:discord.Interaction):
+    """ Determine the locale of the user, based on config and server settings """
+    langs = self.bot.babel.resolve_lang(inter.user.id, inter.guild_id, inter)
+    i = 0
+    lang = langs[i]
+    if prefix := self.bot.config['language']['prefix']:
+      # Overlay support: continue down the chain of inheritance until a base language is found
+      while lang.startswith(prefix):
+        i += 1
+        lang = langs[i]
+    return lang
 
   # Commands
 
@@ -360,36 +378,48 @@ class ReactRoles(commands.Cog):
       Add a reaction and the corresponding roles to a prompt in edit mode.
     """
     emoji = emoji.strip()
-    lang = self.bot.babel.resolve_lang(inter.user.id, inter.guild_id, inter)[0]
+    lang = self.find_locale(inter)
     all_emoji = ej.unicode_codes.get_emoji_unicode_dict(lang)
 
     if inter.channel_id not in self.drafts:
       await inter.response.send_message(self.babel(inter, 'no_draft'), ephemeral=True)
       return
     foundemoji:discord.Emoji | str
-    if ej.is_emoji(emoji.split()[0]):
+    if ej.is_emoji(emoji):
       # Emoji keyboard emoji
-      foundemoji = emoji.split()[0]
-    elif match := re.match(r'<a?:[\w\d\_]+:([\d]+)>', emoji):
+      foundemoji = emoji
+    elif emoji.isdigit():
       # Discord server emoji (by id)
-      match:re.Match[str]
       try:
-        foundemoji = await inter.guild.fetch_emoji(int(match.groups()[0]))
+        foundemoji = await inter.guild.fetch_emoji(int(emoji))
       except discord.NotFound:
         await inter.response.send_message(self.babel(inter, 'no_emoji'), ephemeral=True)
         return
-    elif match := [e for e in inter.guild.emojis if e.name == emoji.replace(':', '')]:
+    elif matches := [e for e in inter.guild.emojis if e.name == emoji.replace(':', '')]:
       # Discord server emoji (by name)
-      foundemoji = match[0]
-    elif match := [e for e in all_emoji if e == emoji or e == f':{emoji}:']:
+      foundemoji = matches[0]
+    elif emoji.replace(':', '') in all_emoji:
       # UTF Emoji (by name)
-      foundemoji = all_emoji[emoji]
+      foundemoji = all_emoji[emoji.replace(':', '')]
     else:
       await inter.response.send_message(self.babel(inter, 'no_emoji'), ephemeral=True)
       return
 
     roles = set((role1, role2, role3))
-    roles.remove(None)
+    if None in roles:
+      roles.remove(None)
+    unassignable = []
+    for role in roles:
+      if not role.is_assignable():
+        unassignable.append('"'+role.name+'"')
+    if unassignable:
+      await inter.channel.send(self.babel(
+        inter,
+        'warn_unassignable',
+        myrole=inter.guild.me.top_role.name,
+        roles=self.bot.babel.string_list(inter, unassignable)
+      ))
+
     await self.drafts[inter.channel_id].add_reactroles(foundemoji, list(roles))
     await inter.response.send_message(self.babel(inter, 'emoji_added'), ephemeral=True)
 
@@ -397,15 +427,17 @@ class ReactRoles(commands.Cog):
   async def ac_emoji(self, inter:discord.Interaction, search:str):
     """ Autocomplete for emoji search """
     search = search.strip()
-    lang = self.bot.babel.resolve_lang(inter.user.id, inter.guild_id, inter)[0]
+    lang = self.find_locale(inter)
     all_emoji = ej.unicode_codes.get_emoji_unicode_dict(lang)
 
     results = [
-      f':{e.name}:' for e in inter.guild.emojis
+      app_commands.Choice(name=f':{e.name}:', value=str(e.id))
+      for e in inter.guild.emojis
       if search.replace(':','').lower() in e.name.lower()
       or f'{e.name}:{e.id}' in search
     ] + [
-      f'{all_emoji[e]} {e} (built in)' for e in all_emoji
+      app_commands.Choice(name=f'{all_emoji[e]} {e} (built in)', value=all_emoji[e])
+      for e in all_emoji
       if search.lower().replace(':','') in e.lower()
       or search == all_emoji[e]
     ]
@@ -424,14 +456,15 @@ class ReactRoles(commands.Cog):
       await inter.response.send_message(self.babel(inter, 'draft_in_progress'))
       return
     #TODO: save drafts to storage
-    self.drafts[inter.channel_id] = self.ReactRoleEditorView(self, inter, prompt)
-    await inter.response.send_message(prompt, view=self.drafts[inter.channel_id])
+    self.drafts[inter.channel_id] = self.ReactRoleEditorView(self, inter, topic)
+    await inter.response.send_message(topic, view=self.drafts[inter.channel_id])
     self.drafts[inter.channel_id].msg = await inter.original_response()
     await inter.followup.send(
-      self.babel(inter, 'howto_add_reaction', cmd='/reactrole_add'),
+      self.babel(inter, 'howto_add_reaction', cmd='reactrole_add'),
       ephemeral=True
     )
 
 
-def setup(bot:MerelyBot):
-  bot.add_cog(ReactRoles(bot))
+async def setup(bot:MerelyBot):
+  """ Bind this cog to the bot """
+  await bot.add_cog(ReactRoles(bot))
