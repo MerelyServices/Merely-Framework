@@ -62,6 +62,10 @@ Data must be retreived manually, or just talk to the existing components as thei
 - `inter.data.custom_id` is now `inter.data.get('custom_id')`
 
 ---
+### Calling commands internally is a little different
+Instead of `self.command(inter)`, you need to call `self.command.callback(self, inter)`
+
+---
 ### Most interaction events are not available
 Instead we rely upon the low-level `on_interaction` event, or use Object callbacks
 - `on_button_click`, `on_select` no longer exist
