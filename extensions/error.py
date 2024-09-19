@@ -41,11 +41,12 @@ class Error(commands.Cog):
     error:app_commands.AppCommandError
   ):
     """ Report to the user what went wrong """
+    send = (inter.followup.send if inter.response.is_done() else inter.response.send_message)
     print("error detected")
     try:
       if isinstance(error, app_commands.CommandOnCooldown):
         if error.cooldown.get_retry_after() > 5:
-          await inter.response.send_message(
+          await send(
             self.babel(inter, 'cooldown', t=int(error.cooldown.get_retry_after())),
             ephemeral=True
           )
@@ -58,31 +59,31 @@ class Error(commands.Cog):
         (app_commands.CommandNotFound, commands.BadArgument, commands.MissingRequiredArgument)
       ):
         if 'Help' in self.bot.cogs:
-          await inter.response.send_message(
+          await send(
             self.bot.cogs['Help'].resolve_docs(inter, inter.command.name),
             **kwargs
           )
         else:
-          await inter.response.send_message(self.babel(inter, 'missingrequiredargument'), **kwargs)
+          await send(self.babel(inter, 'missingrequiredargument'), **kwargs)
         return
       if isinstance(error, app_commands.NoPrivateMessage):
-        await inter.response.send_message(self.babel(inter, 'noprivatemessage'), **kwargs)
+        await send(self.babel(inter, 'noprivatemessage'), **kwargs)
         return
       if isinstance(error, commands.PrivateMessageOnly):
-        await inter.response.send_message(self.babel(inter, 'privatemessageonly'), **kwargs)
+        await send(self.babel(inter, 'privatemessageonly'), **kwargs)
         return
       if isinstance(error, (app_commands.BotMissingPermissions, app_commands.MissingPermissions)):
         permlist = self.bot.babel.string_list(inter, [f'`{p}`' for p in error.missing_permissions])
         me = isinstance(error, app_commands.BotMissingPermissions)
-        await inter.response.send_message(
+        await send(
           self.babel(inter, 'missingperms', me=me, perms=permlist), **kwargs
         )
         return
       if isinstance(error, app_commands.CommandInvokeError):
         if isinstance(error.original, self.bot.auth.AuthError):
-          await inter.response.send_message(str(error.original), **kwargs)
+          await send(str(error.original), **kwargs)
           return
-        await inter.response.send_message(
+        await send(
           self.babel(inter, 'commanderror', error=str(error.original)), **kwargs
         )
         raise error.original
