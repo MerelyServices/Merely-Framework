@@ -55,9 +55,9 @@ class Babel():
     if path != 'babel':
       self.backup_path = 'babel'
     self.config = config
-    self.filter_conditional = re.compile(r'{([a-z]*?)\?(.*?)\|(.*?)}')
-    self.filter_configreference = re.compile(r'{c\:([a-z_]*?)\/([a-z_]*?)}')
-    self.filter_commandreference = re.compile(r'{p\:([a-z_ -]*?)}')
+    self.filter_conditional = re.compile(r'{([a-z0-9]*?)\?(.*?)\|(.*?)}')
+    self.filter_configreference = re.compile(r'{c\:([a-z0-9_]*?)\/([a-z0-9_]*?)}')
+    self.filter_commandreference = re.compile(r'{p\:([a-z0-9_ -]*?)}')
     self.load()
 
   def load(self):
