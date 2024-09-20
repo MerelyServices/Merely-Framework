@@ -282,7 +282,7 @@ class EventMsg(commands.Cog):
 
     async def on_submit(self, inter:discord.Interaction, /):
       """ Handle the new message content """
-      self.eventview.message = inter.text_values['message']
+      self.eventview.message = inter.data.get('values')['message']
       await self.eventview.update(inter)
 
   class EventEditView(discord.ui.View):
@@ -369,7 +369,7 @@ class EventMsg(commands.Cog):
       else:
         submitbtn.disabled = True
 
-      await inter.response.edit_message(state, components=self.children)
+      await inter.response.edit_message(content=state, components=self.children)
 
     async def edit_click(self, inter:discord.Interaction):
       """ Opens the event message editor """

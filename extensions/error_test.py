@@ -35,8 +35,8 @@ class ErrorTest(commands.Cog):
     bot.tree.add_command(self.throw_error_ctx_msg)
 
   async def cog_unload(self) -> None:
-    self.bot.tree.remove_command(self.throw_error_ctx_user.name, type=discord.AppCommandType.user)
-    self.bot.tree.remove_command(self.throw_error_ctx_msg.name, type=discord.AppCommandType.message)
+    self.bot.tree.remove_command(self.throw_error_ctx_user.name, type=self.throw_error_ctx_user.type)
+    self.bot.tree.remove_command(self.throw_error_ctx_msg.name, type=self.throw_error_ctx_msg.type)
 
   async def throw_error_ctx_user_callback(self, _:discord.Interaction, _1:discord.User):
     """ Throws an error for testing """

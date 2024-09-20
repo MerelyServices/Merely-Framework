@@ -213,12 +213,12 @@ class Help(commands.Cog):
     )
 
   @help.autocomplete('command')
-  async def ac_command(self, _:discord.Interaction, command:str):
+  async def ac_command(self, _:discord.Interaction, search:str):
     """ find any commands that contain the provided string """
     matches = []
     hide = self.config.get('hidden_commands', fallback='').split(', ')
     for cmd in self.bot.tree.walk_commands():
-      if command in cmd.name and cmd.name not in hide:
+      if search in cmd.name and cmd.name not in hide:
         commandname = (cmd.root_parent.name + ' ' if cmd.root_parent else '') + cmd.name
         matches.append(app_commands.Choice(name=commandname, value=commandname))
     return matches[0:25]

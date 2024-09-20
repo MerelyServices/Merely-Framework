@@ -89,6 +89,10 @@ Instead we rely upon the low-level `on_interaction` event, or use Object callbac
 - `load_extension` must be async, alongside Cog setup functions and bot.add_cog
 
 ---
+### `getch` methods no longer exist
+These handy methods automatically use fetch or get depending on cache, you will need to do this manually now
+
+---
 ### `TextInput.value` is now `TextInput.default`
 
 ---
