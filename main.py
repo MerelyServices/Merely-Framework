@@ -4,7 +4,7 @@
   Created by Yiays and contributors
 """
 
-import sys, time, os, re, glob, importlib
+import sys, time, os, re, glob, importlib, logging
 from itertools import groupby
 from packaging import version
 import discord
@@ -259,7 +259,7 @@ if __name__ == '__main__':
       try:
         # Create autorestart marker
         open('.restart', 'a').close()
-        bot.run(token)
+        bot.run(token, log_level=logging.DEBUG if bot.verbose else logging.ERROR)
         if not bot.restart:
           # Tell the batch/shell script that the bot does not want to restart
           os.remove('.restart')
