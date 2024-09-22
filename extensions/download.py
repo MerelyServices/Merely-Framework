@@ -9,7 +9,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import subprocess, os, glob, asyncio, shlex
-from urllib.parse import urlparse
+from urllib.parse import urlparse, ParseResult
 
 if TYPE_CHECKING:
   from main import MerelyBot
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 def uri_validator(x):
     try:
-        result = urlparse(x)
+        result:ParseResult = urlparse(x)
         return all([result.scheme, result.netloc])
     except AttributeError:
         return False
