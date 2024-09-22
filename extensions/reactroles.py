@@ -227,7 +227,7 @@ class ReactRoles(commands.Cog):
         await self.watching[data.message_id].add_reaction(data.emoji)
     else:
       # Member potentially removed their reaction to a reactrole
-      member = await self.bot.get_guild(data.guild_id).getch_member(data.user_id)
+      member = await self.bot.get_guild(data.guild_id).fetch_member(data.user_id)
       emojiid = data.emoji if data.emoji.is_unicode_emoji() else data.emoji.id
       roleconfid = f"{data.channel_id}_{data.message_id}_{emojiid}_roles"
       if roles := await self.get_roles(member.guild, roleconfid):
