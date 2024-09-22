@@ -96,7 +96,7 @@ class Example(commands.Cog):
     if os.path.exists(filepath):
       await inter.edit_original_response(attachments=(discord.File(filepath),))
     else:
-      await inter.edit_original_response("Download failed;\n" + logs)
+      await inter.edit_original_response(self.babel(inter, 'failed', log=logs))
 
 
 async def setup(bot:MerelyBot):
