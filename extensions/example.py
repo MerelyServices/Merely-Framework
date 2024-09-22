@@ -59,6 +59,8 @@ class Example(commands.Cog):
     # babel will return "{JOINED: user=member.name}" until a string is added to en.ini
 
   @app_commands.command()
+  @app_commands.allowed_contexts(guilds=True, private_channels=True)
+  @app_commands.allowed_installs(guilds=True, users=True)
   async def example(self, inter:discord.Interaction, echo:str):
     """ Just a simple echo command """
     await inter.response.send_message(echo, ephemeral=True)

@@ -84,7 +84,7 @@ class Config(ConfigParser):
     if 'beta' not in self['main']:
       self['main']['beta'] = 'False'
     if 'ver' not in self['main']:
-      self['main']['ver'] = ''
+      self['main']['ver'] = '0'
     elif (
       self.reference and
       version.parse(self.reference['main']['ver']) > version.parse(self['main']['ver'])
@@ -117,12 +117,20 @@ class Config(ConfigParser):
       self['intents']['presences'] = 'False'
     if 'message_content' not in self['intents']:
       self['intents']['message_content'] = 'False'
+    if 'bans' not in self['intents']:
+      self['intents']['bans'] = 'False'
+    if 'scheduled_events' not in self['intents']:
+      self['intents']['scheduled_events'] = 'False'
+    if 'auto_moderation' not in self['intents']:
+      self['intents']['auto_moderation'] = 'False'
     if 'messages' not in self['intents']:
-      self['intents']['messages'] = 'False'
+      self['intents']['messages'] = 'none'
     if 'reactions' not in self['intents']:
-      self['intents']['reactions'] = 'False'
+      self['intents']['reactions'] = 'none'
     if 'typing' not in self['intents']:
-      self['intents']['typing'] = 'False'
+      self['intents']['typing'] = 'none'
+    if 'polls' not in self['intents']:
+      self['intents']['polls'] = 'none'
 
     # Language section (babel)
     if 'language' not in self.sections():

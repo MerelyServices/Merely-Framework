@@ -66,7 +66,7 @@ class Example(commands.Cog):
   @app_commands.describe(
     media_url="A link to almost any web page with a video. Doesn't work if payment is required."
   )
-  @app_commands.allowed_contexts(guilds=True, private_channels=True)
+  @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
   @app_commands.allowed_installs(guilds=True, users=True)
   @commands.has_permissions(send_messages=True)
   async def download(self, inter:discord.Interaction, media_url:str):
