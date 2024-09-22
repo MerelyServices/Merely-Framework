@@ -37,6 +37,8 @@ class Dice(commands.Cog):
     sides="The number of sides on your dice, separate with commas for multiple dice"
   )
   @app_commands.default_permissions(send_messages=True)
+  @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+  @app_commands.allowed_installs(guilds=True, users=True)
   async def dice(self, inter:discord.Interaction, sides:str = '6'):
     """
     Roll an n-sided dice
