@@ -34,6 +34,7 @@ class Emoji(commands.Cog):
 
   @app_commands.command()
   @app_commands.describe(search="Start typing to refine your search")
+  @app_commands.allowed_contexts(guilds=True)
   async def emoji(self, inter:discord.Interaction, search:str):
     """
     Searches emojis from all servers merely is a part of for one to use
