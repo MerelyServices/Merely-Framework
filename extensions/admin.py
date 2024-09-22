@@ -99,7 +99,7 @@ class Admin(commands.Cog):
     self,
     inter:discord.Interaction,
     number:Optional[app_commands.Range[int, 1, 10000]],
-    clean_to:Optional[app_commands.Range[float, 10000000000000000]] = None,
+    clean_to:Optional[app_commands.Range[str, 10, 32]] = None,
     strict:bool = False
   ):
     """
@@ -111,8 +111,7 @@ class Admin(commands.Cog):
         deleted = await inter.channel.purge(
           limit=number if number else 1000,
           check=lambda m: self.check_delete(m, strict),
-          before=await inter.original_response(),
-          after=clean_to
+          after=discord.Object(int(clean_to))
         )
       else:
         deleted = await inter.channel.purge(
@@ -120,9 +119,9 @@ class Admin(commands.Cog):
           check=lambda m: self.check_delete(m, strict),
           before=await inter.original_response()
         )
-      await inter.response.send_message(self.babel(inter, 'clean_success', n=len(deleted)))
+      await inter.followup.send(self.babel(inter, 'clean_success', n=len(deleted)))
     except discord.errors.Forbidden:
-      await inter.response.send_message(self.babel(inter, 'clean_failed'))
+      await inter.followup.send(self.babel(inter, 'clean_failed'))
 
 
 async def setup(bot:MerelyBot):

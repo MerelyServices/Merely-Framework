@@ -98,3 +98,6 @@ These handy methods automatically use fetch or get depending on cache, you will 
 ---
 ### `allowed_contexts` and `allowed_installs` cannot be mixed with `_guild_ids`
 
+---
+### `Channel.purge(before, after)` no longer accept `int`s.
+Provide a `discord.Object(id)` instead
