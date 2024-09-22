@@ -111,7 +111,7 @@ class ReactRoles(commands.Cog):
     changecount = 0
     guilds = set(m.guild for m in messages)
     for guild in guilds:
-      members = [m for m in await guild.fetch_members()]
+      members = [m async for m in guild.fetch_members()]
       pendingchanges: dict[discord.Member, dict[bool, set[discord.Role]]]
       pendingchanges = {m: {True: set(), False: set()} for m in members}
 
@@ -127,7 +127,7 @@ class ReactRoles(commands.Cog):
                 if not reacts:
                   continue
                 react = reacts[0]
-                reactors = [u for u in await react.users()]
+                reactors = [u async for u in react.users()]
                 for member in members:
                   if member == self.bot.user or member.bot:
                     continue
