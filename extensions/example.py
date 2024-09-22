@@ -33,8 +33,8 @@ class Example(commands.Cog):
   def __init__(self, bot:MerelyBot):
     self.bot = bot
     # ensure config file has required data
-    if not bot.config.has_section(self.SCOPE):
-      bot.config.add_section(self.SCOPE)
+    #if not bot.config.has_section(self.SCOPE):
+      #bot.config.add_section(self.SCOPE)
 
   def controlpanel_settings(self, inter:discord.Interaction):
     # ControlPanel integration - use this when you want to allow users / guilds to change preferences

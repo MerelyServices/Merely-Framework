@@ -36,6 +36,8 @@ class Language(commands.Cog):
   def __init__(self, bot:MerelyBot):
     self.bot = bot
     # ensure config file has required data
+    # There are more keys which are handled in config.py
+    # This is because they need to exist before the bot can start
     if not bot.config.has_section(self.SCOPE):
       bot.config.add_section(self.SCOPE)
     if 'show_in_controlpanel' not in self.config:

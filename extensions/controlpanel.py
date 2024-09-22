@@ -167,9 +167,6 @@ class ControlPanel(commands.Cog):
   def __init__(self, bot:MerelyBot):
     self.bot = bot
     self.section_styles:dict[str, discord.ButtonStyle] = {}
-    # ensure config file has required data
-    #if not bot.config.has_section(self.SCOPE):
-    #  bot.config.add_section(self.SCOPE)
 
   # Events
 

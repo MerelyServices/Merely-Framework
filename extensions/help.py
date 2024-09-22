@@ -51,13 +51,15 @@ class Help(commands.Cog):
     if 'highlight_sections' not in self.config:
       self.config['highlight_sections'] = '💡 learn'
       if 'learn_highlights' not in self.config:
-        self.config['learn_highlights'] = self.SCOPE
+        self.config['learn_highlights'] = 'help'
     if 'future_commands' not in self.config:
       self.config['future_commands'] = ''
     if 'obsolete_commands' not in self.config:
       self.config['obsolete_commands'] = ''
     if 'hidden_commands' not in self.config:
       self.config['hidden_commands'] = ''
+    if 'moved_commands' not in self.config:
+      self.config['moved_commands'] = ''
     if 'changelog' not in self.config:
       self.config['changelog'] = '> '+bot.config['main']['ver']+'\n- No changes yet!'
     elif (

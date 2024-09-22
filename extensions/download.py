@@ -44,10 +44,6 @@ class Example(commands.Cog):
     self.bot = bot
     self.runtime_counter = 0
 
-    # ensure config file has required data
-    if not bot.config.has_section(self.SCOPE):
-      bot.config.add_section(self.SCOPE)
-
     # check yt-dlp is installed
     try:
       out = subprocess.check_output(['yt-dlp', '--version'])
