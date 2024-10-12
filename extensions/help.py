@@ -11,6 +11,7 @@ from typing import Optional, TYPE_CHECKING
 import discord
 from discord import app_commands
 from discord.ext import commands
+import aiohttp
 
 if TYPE_CHECKING:
   from main import MerelyBot
@@ -44,8 +45,8 @@ class Help(commands.Cog):
       self.config['changelogurl'] = ''
     if 'codeurl' not in self.config:
       self.config['codeurl'] = ''
-    if 'helpurlvideoexamples' not in self.config:
-      self.config['helpurlvideoexamples'] = ''
+    if 'video_tutorial_url_pattern' not in self.config:
+      self.config['video_tutorial_url_pattern'] = ''
     if 'serverinv' not in self.config:
       self.config['serverinv'] = ''
     if 'highlight_sections' not in self.config:
@@ -105,12 +106,24 @@ class Help(commands.Cog):
           return [sc for sc in cmd.commands if sc.name == splitsearch[1]][0]
     return None
 
-  def get_docs(self, inter:discord.Interaction, command:app_commands.Command):
+  async def get_docs(self, inter:discord.Interaction, command:app_commands.Command):
     """ find documentation for this command in babel """
     reslang = self.bot.babel.resolve_lang(
       inter.user.id, inter.guild.id if inter.guild else None, inter
     )
     commandname = (command.root_parent.name + ' ' if command.root_parent else '') + command.name
+
+    video_url = ''
+    if pattern := self.config.get('video_tutorial_url_pattern'):
+      video_url = pattern.replace('{}', commandname)
+      session_timeout = aiohttp.ClientTimeout(2)
+      async with aiohttp.ClientSession(timeout=session_timeout) as session:
+        async with session.head(video_url, allow_redirects=True) as res:
+          if res.status == 200:
+            video_url += '\n'
+          else:
+            video_url = ''
+
     for reflang in reslang:
       reflang = self.bot.babel.langs[reflang]
       for key in reflang.keys():
@@ -120,7 +133,7 @@ class Help(commands.Cog):
               inter, key, f"command_{commandname.replace(' ', '_')}_help", cmd=commandname
             ).splitlines()
           )
-          docs = f'**{docsrc[0]}**'
+          docs = video_url + f'**{docsrc[0]}**'
           if len(docsrc) > 1:
             docs += '\n'+docsrc[1]
           if len(docsrc) > 2:
@@ -128,8 +141,8 @@ class Help(commands.Cog):
               docs += '\n*'+line+'*'
           return docs
     # Return the docstring otherwise
-    mentionline = (
-      f'**{self.bot.babel.mention_command(command.name)}' + (' ' if command.parameters else '')
+    mentionline = video_url + (
+      f'**{self.bot.babel.mention_command(commandname)}' + (' ' if command.parameters else '')
     )
     autodoc = command.description + ('\n' if command.parameters else '')
     for param in command.parameters:
@@ -137,12 +150,12 @@ class Help(commands.Cog):
       autodoc += '\n' + f'*{param.name}: {param.description}*'
     return mentionline + '**\n' + autodoc
 
-  def resolve_docs(self, inter:discord.Interaction, search:str):
+  async def resolve_docs(self, inter:discord.Interaction, search:str):
     """
       Find documentation for any command
     """
     if command := self.find_command(search):
-      docs = self.get_docs(inter, command)
+      docs = await self.get_docs(inter, command)
       if docs is not None:
         # we found the documentation
         return docs
@@ -178,7 +191,8 @@ class Help(commands.Cog):
       A repository of all the information you should need to use this bot
     """
     if command:
-      await inter.response.send_message(self.resolve_docs(inter, command))
+      await inter.response.defer()
+      await inter.followup.send(await self.resolve_docs(inter, command))
       return
 
     # show the generic help embed with a variety of featured commands
@@ -187,7 +201,7 @@ class Help(commands.Cog):
       description=self.babel(
         inter,
         'introduction',
-        videoexamples=bool(self.config['helpurlvideoexamples']),
+        videoexamples=bool(self.config['video_tutorial_url_pattern']),
         serverinv=self.config['serverinv']
       ),
       color=int(self.bot.config['main']['themecolor'], 16),
@@ -253,7 +267,7 @@ class Help(commands.Cog):
     embed.add_field(
       name=self.babel(inter, 'about_field3_title'),
       value=self.babel(inter, 'about_field3_value',
-                       videoexamples=self.config.getboolean('helpurlvideoexamples'),
+                       videoexamples=self.config.getboolean('video_tutorial_url_pattern'),
                        serverinv=self.config['serverinv']),
       inline=False
     )

@@ -60,7 +60,7 @@ class Error(commands.Cog):
       ):
         if 'Help' in self.bot.cogs:
           await send(
-            self.bot.cogs['Help'].resolve_docs(inter, inter.command.name),
+            await self.bot.cogs['Help'].resolve_docs(inter, inter.command.name),
             **kwargs
           )
         else:

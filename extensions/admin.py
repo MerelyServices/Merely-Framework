@@ -121,8 +121,10 @@ class Admin(commands.Cog):
           before=await inter.original_response()
         )
       await inter.followup.send(self.babel(inter, 'clean_success', n=len(deleted)))
-    except discord.errors.Forbidden:
+    except discord.Forbidden:
       await inter.followup.send(self.babel(inter, 'clean_failed'))
+    except discord.NotFound:
+      pass
 
 
 async def setup(bot:MerelyBot):
