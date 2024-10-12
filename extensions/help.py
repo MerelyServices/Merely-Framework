@@ -330,15 +330,18 @@ class Help(commands.Cog):
   async def ac_version(self, _:discord.Interaction, search:str):
     """ find any matching versions """
     matches = []
+    foundver = []
     iver = '0'
     for line in self.config['changelog'].splitlines():
       if line.startswith('> '):
         iver = line[2:]
-      if search.lower() in line.lower() and iver not in matches:
-        matches.append(iver)
+      if search.lower() in line.lower() and iver not in foundver:
+        matches.append(app_commands.Choice(name=iver, value=iver))
+        foundver.append(iver)
 
+    ellipse = app_commands.Choice(name='...', value='')
     if len(matches) > 25:
-      matches = [matches[0], '...'] + matches[len(matches) - 23:]
+      matches = [matches[0], ellipse] + matches[len(matches) - 23:]
     return matches
 
 

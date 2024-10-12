@@ -241,7 +241,7 @@ class EventMsg(commands.Cog):
         print(f"WARN: Missing variable {evar} for event (was not in kwargs)")
     return newmessage
 
-  @commands.Cog.listener("on_raw_member_join")
+  @commands.Cog.listener("on_member_join")
   async def on_welcome(self, member:discord.Member):
     """welcome service, shows a custom welcome message to new users"""
     if f"{member.guild.id}_welcome" in self.config:
@@ -251,7 +251,7 @@ class EventMsg(commands.Cog):
         ', '.join(data[1:]).format(member.mention, member.guild.name)
       )
 
-  @commands.Cog.listener("on_raw_member_leave")
+  @commands.Cog.listener("on_raw_member_remove")
   async def on_farewell(self, payload:discord.RawMemberRemoveEvent):
     """farewell service, shows a custom farewell message whenever someone leaves"""
     if f"{payload.guild_id}_farewell" in self.config:
