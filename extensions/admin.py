@@ -53,6 +53,7 @@ class Admin(commands.Cog):
         strict or
         (
           message.author == self.bot.user or
+          message.author.bot or
           message.content.startswith('<@'+str(self.bot.user.id)+'>') or
           message.type == discord.MessageType.pins_add
         )
@@ -111,7 +112,7 @@ class Admin(commands.Cog):
         deleted = await inter.channel.purge(
           limit=number if number else 1000,
           check=lambda m: self.check_delete(m, strict),
-          after=discord.Object(int(clean_to))
+          after=discord.Object(int(clean_to) - 1)
         )
       else:
         deleted = await inter.channel.purge(
