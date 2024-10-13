@@ -267,7 +267,7 @@ class Help(commands.Cog):
     embed.add_field(
       name=self.babel(inter, 'about_field3_title'),
       value=self.babel(inter, 'about_field3_value',
-                       videoexamples=self.config.getboolean('video_tutorial_url_pattern'),
+                       videoexamples=self.config.get('video_tutorial_url_pattern'),
                        serverinv=self.config['serverinv']),
       inline=False
     )
