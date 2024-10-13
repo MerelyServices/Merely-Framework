@@ -108,7 +108,7 @@ class Language(commands.Cog):
     """
     langs, origins = self.bot.babel.resolve_lang(
       user_id=inter.user.id,
-      guild_id=inter.guild.id,
+      guild_id=inter.guild.id if inter.guild else None,
       inter=inter,
       debug=True
     )
