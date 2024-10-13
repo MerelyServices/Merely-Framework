@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 
 def process_list(data:str) -> str:
+  data = data.replace('=', '')
   return ','.join(list(dict.fromkeys(data.split(',')))).replace(',,', ',')
 
 

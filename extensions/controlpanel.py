@@ -96,7 +96,7 @@ class Listable(Toggleable):
     self.value = value
 
   def get(self, _):
-    return str(self.value in self.bot.config.get(self.scope, self.key, fallback=''))
+    return str(self.value + self.delimiter in self.bot.config.get(self.scope, self.key, fallback=''))
 
   def set(self, include:bool):
     state = self.bot.config.get(self.scope, self.key, fallback='')
