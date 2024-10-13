@@ -129,6 +129,7 @@ class Announce(commands.Cog):
         view = self.AnnouncementView(self)
         view.send_button.disabled = True
         view.resume_button.disabled = False
+        view.cancel_button.disabled = False
         await msg.edit(view=view)
 
   @commands.Cog.listener('on_message_delete')
@@ -193,6 +194,12 @@ class Announce(commands.Cog):
     self.bot.config.save()
 
     subscribed = self.config['dm_subscription'].split(',')
+    if len(subscribed) <= 1:
+      await msg.edit(content=self.babel(msg, 'announce_empty'))
+      self.config['in_progress'] = ''
+      self.bot.config.save()
+      self.lock = False
+      return
     for encoded_uid in subscribed[skip:]:
       if encoded_uid == '':
         continue
@@ -354,6 +361,7 @@ class Announce(commands.Cog):
       # Disable buttons
       self.send_button.disabled = True
       self.resume_button.disabled = True
+      self.cancel_button.disabled = True
       await inter.response.edit_message(view=self)
       await self.parent.send_announcement(await inter.original_response(), simulate=self.simulate)
 
@@ -371,10 +379,14 @@ class Announce(commands.Cog):
       # Disable resume button once again
       self.send_button.disabled = True
       self.resume_button.disabled = True
+      self.cancel_button.disabled = True
       await inter.response.edit_message(view=self)
 
       # Recover state from message content
-      succeeded = int(inter.message.content[24:].split('/')[0])
+      try:
+        succeeded = int(inter.message.content[24:].split('/')[0])
+      except ValueError:
+        succeeded = 0
       failed = {}
       readnext = False
       for line in inter.message.content.splitlines():
@@ -401,6 +413,16 @@ class Announce(commands.Cog):
         simulate=self.simulate
       )
 
+    @discord.ui.button(label='Cancel', emoji='❌', custom_id='announce_cancel', disabled=False)
+    async def cancel_button(self, inter:discord.Interaction, _:discord.ui.Button):
+      self.send_button.disabled = True
+      self.resume_button.disabled = True
+      self.cancel_button.disabled = True
+      self.parent.config['in_progress'] = ''
+      self.parent.bot.config.save()
+      self.parent.lock = False
+      await inter.response.edit_message(content="This announcement was cancelled", view=self)
+
   # Commands
 
   @app_commands.command()
@@ -414,6 +436,14 @@ class Announce(commands.Cog):
     """
     self.bot.auth.superusers(inter)
 
+    if progress := self.config.get('in_progress'):
+      raw_channel_id, raw_message_id = progress.split('/')
+      channel = self.bot.get_channel(int(raw_channel_id))
+      msg = channel.get_partial_message(int(raw_message_id))
+      await inter.response.send_message(
+        self.babel(inter, 'announce_in_progress', msglink=msg.jump_url)
+      )
+      return
     await inter.response.send_modal(self.AnnounceModal(self, inter, simulate))
 
 
