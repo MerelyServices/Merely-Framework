@@ -483,8 +483,7 @@ class EventMsg(commands.Cog):
     self.config[f'{inter.guild.id}_welcome'] = f"{inter.channel.id}, {message}"
     self.bot.config.save()
     await inter.response.send_message(
-      self.bot.babel(inter, 'greeter', 'welcome_set_success'),
-      ephemeral=True
+      self.bot.babel(inter, 'greeter', 'welcome_set_success')
     )
 
   @welcome.command(name='clear')
@@ -494,13 +493,11 @@ class EventMsg(commands.Cog):
       self.config.pop(f'{inter.guild.id}_welcome')
       self.bot.config.save()
       await inter.response.send_message(
-        self.bot.babel(inter, 'greeter', 'welcome_clear_success'),
-        ephemeral=True
+        self.bot.babel(inter, 'greeter', 'welcome_clear_success')
       )
     else:
       await inter.response.send_message(
-        self.bot.babel(inter, 'greeter', 'welcome_clear_failed'),
-        ephemeral=True
+        self.bot.babel(inter, 'greeter', 'welcome_clear_failed')
       )
 
   farewell = app_commands.Group(
