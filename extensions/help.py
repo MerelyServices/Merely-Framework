@@ -291,7 +291,7 @@ class Help(commands.Cog):
 
     embed.set_footer(
       text=self.babel(inter, 'creator_footer'),
-      icon_url=self.bot.user.avatar.url
+      icon_url=self.bot.user.avatar.url if self.bot.user.avatar else None
     )
 
     await inter.response.send_message(
@@ -335,7 +335,7 @@ class Help(commands.Cog):
     )
     embed.set_footer(
       text=self.babel(inter, 'creator_footer'),
-      icon_url=self.bot.user.avatar.url
+      icon_url=self.bot.user.avatar.url if self.bot.user.avatar else None
     )
 
     await inter.response.send_message(
