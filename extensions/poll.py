@@ -74,8 +74,25 @@ class LivePoll():
     self.parent.bot.config.save()
 
   def load(self, message:discord.Message):
-    """ Loads poll from config and stores message in memory """
+    """ Loads poll from config, recovers state from message, and stores message in memory """
     self.message = message
+    if message.guild:
+      self.target = message.guild
+    elif message.channel.recipient:
+      self.target = message.channel.recipient
+    else:
+      self.target = message.channel.members[0]
+    self.title = self.message.embeds[0].title
+    self.answers = [f.name[4:-1] for f in self.message.embeds[0].fields]
+    if self.expired:
+      self.votes = [
+        int(re.match(r'.*\((\d+)\)', f.value).group(1)) for f in self.message.embeds[0].fields
+      ]
+    else:
+      self.votes = [0 for _ in self.answers]
+      for react in self.message.reactions:
+        if str(react.emoji) in self.EMOJIS:
+          self.votes[self.EMOJIS.index(str(react.emoji))] = react.count-1
     self.get_expiry()
 
   def remove(self, save=True):
@@ -86,18 +103,18 @@ class LivePoll():
     if save:
       self.parent.bot.config.save()
 
-  def expiry_to_time(self, target:discord.Guild | discord.User, precisionlimit:int = 1) -> str:
+  def expiry_to_time(self, precisionlimit:int = 1) -> str:
     """ Converts countdown seconds into a nicely formatted sentence """
     # Import current locale strings
-    TIMENAMES = self.parent.babel(target, 'timenames').split(',')
+    TIMENAMES = self.parent.babel(self.target, 'timenames').split(',')
     assert len(TIMENAMES) == 7
-    TIMEPLURALS = self.parent.babel(target, 'timeplurals').split(',')
+    TIMEPLURALS = self.parent.babel(self.target, 'timeplurals').split(',')
     assert len(TIMEPLURALS) == 7
-    TIMENUMFORMAT = self.parent.babel(target, 'time_number_format')
+    TIMENUMFORMAT = self.parent.babel(self.target, 'time_number_format')
     assert TIMENUMFORMAT.find('{number}') >= 0 and TIMENUMFORMAT.find('{name}') >= 0
 
     if self.counter == 0:
-      return self.parent.babel(target, 'present')
+      return self.parent.babel(self.target, 'present')
 
     MULTIPLIERS = [31449600, 2419200, 604800, 86400, 3600, 60,    1]
     #              year      month    week    day    hour  minute second
@@ -120,33 +137,31 @@ class LivePoll():
       if ni >= precisionlimit:
         break
 
-    timelist = self.parent.bot.babel.string_list(target, times)
+    timelist = self.parent.bot.babel.string_list(self.target, times)
     if timelist == '':
       #BABEL: near_past,near_future
-      return self.parent.babel(target, 'near_past' if self.counter < 0 else 'near_future')
+      return self.parent.babel(self.target, 'near_past' if self.counter < 0 else 'near_future')
     else:
       #BABEL: far_past,far_future
       return self.parent.babel(
-        target,
-        'far_past' if self.counter < 0 else 'far_future',
-        timelist=timelist
+        self.target, 'far_past' if self.counter < 0 else 'far_future', timelist=timelist
       )
 
-  def generate_embed(self, target:discord.Guild | discord.User):
+  def generate_embed(self):
     """ Generates a poll embed based on the object data """
     embed = discord.Embed(title=self.title)
     if self.counter > 0:
       # Counting down
       if self.counter > 60:
-        embed.description = f"⏳ {self.expiry_to_time(target, 5)}" # 5 = count minutes
+        embed.description = f"⏳ {self.expiry_to_time(5)}" # 5 = count minutes
       else:
-        embed.description = f"⌛ {self.expiry_to_time(target, 6)}" # 6 = count seconds
+        embed.description = f"⌛ {self.expiry_to_time(6)}" # 6 = count seconds
     elif self.counter <= -604800:
       # Expired
-      embed.description = f"⌛ {self.parent.babel(target, 'inf_past')}"
+      embed.description = f"⌛ {self.parent.babel(self.target, 'inf_past')}"
     else:
       # Poll has finished, counting time since
-      embed.description = f"⌛ {self.expiry_to_time(target, 4 if self.counter > -86400 else 2)}"
+      embed.description = f"⌛ {self.expiry_to_time(4 if self.counter > -86400 else 2)}"
       #                                                    4 = count hours,  3 = count days
     votemax = max(self.votes + [1])
     index = 0
@@ -158,7 +173,7 @@ class LivePoll():
       )
       index += 1
     if not self.expired:
-      embed.set_footer(text=self.parent.babel(target, 'vote_cta', multichoice=True))
+      embed.set_footer(text=self.parent.babel(self.target, 'vote_cta', multichoice=True))
     return embed
 
   async def add_reacts(self):
@@ -166,20 +181,8 @@ class LivePoll():
       await self.message.add_reaction(self.EMOJIS[i])
 
   async def redraw(self):
-    """ Recover data from the embed, count reactions, then regenerate the embed """
-    if not hasattr(self, 'title'):
-      self.title = self.message.embeds[0].title
-      self.answers = [f.name[4:-1] for f in self.message.embeds[0].fields]
-      if self.expired:
-        self.votes = [
-          int(re.match(r'.*\((\d+)\)', f.value).group(1)) for f in self.message.embeds[0].fields
-        ]
-      else:
-        self.votes = [0 for _ in self.answers]
-        for react in self.message.reactions:
-          if str(react.emoji) in self.EMOJIS:
-            self.votes[self.EMOJIS.index(str(react.emoji))] = react.count-1
-    embed = self.generate_embed(self.target)
+    """ Regenerate the embed based on current state """
+    embed = self.generate_embed()
     await self.message.edit(embed=embed)
 
   async def finish(self):
@@ -435,7 +438,7 @@ class Poll(commands.Cog):
     target = inter.guild if inter.guild else inter.user
     poll.create(target, title, answers, [0]*len(answers), time() + expiry)
 
-    embed = poll.generate_embed(target)
+    embed = poll.generate_embed()
     announce = self.babel(target, 'poll_created', author=inter.user.mention)
     await inter.response.send_message(announce, embed=embed)
     message = await inter.original_response()
