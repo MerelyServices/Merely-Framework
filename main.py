@@ -77,8 +77,8 @@ class MerelyBot(commands.AutoShardedBot):
           sep='\n'
         )
       else:
-        beta = self.config.master.getboolean('main', 'beta', fallback=False)
-        version = self.config.master.get('main', 'ver', fallback='0.0.0')
+        beta = self.config.getboolean('main', 'beta', fallback=False)
+        version = self.config.get('main', 'ver', fallback='0.0.0')
         name = self.config.get('main', 'botname', fallback='unknown')
         creator = self.config.get('main', 'creator', fallback='Unknown')
         print(
