@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-import asyncio
+import asyncio, re
 from typing import TYPE_CHECKING
 import discord
 from discord import app_commands
@@ -34,6 +34,7 @@ class Log(commands.Cog):
   def __init__(self, bot:MerelyBot):
     self.bot = bot
     self.logchannel = None
+    self.discord_url_filter = re.compile(r'^https://.*discord[^/]*(/.*)$')
     # ensure config file has required data
     if not bot.config.has_section(self.SCOPE):
       bot.config.add_section(self.SCOPE)
@@ -78,21 +79,63 @@ class Log(commands.Cog):
 
   @commands.Cog.listener('on_interaction')
   async def log_slash_command(self, inter:discord.Interaction):
-    """ Record slash command calls """
-    #TODO: maybe log button presses too?
-    if inter.type != discord.InteractionType.application_command:
-      return
-    if 'options' not in inter.data:
+    """ Record slash commands, context menu commands, modal submissions, and button presses """
+    if inter.type not in (
+      discord.InteractionType.application_command, discord.InteractionType.modal_submit,
+      discord.InteractionType.component
+    ):
       return
     truncate = self.bot.utilities.truncate
+
+    # Find command name, if any
+    cmdname = ''
     options = []
-    for raw_option in inter.data.get('options', []):
-      options.append(
-        raw_option['name'] + (':'+truncate(raw_option['value'], 30) if 'value' in raw_option else '')
+    if isinstance(inter.command, app_commands.Command):
+      cmdname = '/' + (
+        inter.command.root_parent.name if inter.command.root_parent else inter.command.name
       )
-    cmdname = inter.command.root_parent.name if inter.command.root_parent else inter.command.name
+    elif isinstance(inter.command, app_commands.ContextMenu):
+      cmdname = inter.command.name
+      target = inter.data['target_id']
+      if target_user := self.bot.get_user(target):
+        options.append('target: @' + target_user.name)
+      elif target_message := inter.channel.get_partial_message(target):
+        options.append('target: '+target_message.jump_url[19:])
+      else:
+        options.append('target: unknown')
+    elif inter.type == discord.InteractionType.modal_submit:
+      cmdname = 'Modal submit'
+    elif inter.type == discord.InteractionType.component:
+      cmdname = 'Button click'
+    else:
+      cmdname = 'Unknown command'
+
+    # Find parameters and values, if any
+    if 'options' in inter.data:
+      for opt in inter.data['options']:
+        value = ''
+        if 'value' in opt:
+          if matches := re.match(self.discord_url_filter, str(opt['value'])):
+            value = ':' + matches.group(1)
+          else:
+            value = ':' + truncate(opt['value'], 30)
+        options.append(opt['name'] + value)
+    elif 'values' in inter.data:
+      for value in inter.data['values']:
+        if matches := re.match(self.discord_url_filter, str(value)):
+          value = ':' + matches.group(1)
+        else:
+          value = ':' + truncate(value, 30)
+        options.append(value)
+    elif 'custom_id' in inter.data:
+      options.append(truncate(inter.data['custom_id'], 30))
+    elif 'components' in inter.data:
+      for opt in inter.data['components']:
+        options.append(opt['custom_id'] + (':'+truncate(opt['value'], 30) if 'value' in opt else ''))
+
+    # Compile results together
     logentry = self.wrap(
-      f"/{cmdname} {' '.join(options)}",
+      f"{cmdname} > {' '.join(options)}",
       inter.user,
       inter.channel
     )
@@ -141,9 +184,9 @@ class Log(commands.Cog):
     if self.logchannel:
       await self.logchannel.send(logentry, embed=msg.embeds[0] if msg.embeds else None)
 
-  async def log_misc_str(self, inter:discord.Interaction, content:str):
+  async def log_misc_str(self, inter:discord.Interaction | None = None, content:str = ''):
     """ Record a string and interaction separately """
-    logentry = self.wrap(content, inter.user, inter.channel)
+    logentry = self.wrap(content, inter.user, inter.channel) if inter else content
     print(logentry)
     if self.logchannel:
       await self.logchannel.send(logentry)

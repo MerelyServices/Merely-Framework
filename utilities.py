@@ -15,8 +15,8 @@ class Utilities:
     return int(fill) * '█' + ('▒' if half else '') + (width - int(fill) - (1 if half else 0))*'░'
 
   def truncate(self, string, maxlen:int = 80) -> str:
-    """ Auto-trim strings and add ellipsis if needed """
-    _str = str(string)
+    """ Auto-trim strings, remove newlines, and add ellipsis if needed """
+    _str = str(string).replace('\n', ' ')
     n = maxlen - 3 if len(_str) > maxlen else maxlen
     return _str[:n] + ('...' if len(_str) > maxlen else '')
 
