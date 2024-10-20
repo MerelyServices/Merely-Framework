@@ -21,6 +21,12 @@ class Config(ConfigParser):
     self.file = os.path.join(self.path, "config.ini")
     self.template = os.path.join(self.path, "config.factory.ini")
     self.reference:ConfigParser | None = None
+    self.master:ConfigParser | None = None
+    master_file = os.path.join('config', "config.factory.ini")
+    if path != 'config' and os.path.exists(master_file):
+      with open(master_file, 'r', encoding='utf-8') as f:
+        self.master = ConfigParser()
+        self.master.read_file(f)
     self.last_backup = 0
     self.migrate:bool | version.Version = False
     self.quiet = quiet

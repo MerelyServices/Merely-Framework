@@ -62,13 +62,32 @@ class MerelyBot(commands.AutoShardedBot):
     self.auth = Auth(self)
 
     if not self.quiet:
-      print(f"""
-      merely framework{
-        ' beta' if self.config.getboolean('main', 'beta') else ''
-      } v{self.config['main']['ver']}
-      currently named {self.config['main']['botname']} by config
-      created by Yiays. https://github.com/yiays/merelybot
-      """)
+      if self.config.master:
+        beta = self.config.master.getboolean('main', 'beta', fallback=False)
+        version = self.config.master.get('main', 'ver', fallback='0.0.0')
+        overlay = self.config.get('main', 'botname', fallback='unknown')
+        o_beta = self.config.getboolean('main', 'beta', fallback=False)
+        o_version = self.config.get('main', 'ver', fallback='0.0.0')
+        creator = self.config.get('main', 'creator', fallback='Unknown')
+        print(
+          'Framework: Merely Framework' + (' beta' if beta else '') + ' v'+version,
+          "Created by Yiays. https://github.com/MerelyServices/Merely-Framework",
+          'Overlay: ' + overlay + (' beta' if o_beta else '') + ' v'+o_version,
+          "Created by " + creator,
+          sep='\n'
+        )
+      else:
+        beta = self.config.master.getboolean('main', 'beta', fallback=False)
+        version = self.config.master.get('main', 'ver', fallback='0.0.0')
+        name = self.config.get('main', 'botname', fallback='unknown')
+        creator = self.config.get('main', 'creator', fallback='Unknown')
+        print(
+          'Framework: Merely Framework' + (' beta' if beta else '') + ' v'+version,
+          "Created by Yiays. https://github.com/MerelyServices/Merely-Framework",
+          'Bot name: ' + name,
+          "Maintained by " + creator,
+          sep='\n'
+        )
 
     # stdout to file
     if not os.path.exists('logs'):
