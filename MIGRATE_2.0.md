@@ -46,6 +46,8 @@ Instead, create component class variables directly
 ### `View`s are required, raw components are not available
 This means you must always have a full lifecycle for your views planned; if the View is meant to survive restarts, you need to use `MerelyBot.config` and `@commands.Cog.listener('on_ready')` to rehydrate it.
 - Be considerate when using the on_ready event! Consider adding a `asyncio.sleep()` so not all on_ready events fire at the same time.
+- With discord.py v2.4, Dynamic Items have been added, which can help create views that survive restarts.
+  - Read more here https://github.com/Rapptz/discord.py/blob/v2.4.0/examples/views/dynamic_counter.py
 
 ---
 ### `Button.callback` has a different signature
@@ -56,10 +58,18 @@ This means you must always have a full lifecycle for your views planned; if the 
 Refer to this https://github.com/Rapptz/discord.py/issues/7823#issuecomment-1086830458
 
 ---
+### `Interaction` is not subclassed
+In disnake, you could determine the structure and context of an interaction based on the subclass (`ApplicationCommandInteraction`, `ModalInteraction`, etc). In Discord.py, `Interaction` is used in all cases and no subclasses exist.
+- Use `Interaction.type` to determine the Interaction type instead.
+
+---
 ### `inter.data` is now a low level component in Discord.py and offers no hand-holding
 Data must be retreived manually, or just talk to the existing components as their state changes
-- `inter.data.values` is now `inter.data.get('values')`
-- `inter.data.custom_id` is now `inter.data.get('custom_id')`
+- `inter.data.values` is now `inter.data['values']`
+- `inter.data.custom_id` is now `inter.data['custom_id']`
+- `inter.data.text_values` is now `inter.data['components'][0]['components']`
+
+*Note that this is an oversimplification. The documentation doesn't describe these structures so you will need to either rely on Intellisense, or print(inter.data) in a few contexts to learn how it is structured.*
 
 ---
 ### Calling commands internally is a little different
