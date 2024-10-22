@@ -34,7 +34,7 @@ class Log(commands.Cog):
   def __init__(self, bot:MerelyBot):
     self.bot = bot
     self.logchannel = None
-    self.discord_url_filter = re.compile(r'^https://.*discord[^/]*(/.*)$')
+    self.discord_url_filter = re.compile(r'^https://[^/]*discord[^/]*(/.*)$')
     # ensure config file has required data
     if not bot.config.has_section(self.SCOPE):
       bot.config.add_section(self.SCOPE)
@@ -97,10 +97,11 @@ class Log(commands.Cog):
     elif isinstance(inter.command, app_commands.ContextMenu):
       cmdname = inter.command.name
       target = inter.data['target_id']
-      if target_user := self.bot.get_user(target):
-        options.append('target: @' + target_user.name)
-      elif target_message := inter.channel.get_partial_message(target):
-        options.append('target: '+target_message.jump_url[19:])
+      if inter.data['type'] == 2:
+        options.append('target:@' + inter.data['resolved']['users'][target]['username'])
+      elif inter.data['type'] == 3:
+        target_message = inter.channel.get_partial_message(target)
+        options.append('target:'+target_message.jump_url[19:])
       else:
         options.append('target: unknown')
     elif inter.type == discord.InteractionType.modal_submit:
@@ -146,7 +147,8 @@ class Log(commands.Cog):
     logentry = self.wrap(
       f"{cmdname} > {' '.join(options)}",
       inter.user,
-      inter.channel
+      inter.channel,
+      maxlen=250
     )
     print(logentry)
     if self.logchannel:
