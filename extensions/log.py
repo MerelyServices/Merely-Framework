@@ -121,17 +121,26 @@ class Log(commands.Cog):
             value = ':' + truncate(opt['value'], 30)
         options.append(opt['name'] + value)
     elif 'values' in inter.data:
+      pre = ':'
+      if inter.type == discord.InteractionType.component:
+        cmdname = 'Selection'
+        pre = inter.data['custom_id'] + ':'
       for value in inter.data['values']:
         if matches := re.match(self.discord_url_filter, str(value)):
-          value = ':' + matches.group(1)
+          value = pre + matches.group(1)
         else:
-          value = ':' + truncate(value, 30)
+          value = pre + truncate(value, 30)
         options.append(value)
+    elif 'components' in inter.data:
+      for row in inter.data['components']:
+        for opt in row['components']:
+          options.append(
+            opt['custom_id'] + (':' + truncate(opt['value'], 30) if 'value' in opt else '')
+          )
+        if 'value' in row:
+          options.append(row['custom_id'] + (':' + truncate(row['value'],30)))
     elif 'custom_id' in inter.data:
       options.append(truncate(inter.data['custom_id'], 30))
-    elif 'components' in inter.data:
-      for opt in inter.data['components']:
-        options.append(opt['custom_id'] + (':'+truncate(opt['value'], 30) if 'value' in opt else ''))
 
     # Compile results together
     logentry = self.wrap(
