@@ -33,8 +33,25 @@ class Example(commands.Cog):
   def __init__(self, bot:MerelyBot):
     self.bot = bot
     # ensure config file has required data
-    #if not bot.config.has_section(self.SCOPE):
-      #bot.config.add_section(self.SCOPE)
+    if not bot.config.has_section(self.SCOPE):
+      bot.config.add_section(self.SCOPE)
+
+    # Add context menu commands
+    self.example_user = app_commands.ContextMenu(
+      name='Example',
+      allowed_contexts=app_commands.AppCommandContext(guild=True, private_channel=True),
+      allowed_installs=app_commands.AppInstallationType(guild=True, user=True),
+      callback=self.example_user_callback
+    )
+    bot.tree.add_command(self.example_user)
+
+    self.example_msg = app_commands.ContextMenu(
+      name='Example',
+      allowed_contexts=app_commands.AppCommandContext(guild=True, private_channel=True),
+      allowed_installs=app_commands.AppInstallationType(guild=True, user=True),
+      callback=self.example_msg_callback
+    )
+    bot.tree.add_command(self.example_msg)
 
   def controlpanel_settings(self, inter:discord.Interaction):
     # ControlPanel integration - use this when you want to allow users / guilds to change preferences
@@ -57,6 +74,18 @@ class Example(commands.Cog):
     # Using the guild as the language target. Usually you just use inter instead.
     print(self.babel(member.guild, 'joined', user=member.name))
     # babel will return "{JOINED: user=member.name}" until a string is added to en.ini
+
+  async def example_user_callback(self, inter:discord.Interaction, user:discord.User):
+    """ Responds with user information """
+    await inter.response.send_message(
+      '```' + '\n'.join([user.name, str(user.id)]) + '```', ephemeral=True
+    )
+
+  async def example_msg_callback(self, inter:discord.Interaction, msg:discord.Message):
+    """ Responds with message information """
+    await inter.response.send_message(
+      '```' + '\n'.join([msg.author.name, str(msg.id)]) + '```', ephemeral=True
+    )
 
   @app_commands.command()
   @app_commands.allowed_contexts(guilds=True, private_channels=True)
