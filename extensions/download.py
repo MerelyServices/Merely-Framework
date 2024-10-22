@@ -27,7 +27,7 @@ def uri_validator(x):
         return False
 
 
-class Example(commands.Cog):
+class Download(commands.Cog):
   """ Adds an echo command and logs new members """
   SCOPE = 'download'
 
@@ -101,4 +101,4 @@ class Example(commands.Cog):
 
 async def setup(bot:MerelyBot):
   """ Bind this cog to the bot """
-  await bot.add_cog(Example(bot))
+  await bot.add_cog(Download(bot))
