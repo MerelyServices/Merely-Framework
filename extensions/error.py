@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-import asyncio
+import asyncio, traceback
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -86,7 +86,7 @@ class Error(commands.Cog):
         await send(
           self.babel(inter, 'commanderror', error=str(error.original)), **kwargs
         )
-        raise error.original
+        traceback.print_exception(type(error.original), error.original, error.original.__traceback__)
       elif isinstance(error, (app_commands.CheckFailure, commands.CheckAnyFailure)):
         print("Unhandled error;", error)
         return
