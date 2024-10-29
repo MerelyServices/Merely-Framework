@@ -301,7 +301,7 @@ class ReactRoles(commands.Cog):
       self.save_button.disabled = True
       await self.msg.edit(view=self)
 
-    @discord.ui.button(style=discord.ButtonStyle.green, emoji='❔')
+    @discord.ui.button(style=discord.ButtonStyle.green, emoji='❔', custom_id='add_reactrole_emoji')
     async def add_reaction_button(self, inter:discord.Interaction, _:discord.Button):
       """ Sends the command needed to add a reaction (and associated roles) """
       self.parent.bot.auth.admins(inter)
@@ -311,7 +311,9 @@ class ReactRoles(commands.Cog):
         ephemeral=True
       )
 
-    @discord.ui.button(style=discord.ButtonStyle.primary, emoji='💾', disabled=True)
+    @discord.ui.button(
+      style=discord.ButtonStyle.primary, emoji='💾', disabled=True, custom_id='reactrole_submit'
+    )
     async def save_button(self, inter:discord.Interaction, _:discord.Button):
       """ Saves the reactrole message to storage so it will start to take effect """
       self.parent.bot.auth.admins(inter)
