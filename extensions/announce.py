@@ -4,7 +4,8 @@
 
 from __future__ import annotations
 
-import base64, asyncio
+import asyncio
+from base64 import b64encode, b64decode
 from typing import TYPE_CHECKING
 import discord
 from discord import app_commands
@@ -21,8 +22,8 @@ if TYPE_CHECKING:
 # Stateless functions
 
 def encode_uid(uid:int) -> str:
-  """ Takes discord id and encodes it using ascii """
-  return base64.b64encode(uid.to_bytes(8, 'big')).decode('ascii').replace('=','')
+  """ Takes discord id and encodes it using base64 """
+  return b64encode(uid.to_bytes(8, 'big')).decode('ascii').replace('=','')
 
 
 def decode_uid(uid:str) -> int | None:
@@ -30,7 +31,7 @@ def decode_uid(uid:str) -> int | None:
   if len(uid) == 11:
     uid += '='
   try:
-    return int.from_bytes(base64.b64decode(uid), 'big')
+    return int.from_bytes(b64decode(uid), 'big')
   except Exception:
     print(f"WARN: {uid} is not a valid encoded UID.")
     return None
@@ -176,7 +177,7 @@ class Announce(commands.Cog):
 
   async def send_announcement(
     self,
-    msg:discord.Message,
+    msg:discord.InteractionMessage,
     skip=0,
     succeeded=0,
     failed:dict[str, list[str]] = {},
@@ -335,7 +336,7 @@ class Announce(commands.Cog):
     def __init__(self, parent:Announce, simulate:bool = False):
       self.parent = parent
       self.simulate = simulate
-      super().__init__()
+      super().__init__(timeout=0)
       if simulate:
         self.set_simulate()
 
