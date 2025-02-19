@@ -77,7 +77,7 @@ class Download(commands.Cog):
     self.runtime_counter += 1
     dlp = await asyncio.create_subprocess_shell(' '.join((
       'yt-dlp',
-      '--max-filesize', '25M',
+      '--max-filesize', '10M',
       '--no-playlist',
       '--max-downloads', '1',
       '--limit-rate', '2M',
