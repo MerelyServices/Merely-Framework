@@ -13,6 +13,7 @@ from config import Config
 from glob import glob
 import discord
 from discord import app_commands
+from discord.app_commands import locale_str
 
 if TYPE_CHECKING:
   from .main import MerelyBot
@@ -23,7 +24,7 @@ Resolvable = (
 )
 
 
-class Babel():
+class Babel(app_commands.Translator):
   """ Stores language data and resolves and formats it for use in Cogs """
   path:str
   backup_path:Optional[str] = None
@@ -58,10 +59,10 @@ class Babel():
     self.filter_conditional = re.compile(r'{([a-z0-9]*?)\?(.*?)\|(.*?)}')
     self.filter_configreference = re.compile(r'{c\:([a-z0-9_]*?)\/([a-z0-9_]*?)}')
     self.filter_commandreference = re.compile(r'{p\:([a-z0-9_ -]*?)}')
-    self.load()
+    self.read()
 
-  def load(self):
-    """ Load data from config and babel files, called upon reload """
+  def read(self):
+    """ Read data from config and babel files """
     # Reset cache
     self.langs = {}
     self.scope_key_cache = {}
@@ -84,8 +85,8 @@ class Babel():
                      (glob(self.backup_path + os.path.sep + '*.ini') if self.backup_path else [])):
       langfile = re.sub(r'^(babel[/\\]|overlay[/\\]babel[/\\])', '', langpath)
       langname = langfile[:-4]
-      self.langs[langname] = ConfigParser(comment_prefixes='@', allow_no_value=True)
       # create a Config that should preserve comments
+      self.langs[langname] = ConfigParser(comment_prefixes='@', allow_no_value=True)
       self.langs[langname].read(langpath, encoding='utf-8')
 
     # baselang is the root language file that should be considered the most complete.
@@ -295,6 +296,22 @@ class Babel():
       items.insert(1, CONJUNCTION_2)
 
     return ''.join(items)
+
+  async def translate(
+    self, string:locale_str, locale:discord.Locale, _:app_commands.TranslationContext
+  ) -> str:
+    """ Handles Discord.py translation requests by converting them to Babel requests """
+    if 'scope' not in string.extras: # Do not attempt to translate strings without a scope
+      return None
+    target = self.localeconv(locale)
+    scope = string.extras['scope']
+    del string.extras['scope']
+    try:
+      # Call internal translation function
+      return self.__call__(target, scope, string.message, **string.extras)
+    except Exception as e:
+      print(f"Translation error in Babel: {e}")
+      return None
 
   def scope_key_pairs(self, lang) -> set[str]:
     """ Breaks down the structure of a babel file for evaluation """
