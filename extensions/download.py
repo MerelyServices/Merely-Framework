@@ -80,11 +80,11 @@ class Download(commands.Cog):
       '--max-filesize', '10M',
       '--no-playlist',
       '--max-downloads', '1',
-      '--limit-rate', '2M',
+      '--limit-rate', '1M',
       '--output', f'tmp/{filenumber}.mp4',
       '--quiet',
       '--no-warnings',
-      '-S', '"+codec:h264,res:720,fps"',
+      '-S', '"+codec:h264,res:480,fps"',
       shlex.quote(media_url)
     )), stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
     logs = ''
