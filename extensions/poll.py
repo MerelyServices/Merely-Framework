@@ -380,23 +380,26 @@ class Poll(commands.Cog):
           self.livepolls.pop(poll.message.id)
           poll.remove()
 
-  @app_commands.command()
+  @app_commands.command(
+    name=app_commands.locale_str('command_poll', scope=SCOPE),
+    description=app_commands.locale_str('command_poll_desc', scope=SCOPE)
+  )
   @app_commands.describe(
-    title="The subject of the poll, appears above the options",
-    answer1="Option A. Required",
-    answer2="Option B. Required",
-    answer3="Option C. Not required.",
-    answer4="Option D. Not required.",
-    answer5="Option E. Not required.",
-    answer6="Option F. Not required.",
-    answer7="Option G. Not required.",
-    answer8="Option H. Not required.",
-    answer9="Option I. Not required.",
-    answer10="Option J. Not required.",
-    expiry_days="Number of days until the poll expires. Summed with other expiry fields.",
-    expiry_hours="Number of hours until the poll expires. Summed with other expiry fields.",
-    expiry_minutes="Number of minutes until the poll expires. Summed with other expiry fields.",
-    expiry_seconds="Number of seconds until the poll expires. Summed with other expiry fields."
+    title=app_commands.locale_str('command_poll_title_desc', scope=SCOPE),
+    answer1=app_commands.locale_str('command_poll_answer_desc', scope=SCOPE),
+    answer2=app_commands.locale_str('command_poll_answer_desc', scope=SCOPE),
+    answer3=app_commands.locale_str('command_poll_answer_desc', scope=SCOPE),
+    answer4=app_commands.locale_str('command_poll_answer_desc', scope=SCOPE),
+    answer5=app_commands.locale_str('command_poll_answer_desc', scope=SCOPE),
+    answer6=app_commands.locale_str('command_poll_answer_desc', scope=SCOPE),
+    answer7=app_commands.locale_str('command_poll_answer_desc', scope=SCOPE),
+    answer8=app_commands.locale_str('command_poll_answer_desc', scope=SCOPE),
+    answer9=app_commands.locale_str('command_poll_answer_desc', scope=SCOPE),
+    answer10=app_commands.locale_str('command_poll_answer_desc', scope=SCOPE),
+    expiry_days=app_commands.locale_str('command_poll_expiry_desc', scope=SCOPE),
+    expiry_hours=app_commands.locale_str('command_poll_expiry_desc', scope=SCOPE),
+    expiry_minutes=app_commands.locale_str('command_poll_expiry_desc', scope=SCOPE),
+    expiry_seconds=app_commands.locale_str('command_poll_expiry_desc', scope=SCOPE)
   )
   @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=True)
   @commands.bot_has_permissions(read_messages=True, send_messages=True, add_reactions=True)

@@ -184,8 +184,11 @@ class Help(commands.Cog):
     else:
       return self.babel(inter, 'no_command', cmd=search)
 
-  @app_commands.command()
-  @app_commands.describe(command="Name any command you'd like specific help with")
+  @app_commands.command(
+    name=app_commands.locale_str('command_help', scope=SCOPE),
+    description=app_commands.locale_str('command_help_desc', scope=SCOPE)
+  )
+  @app_commands.describe(command=app_commands.locale_str('command_help_command_desc', scope=SCOPE))
   async def help(self, inter:discord.Interaction, command:Optional[str]):
     """
       A repository of all the information you should need to use this bot
@@ -242,7 +245,10 @@ class Help(commands.Cog):
         matches.append(app_commands.Choice(name=commandname, value=commandname))
     return matches[0:25]
 
-  @app_commands.command()
+  @app_commands.command(
+    name=app_commands.locale_str('command_about', scope=SCOPE),
+    description=app_commands.locale_str('command_about_desc', scope=SCOPE)
+  )
   async def about(self, inter:discord.Interaction):
     """
     General information about this bot, including an invite link
@@ -299,9 +305,12 @@ class Help(commands.Cog):
       embed=embed
     )
 
-  @app_commands.command()
+  @app_commands.command(
+    name=app_commands.locale_str('command_changes', scope=SCOPE),
+    description=app_commands.locale_str('command_changes_desc', scope=SCOPE)
+  )
   @app_commands.describe(
-    search="Find the version a change occured in, or search for a version number"
+    search=app_commands.locale_str('command_changes_search_desc', scope=SCOPE)
   )
   async def changes(self, inter:discord.Interaction, search:Optional[str] = None):
     """

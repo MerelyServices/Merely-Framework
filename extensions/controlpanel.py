@@ -331,7 +331,10 @@ class ControlPanel(commands.Cog):
 
   # Commands
 
-  @app_commands.command(name=app_commands.locale_str('command_controlpanel', scope=SCOPE))
+  @app_commands.command(
+    name=app_commands.locale_str('command_controlpanel', scope=SCOPE),
+    description=app_commands.locale_str('command_controlpanel_desc', scope=SCOPE)
+  )
   async def controlpanel(self, inter:discord.Interaction):
     """ Opens the control panel so you can change bot preferences for this guild and yourself """
     settings = self.discover_settings(inter)

@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class Example(commands.Cog):
-  """ Adds an echo command and logs new members """
+  """ Example commands for learning purposes """
   SCOPE = 'example'
 
   @property

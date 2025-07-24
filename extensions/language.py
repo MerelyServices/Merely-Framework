@@ -64,11 +64,14 @@ class Language(commands.Cog):
     return out
 
   language = app_commands.Group(
-    name='language',
-    description="Changes the language this bot speaks to you, or to a server you administrate"
+    name=app_commands.locale_str('command_language', scope=SCOPE),
+    description=app_commands.locale_str('command_language_desc', scope=SCOPE)
   )
 
-  @language.command(name='list')
+  @language.command(
+    name=app_commands.locale_str('command_language_list', scope=SCOPE),
+    description=app_commands.locale_str('command_language_list_desc', scope=SCOPE)
+  )
   async def language_list(self, inter:discord.Interaction):
     """
     Lists all available languages this bot can be translated to
@@ -105,7 +108,10 @@ class Language(commands.Cog):
 
     await inter.response.send_message(embed=embed)
 
-  @language.command(name='get')
+  @language.command(
+    name=app_commands.locale_str('command_language_get', scope=SCOPE),
+    description=app_commands.locale_str('command_language_get_desc', scope=SCOPE)
+  )
   async def language_get(self, inter:discord.Interaction):
     """
     Get the language the bot is using with you right now and the reason why it was selected
@@ -136,7 +142,10 @@ class Language(commands.Cog):
 
     await inter.response.send_message(embeds=embeds)
 
-  @language.command(name='set')
+  @language.command(
+    name=app_commands.locale_str('command_language_set', scope=SCOPE),
+    description=app_commands.locale_str('command_language_set_desc', scope=SCOPE)
+  )
   @app_commands.describe(language="An ISO language code for your language and dialect")
   async def language_set(
     self,
