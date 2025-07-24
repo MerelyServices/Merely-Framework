@@ -88,7 +88,11 @@ class Language(commands.Cog):
           continue
       coverage = self.bot.babel.calculate_coverage(langcode)
       embed.add_field(
-        name=language.get('meta', 'name') + ' (' + langcode.replace(prefix, '') + ')',
+        name=(
+          language.get('meta', 'flag') + ' ' +
+          language.get('meta', 'name') + ' ' +
+          '(' + langcode.replace(prefix, '') + ')'
+        ),
         value=language.get(
           'meta',
           'contributors',
@@ -121,7 +125,10 @@ class Language(commands.Cog):
       #BABEL: -origin_reason_,origin_reason_author,origin_reason_guild,origin_reason_default
       #BABEL: origin_reason_author_locale,origin_reason_guild_locale,origin_reason_inherit
       embeds.append(discord.Embed(
-        title=f"{self.bot.babel.langs[lang].get('meta', 'name')} ({lang})",
+        title=(
+          self.bot.babel.langs[lang].get('meta', 'flag') + ' ' +
+          self.bot.babel.langs[lang].get('meta', 'name') + ' (' + lang + ')'
+        ),
         description=self.babel(inter, 'origin_reason_'+origin, backup=backup),
         color=int(self.bot.config['main']['themecolor'], 16)
       ))
@@ -185,10 +192,12 @@ class Language(commands.Cog):
     """ Suggests languages that are already available """
     matches = []
     prefix = self.config['prefix']
-    for lang in self.bot.babel.langs.keys():
-      if lang.startswith(prefix) and search in lang:
-        langname = lang.replace(prefix, '')
-        matches.append(app_commands.Choice(name=langname, value=lang))
+    for langcode in self.bot.babel.langs.keys():
+      if langcode.startswith(prefix) and search in langcode:
+        name = self.bot.babel.langs[langcode].get('meta', 'name')
+        flag = self.bot.babel.langs[langcode].get('meta', 'flag')
+        langname = flag + ' ' + name
+        matches.append(app_commands.Choice(name=langname, value=langcode.replace(prefix, '')))
     if len(matches) > 25:
       matches = matches[:24] + [app_commands.Choice(name='...', value='')]
     if 'default'.startswith(search):
