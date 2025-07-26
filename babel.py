@@ -304,11 +304,12 @@ class Babel(app_commands.Translator):
     if 'scope' not in string.extras: # Do not attempt to translate strings without a scope
       return None
     target = self.localeconv(locale)
+    params = string.extras.copy()
+    params.pop('scope', None) # Remove scope as this is only for internal use
     scope = string.extras['scope']
-    del string.extras['scope']
     try:
       # Call internal translation function
-      return self.__call__(target, scope, string.message, **string.extras)
+      return self.__call__(target, scope, string.message, **params)
     except Exception as e:
       print(f"Translation error in Babel: {e}")
       return None
