@@ -89,7 +89,7 @@ class System(commands.Cog):
         if module == 'config':
           self.bot.config.reload()
         elif module == 'babel':
-          self.bot.babel.load()
+          self.bot.babel.read()
         elif module == 'utilities':
           self.bot.utilities = importlib.import_module('utilities', 'main').Utilities()
         elif module == 'auth':

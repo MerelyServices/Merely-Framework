@@ -58,9 +58,12 @@ class Download(commands.Cog):
     for f in files:
       os.remove(f)
 
-  @app_commands.command()
+  @app_commands.command(
+    name=app_commands.locale_str('download', scope=SCOPE),
+    description=app_commands.locale_str('download_desc', scope=SCOPE)
+  )
   @app_commands.describe(
-    media_url="A link to almost any web page with a video. Doesn't work if payment is required."
+    media_url=app_commands.locale_str('download_media_url', scope=SCOPE)
   )
   @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
   @app_commands.allowed_installs(guilds=True, users=True)
@@ -70,7 +73,7 @@ class Download(commands.Cog):
       Download a video file and send it back as a message
     """
     if not uri_validator(media_url):
-      await inter.response.send_message("Media URL appears to be invalid. Not downloading.")
+      await inter.response.send_message(self.babel(inter, 'invalid_url'))
       return
     await inter.response.defer(thinking=True)
     filenumber = self.runtime_counter

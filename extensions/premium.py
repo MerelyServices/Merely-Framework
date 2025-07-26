@@ -168,7 +168,10 @@ class Premium(commands.Cog):
 
   # Commands
 
-  @app_commands.command()
+  @app_commands.command(
+    name=app_commands.locale_str('premium', scope=SCOPE),
+    description=app_commands.locale_str('premium_desc', scope=SCOPE)
+  )
   async def premium(self, inter:discord.Interaction):
     """
       Learn more about premium.

@@ -32,8 +32,11 @@ class Emoji(commands.Cog):
   def __init__(self, bot:MerelyBot):
     self.bot = bot
 
-  @app_commands.command()
-  @app_commands.describe(search="Start typing to refine your search")
+  @app_commands.command(
+    name=app_commands.locale_str('emoji', scope=SCOPE),
+    description=app_commands.locale_str('emoji_desc', scope=SCOPE),
+  )
+  @app_commands.describe(search=app_commands.locale_str('emoji_search_desc', scope=SCOPE))
   @app_commands.allowed_contexts(guilds=True)
   async def emoji(self, inter:discord.Interaction, search:str):
     """

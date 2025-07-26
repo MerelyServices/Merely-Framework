@@ -359,12 +359,15 @@ class ReactRoles(commands.Cog):
 
   # Commands
 
-  @app_commands.command(name='reactrole_add')
+  @app_commands.command(
+    name=app_commands.locale_str('reactrole_add', scope=SCOPE),
+    description=app_commands.locale_str('reactrole_add_desc', scope=SCOPE)
+  )
   @app_commands.describe(
-    emoji="The emoij to be used",
-    role1="The first role to be given to users that react with this emoji",
-    role2="The second role to be given to users that react with this emoji",
-    role3="The third role to be given to users that react with this emoji"
+    emoji=app_commands.locale_str('reactrole_add_emoji_desc', scope=SCOPE),
+    role1=app_commands.locale_str('reactrole_add_role_desc', scope=SCOPE),
+    role2=app_commands.locale_str('reactrole_add_role_desc', scope=SCOPE),
+    role3=app_commands.locale_str('reactrole_add_role_desc', scope=SCOPE),
   )
   @app_commands.guild_only()
   @app_commands.default_permissions(administrator=True)
@@ -445,8 +448,11 @@ class ReactRoles(commands.Cog):
     ]
     return results[:25]
 
-  @app_commands.command()
-  @app_commands.describe(topic="The content of the message that users will react to")
+  @app_commands.command(
+    name=app_commands.locale_str('reactrole', scope=SCOPE),
+    description=app_commands.locale_str('reactrole_desc', scope=SCOPE)
+  )
+  @app_commands.describe(topic=app_commands.locale_str('reactrole_topic_desc', scope=SCOPE))
   @app_commands.guild_only()
   @app_commands.default_permissions(administrator=True)
   @commands.bot_has_permissions(read_messages=True, manage_messages=True, add_reactions=True)

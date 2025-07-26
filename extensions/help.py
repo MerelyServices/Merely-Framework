@@ -102,7 +102,8 @@ class Help(commands.Cog):
       if search == cmd.name:
         return cmd
       if splitsearch and isinstance(cmd, app_commands.Group):
-        if splitsearch[0] == cmd.name and splitsearch[1] in (sc.name for sc in cmd.commands):
+        if splitsearch[0] == cmd.name and\
+           splitsearch[1] in (sc.name for sc in cmd.commands):
           return [sc for sc in cmd.commands if sc.name == splitsearch[1]][0]
     return None
 
@@ -184,8 +185,11 @@ class Help(commands.Cog):
     else:
       return self.babel(inter, 'no_command', cmd=search)
 
-  @app_commands.command()
-  @app_commands.describe(command="Name any command you'd like specific help with")
+  @app_commands.command(
+    name=app_commands.locale_str('help', scope=SCOPE),
+    description=app_commands.locale_str('help_desc', scope=SCOPE)
+  )
+  @app_commands.describe(command=app_commands.locale_str('help_command_desc', scope=SCOPE))
   async def help(self, inter:discord.Interaction, command:Optional[str]):
     """
       A repository of all the information you should need to use this bot
@@ -242,7 +246,10 @@ class Help(commands.Cog):
         matches.append(app_commands.Choice(name=commandname, value=commandname))
     return matches[0:25]
 
-  @app_commands.command()
+  @app_commands.command(
+    name=app_commands.locale_str('about', scope=SCOPE),
+    description=app_commands.locale_str('about_desc', scope=SCOPE)
+  )
   async def about(self, inter:discord.Interaction):
     """
     General information about this bot, including an invite link
@@ -299,9 +306,12 @@ class Help(commands.Cog):
       embed=embed
     )
 
-  @app_commands.command()
+  @app_commands.command(
+    name=app_commands.locale_str('changes', scope=SCOPE),
+    description=app_commands.locale_str('changes_desc', scope=SCOPE)
+  )
   @app_commands.describe(
-    search="Find the version a change occured in, or search for a version number"
+    search=app_commands.locale_str('changes_search_desc', scope=SCOPE)
   )
   async def changes(self, inter:discord.Interaction, search:Optional[str] = None):
     """

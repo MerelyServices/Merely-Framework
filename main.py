@@ -144,6 +144,7 @@ class MerelyBot(commands.AutoShardedBot):
 
   async def setup_hook(self) -> None:
     """ Sync registered commands """
+    await self.tree.set_translator(self.babel)
     await self.autoload_extensions()
     await self.sync_commands()
 
@@ -297,7 +298,7 @@ if __name__ == '__main__':
     else:
       raise Exception(
         "Invalid token!" +
-        "\nGet a token from https://discordapp.com/developers/applications/ and put it in config.ini"
+        "\nGet a token from https://discord.com/developers/applications/ and put it in config.ini"
       )
   # Denote the end of this process with a separator
   print('='*20)
