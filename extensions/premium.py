@@ -169,8 +169,8 @@ class Premium(commands.Cog):
   # Commands
 
   @app_commands.command(
-    name=app_commands.locale_str('command_premium', scope=SCOPE),
-    description=app_commands.locale_str('command_premium_desc', scope=SCOPE)
+    name=app_commands.locale_str('premium', scope=SCOPE),
+    description=app_commands.locale_str('premium_desc', scope=SCOPE)
   )
   async def premium(self, inter:discord.Interaction):
     """

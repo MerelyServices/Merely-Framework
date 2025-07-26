@@ -381,25 +381,25 @@ class Poll(commands.Cog):
           poll.remove()
 
   @app_commands.command(
-    name=app_commands.locale_str('command_poll', scope=SCOPE),
-    description=app_commands.locale_str('command_poll_desc', scope=SCOPE)
+    name=app_commands.locale_str('poll', scope=SCOPE),
+    description=app_commands.locale_str('poll_desc', scope=SCOPE)
   )
   @app_commands.describe(
-    title=app_commands.locale_str('command_poll_title_desc', scope=SCOPE),
-    answer1=app_commands.locale_str('command_poll_answer_desc', scope=SCOPE),
-    answer2=app_commands.locale_str('command_poll_answer_desc', scope=SCOPE),
-    answer3=app_commands.locale_str('command_poll_answer_desc', scope=SCOPE),
-    answer4=app_commands.locale_str('command_poll_answer_desc', scope=SCOPE),
-    answer5=app_commands.locale_str('command_poll_answer_desc', scope=SCOPE),
-    answer6=app_commands.locale_str('command_poll_answer_desc', scope=SCOPE),
-    answer7=app_commands.locale_str('command_poll_answer_desc', scope=SCOPE),
-    answer8=app_commands.locale_str('command_poll_answer_desc', scope=SCOPE),
-    answer9=app_commands.locale_str('command_poll_answer_desc', scope=SCOPE),
-    answer10=app_commands.locale_str('command_poll_answer_desc', scope=SCOPE),
-    expiry_days=app_commands.locale_str('command_poll_expiry_desc', scope=SCOPE),
-    expiry_hours=app_commands.locale_str('command_poll_expiry_desc', scope=SCOPE),
-    expiry_minutes=app_commands.locale_str('command_poll_expiry_desc', scope=SCOPE),
-    expiry_seconds=app_commands.locale_str('command_poll_expiry_desc', scope=SCOPE)
+    title=app_commands.locale_str('poll_title_desc', scope=SCOPE),
+    answer1=app_commands.locale_str('poll_answer_desc', scope=SCOPE),
+    answer2=app_commands.locale_str('poll_answer_desc', scope=SCOPE),
+    answer3=app_commands.locale_str('poll_answer_desc', scope=SCOPE),
+    answer4=app_commands.locale_str('poll_answer_desc', scope=SCOPE),
+    answer5=app_commands.locale_str('poll_answer_desc', scope=SCOPE),
+    answer6=app_commands.locale_str('poll_answer_desc', scope=SCOPE),
+    answer7=app_commands.locale_str('poll_answer_desc', scope=SCOPE),
+    answer8=app_commands.locale_str('poll_answer_desc', scope=SCOPE),
+    answer9=app_commands.locale_str('poll_answer_desc', scope=SCOPE),
+    answer10=app_commands.locale_str('poll_answer_desc', scope=SCOPE),
+    expiry_days=app_commands.locale_str('poll_expiry_desc', scope=SCOPE),
+    expiry_hours=app_commands.locale_str('poll_expiry_desc', scope=SCOPE),
+    expiry_minutes=app_commands.locale_str('poll_expiry_desc', scope=SCOPE),
+    expiry_seconds=app_commands.locale_str('poll_expiry_desc', scope=SCOPE)
   )
   @app_commands.allowed_contexts(guilds=True, dms=False, private_channels=True)
   @commands.bot_has_permissions(read_messages=True, send_messages=True, add_reactions=True)

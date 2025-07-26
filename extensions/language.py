@@ -64,13 +64,13 @@ class Language(commands.Cog):
     return out
 
   language = app_commands.Group(
-    name=app_commands.locale_str('command_language', scope=SCOPE),
-    description=app_commands.locale_str('command_language_desc', scope=SCOPE)
+    name=app_commands.locale_str('language', scope=SCOPE),
+    description=app_commands.locale_str('language_desc', scope=SCOPE)
   )
 
   @language.command(
-    name=app_commands.locale_str('command_language_list', scope=SCOPE),
-    description=app_commands.locale_str('command_language_list_desc', scope=SCOPE)
+    name=app_commands.locale_str('language_list', scope=SCOPE),
+    description=app_commands.locale_str('language_list_desc', scope=SCOPE)
   )
   async def language_list(self, inter:discord.Interaction):
     """
@@ -109,8 +109,8 @@ class Language(commands.Cog):
     await inter.response.send_message(embed=embed)
 
   @language.command(
-    name=app_commands.locale_str('command_language_get', scope=SCOPE),
-    description=app_commands.locale_str('command_language_get_desc', scope=SCOPE)
+    name=app_commands.locale_str('language_get', scope=SCOPE),
+    description=app_commands.locale_str('language_get_desc', scope=SCOPE)
   )
   async def language_get(self, inter:discord.Interaction):
     """
@@ -143,8 +143,8 @@ class Language(commands.Cog):
     await inter.response.send_message(embeds=embeds)
 
   @language.command(
-    name=app_commands.locale_str('command_language_set', scope=SCOPE),
-    description=app_commands.locale_str('command_language_set_desc', scope=SCOPE)
+    name=app_commands.locale_str('language_set', scope=SCOPE),
+    description=app_commands.locale_str('language_set_desc', scope=SCOPE)
   )
   @app_commands.describe(language="An ISO language code for your language and dialect")
   async def language_set(

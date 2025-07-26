@@ -360,14 +360,14 @@ class ReactRoles(commands.Cog):
   # Commands
 
   @app_commands.command(
-    name=app_commands.locale_str('command_reactrole_add', scope=SCOPE),
-    description=app_commands.locale_str('command_reactrole_add_desc', scope=SCOPE)
+    name=app_commands.locale_str('reactrole_add', scope=SCOPE),
+    description=app_commands.locale_str('reactrole_add_desc', scope=SCOPE)
   )
   @app_commands.describe(
-    emoji=app_commands.locale_str('command_reactrole_add_emoji_desc', scope=SCOPE),
-    role1=app_commands.locale_str('command_reactrole_add_role_desc', scope=SCOPE),
-    role2=app_commands.locale_str('command_reactrole_add_role_desc', scope=SCOPE),
-    role3=app_commands.locale_str('command_reactrole_add_role_desc', scope=SCOPE),
+    emoji=app_commands.locale_str('reactrole_add_emoji_desc', scope=SCOPE),
+    role1=app_commands.locale_str('reactrole_add_role_desc', scope=SCOPE),
+    role2=app_commands.locale_str('reactrole_add_role_desc', scope=SCOPE),
+    role3=app_commands.locale_str('reactrole_add_role_desc', scope=SCOPE),
   )
   @app_commands.guild_only()
   @app_commands.default_permissions(administrator=True)
@@ -449,10 +449,10 @@ class ReactRoles(commands.Cog):
     return results[:25]
 
   @app_commands.command(
-    name=app_commands.locale_str('command_reactrole', scope=SCOPE),
-    description=app_commands.locale_str('command_reactrole_desc', scope=SCOPE)
+    name=app_commands.locale_str('reactrole', scope=SCOPE),
+    description=app_commands.locale_str('reactrole_desc', scope=SCOPE)
   )
-  @app_commands.describe(topic=app_commands.locale_str('command_reactrole_topic_desc', scope=SCOPE))
+  @app_commands.describe(topic=app_commands.locale_str('reactrole_topic_desc', scope=SCOPE))
   @app_commands.guild_only()
   @app_commands.default_permissions(administrator=True)
   @commands.bot_has_permissions(read_messages=True, manage_messages=True, add_reactions=True)

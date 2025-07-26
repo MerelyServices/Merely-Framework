@@ -95,7 +95,7 @@ class Log(commands.Cog):
         inter.command.root_parent.name if inter.command.root_parent else inter.command.name
       )
     elif isinstance(inter.command, app_commands.ContextMenu):
-      cmdname = inter.command.name.replace('command_', '')
+      cmdname = inter.command.name
       target = inter.data['target_id']
       if inter.data['type'] == 2:
         options.append('target:@' + inter.data['resolved']['users'][target]['username'])

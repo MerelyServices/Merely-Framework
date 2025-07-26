@@ -33,10 +33,10 @@ class Emoji(commands.Cog):
     self.bot = bot
 
   @app_commands.command(
-    name=app_commands.locale_str('command_emoji', scope=SCOPE),
-    description=app_commands.locale_str('command_emoji_desc', scope=SCOPE),
+    name=app_commands.locale_str('emoji', scope=SCOPE),
+    description=app_commands.locale_str('emoji_desc', scope=SCOPE),
   )
-  @app_commands.describe(search=app_commands.locale_str('command_emoji_search_desc', scope=SCOPE))
+  @app_commands.describe(search=app_commands.locale_str('emoji_search_desc', scope=SCOPE))
   @app_commands.allowed_contexts(guilds=True)
   async def emoji(self, inter:discord.Interaction, search:str):
     """

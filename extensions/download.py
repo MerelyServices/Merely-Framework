@@ -59,11 +59,11 @@ class Download(commands.Cog):
       os.remove(f)
 
   @app_commands.command(
-    name=app_commands.locale_str('command_download', scope=SCOPE),
-    description=app_commands.locale_str('command_download_desc', scope=SCOPE)
+    name=app_commands.locale_str('download', scope=SCOPE),
+    description=app_commands.locale_str('download_desc', scope=SCOPE)
   )
   @app_commands.describe(
-    media_url=app_commands.locale_str('command_download_media_url', scope=SCOPE)
+    media_url=app_commands.locale_str('download_media_url', scope=SCOPE)
   )
   @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
   @app_commands.allowed_installs(guilds=True, users=True)

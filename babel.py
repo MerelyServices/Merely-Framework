@@ -193,11 +193,9 @@ class Babel(app_commands.Translator):
 
     match: Optional[str] = None
     for reqlang in reqlangs:
-      try:
-        match = self.langs[reqlang][scope][key]
+      match = self.langs[reqlang].get(scope, key, fallback=None)
+      if match is not None:
         break
-      except (ValueError, KeyError):
-        continue
 
     if match is None:
       # Placeholder string when no strings are found
@@ -307,9 +305,10 @@ class Babel(app_commands.Translator):
     params = string.extras.copy()
     params.pop('scope', None) # Remove scope as this is only for internal use
     scope = string.extras['scope']
+    key = 'command_' + string.message
     try:
       # Call internal translation function
-      return self.__call__(target, scope, string.message, **params)
+      return self.__call__(target, scope, key, **params)
     except Exception as e:
       print(f"Translation error in Babel: {e}")
       return None

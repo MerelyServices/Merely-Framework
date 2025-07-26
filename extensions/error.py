@@ -90,6 +90,8 @@ class Error(commands.Cog):
       elif isinstance(error, (app_commands.CheckFailure, commands.CheckAnyFailure)):
         print("Unhandled error;", error)
         return
+      print("Unknown error;", error)
+      raise error
     except asyncio.TimeoutError:
       print(
         "Unable to handle error in command",
@@ -97,6 +99,8 @@ class Error(commands.Cog):
         "because the interaction timed out."
       )
       print(error)
+    except Exception as e:
+      raise e from error
 
 
 async def setup(bot:MerelyBot):

@@ -33,11 +33,11 @@ class Dice(commands.Cog):
     self.bot = bot
 
   @app_commands.command(
-    name=app_commands.locale_str('command_dice', scope=SCOPE),
-    description=app_commands.locale_str('command_dice_desc', scope=SCOPE)
+    name=app_commands.locale_str('dice', scope=SCOPE),
+    description=app_commands.locale_str('dice_desc', scope=SCOPE)
   )
   @app_commands.describe(
-    sides=app_commands.locale_str('command_dice_sides_desc', scope=SCOPE)
+    sides=app_commands.locale_str('dice_sides_desc', scope=SCOPE)
   )
   @app_commands.default_permissions(send_messages=True)
   @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
