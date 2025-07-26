@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Callable
 import discord
 from discord import app_commands
 from discord.ext import commands
+import regex
 
 if TYPE_CHECKING:
   from main import MerelyBot
@@ -129,6 +130,11 @@ class Selectable(Setting):
 
 
 class Stringable(Setting):
+  def __init__(self, scope:str, key:str, babel_key:str, validation:str | None = None):
+    """ Creates a toggleable setting. If default is None, it cannot be unset by the user. """
+    super().__init__(scope, key, babel_key)
+    self.validation = validation
+
   def generate_components(self, target:Resolvable, callback:Callable) -> list[discord.ui.Item]:
     value = self.get('*unset*')
     b1 = discord.ui.Button(
@@ -192,6 +198,7 @@ class ControlPanel(commands.Cog):
     """ Just provides a text box for editing the value of a stringable setting """
     def __init__(self, parent:ControlPanel.ControlPanelView, setting:Stringable):
       self.parent = parent
+      self.setting = setting
 
       super().__init__(
         title=setting.label(parent.origin),
@@ -210,6 +217,12 @@ class ControlPanel(commands.Cog):
       self.add_item(self.textfield)
 
     async def on_submit(self, inter:discord.Interaction):
+      if self.setting.validation and not regex.match(self.setting.validation, self.textfield.value):
+        await inter.response.send_message(
+          self.parent.parent.babel(inter, 'bad_string'),
+          ephemeral=True
+        )
+        return
       await self.parent.callback_all(inter, self.textfield.value)
 
   # Views
