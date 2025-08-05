@@ -42,6 +42,11 @@ class Error(commands.Cog):
   ):
     """ Report to the user what went wrong """
     send = (inter.followup.send if inter.response.is_done() else inter.response.send_message)
+    if isinstance(error, app_commands.CommandInvokeError):
+      if isinstance(error.original, self.bot.auth.AuthError):
+        await send(str(error.original), **kwargs)
+        return
+      error = error.original
     print("error detected")
     try:
       if isinstance(error, app_commands.CommandOnCooldown):
@@ -79,15 +84,7 @@ class Error(commands.Cog):
           self.babel(inter, 'missingperms', me=me, perms=permlist), **kwargs
         )
         return
-      if isinstance(error, app_commands.CommandInvokeError):
-        if isinstance(error.original, self.bot.auth.AuthError):
-          await send(str(error.original), **kwargs)
-          return
-        await send(
-          self.babel(inter, 'commanderror', error=str(error.original)), **kwargs
-        )
-        traceback.print_exception(type(error.original), error.original, error.original.__traceback__)
-      elif isinstance(error, (app_commands.CheckFailure, commands.CheckAnyFailure)):
+      if isinstance(error, (app_commands.CheckFailure, commands.CheckAnyFailure)):
         print("Unhandled error;", error)
         return
       print("Unknown error;", error)
