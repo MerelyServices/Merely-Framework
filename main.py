@@ -221,6 +221,7 @@ class MerelyBot(commands.AutoShardedBot):
 
       If an overlay folder exists, it will also be searched.
     """
+    assert isinstance(self.config.migrate, version.Version)
     migrations:list[str] = []
     if os.path.exists('migrations'):
       migrations += glob.glob(os.path.join('migrations', 'v*_*.py'))

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import os, re
 from configparser import ConfigParser
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, overload
 from config import Config
 from glob import glob
 import discord
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 Resolvable = (
   discord.Interaction | discord.Message | discord.User | discord.Member | discord.Guild
-  | tuple[int, int | None]
+  | tuple[int, int | None] | str
 )
 
 
@@ -105,11 +105,32 @@ class Babel(app_commands.Translator):
     """ Converts a Discord API locale to a babel locale """
     return self.prefix + str(locale).replace('-US', '').replace('-UK', '')
 
+  @overload
   def resolve_lang(
     self,
     user_id:Optional[int] = None,
     guild_id:Optional[int] = None,
     inter:Optional[discord.Interaction] = None,
+    locale:Optional[str] = None,
+    debug:bool = False
+  ) -> list[str]: ...
+
+  @overload
+  def resolve_lang(
+    self,
+    user_id:Optional[int] = None,
+    guild_id:Optional[int] = None,
+    inter:Optional[discord.Interaction] = None,
+    locale:Optional[str] = None,
+    debug:bool = True
+  ) -> tuple[list[str], list[str]]: ...
+
+  def resolve_lang(
+    self,
+    user_id:Optional[int] = None,
+    guild_id:Optional[int] = None,
+    inter:Optional[discord.Interaction] = None,
+    locale:Optional[str] = None,
     debug:bool = False
   ) -> list[str] | tuple[list[str], list[str]]:
     """ Creates a priority list of languages and reasons why they apply to this user or guild """
@@ -127,13 +148,13 @@ class Babel(app_commands.Translator):
         if debug:
           debug_origins.append(origin)
         # Follow the inheritance chain
-        locale = self.langs[langs[-1]].get('meta', 'inherit', fallback=None)
+        optlocale = self.langs[locale].get('meta', 'inherit', fallback=None)
         # Loop interrupts if this chain has been followed before
-        while locale and locale not in langs and locale in self.langs:
-          langs.append(locale)
+        while optlocale and optlocale not in langs and optlocale in self.langs:
+          langs.append(optlocale)
           if debug:
             debug_origins.append('inherit '+origin)
-          locale = self.langs[langs[-1]].get('meta', 'inherit', fallback=None)
+          optlocale = self.langs[langs[-1]].get('meta', 'inherit', fallback=None)
 
     # Manually set language for user
     if user_id and str(user_id) in self.config['language']:
@@ -148,7 +169,7 @@ class Babel(app_commands.Translator):
       locale = self.config.get('language', str(guild_id))
       resolv(locale, 'guild')
     # Guild locale (if it has been set manually)
-    if inter and inter.guild and 'COMMUNITY' in inter.guild.features:
+    if inter and inter.guild and 'COMMUNITY' in inter.guild.features and inter.guild_locale:
       locale = self.localeconv(inter.guild_locale)
       resolv(locale, 'guild_locale')
     # Default language
@@ -165,10 +186,11 @@ class Babel(app_commands.Translator):
     scope:str,
     key:str,
     fallback:str | None = None,
-    **values: dict[str, str | bool]
+    **values: str | bool
   ) -> str:
     """ Determine the locale and resolve the closest translated string """
     inter = None
+    reqlangs = None
     if isinstance(target, discord.Interaction):
       author_id = target.user.id
       guild_id = target.guild.id if target.guild else None
@@ -185,11 +207,16 @@ class Babel(app_commands.Translator):
     elif isinstance(target, discord.Guild):
       author_id = None
       guild_id = target.id
-    else:
+    elif isinstance(target, tuple):
       author_id = target[0]
       guild_id = target[1] if len(target) > 1 else None
+    elif isinstance(target, str):
+      reqlangs = self.resolve_lang(locale=target)
+    else:
+      raise TypeError(f"Unexpected type {type(target)} for argument 'target'")
 
-    reqlangs = self.resolve_lang(author_id, guild_id, inter)
+    if reqlangs is None:
+      reqlangs = self.resolve_lang(author_id, guild_id, inter)
 
     match: Optional[str] = None
     for reqlang in reqlangs:
@@ -247,7 +274,7 @@ class Babel(app_commands.Translator):
 
   def mention_command(self, search:str):
     """ Finds the API slash command and mentions it """
-    mentionables:list[app_commands.AppCommand] = []
+    mentionables:list[app_commands.AppCommand | app_commands.AppCommandGroup] = []
     for cmd in self.appcommands:
       if ' ' in search:
         splitsearch = search.split()
@@ -297,7 +324,7 @@ class Babel(app_commands.Translator):
 
   async def translate(
     self, string:locale_str, locale:discord.Locale, _:app_commands.TranslationContext
-  ) -> str:
+  ):
     """ Handles Discord.py translation requests by converting them to Babel requests """
     if 'scope' not in string.extras: # Do not attempt to translate strings without a scope
       return None
@@ -308,7 +335,11 @@ class Babel(app_commands.Translator):
     key = 'command_' + string.message
     try:
       # Call internal translation function
-      return self.__call__(target, scope, key, **params)
+      result = self.__call__(target, scope, key, **params)
+      if len(result) > 100:
+        print(f"Warning: {scope}/{key} ({target}) is too long!")
+        return result[:97] + '...'
+      return result
     except Exception as e:
       print(f"Translation error in Babel: {e}")
       return None

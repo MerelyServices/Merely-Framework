@@ -25,9 +25,9 @@ class Auth():
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 
-  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> str:
+  def babel(self, target:Resolvable, key:str, **values: str | bool) -> str:
     """ Shorthand for self.bot.babel(scope, key, **values) """
-    return self.bot.babel(target, self.SCOPE, key, **values)
+    return self.bot.babel(target, self.SCOPE, key, fallback=None, **values)
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
@@ -56,7 +56,7 @@ class Auth():
     """ Verify this user owns this guild """
     if self.superusers(inter, fail=False):
       return True
-    if isinstance(inter, discord.Interaction) and inter.user == inter.guild.owner:
+    if isinstance(inter, discord.Interaction) and inter.guild and inter.user == inter.guild.owner:
       return True
     if fail:
       raise self.AuthError(self.babel(inter, 'unauthorized'))
