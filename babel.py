@@ -165,7 +165,7 @@ class Babel(app_commands.Translator):
     scope:str,
     key:str,
     fallback:str | None = None,
-    **values: dict[str, str | bool]
+    **values: str | bool
   ) -> str:
     """ Determine the locale and resolve the closest translated string """
     inter = None
