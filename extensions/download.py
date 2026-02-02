@@ -80,14 +80,16 @@ class Download(commands.Cog):
     self.runtime_counter += 1
     dlp = await asyncio.create_subprocess_shell(' '.join((
       'yt-dlp',
-      '--format', '"bestvideo[filesize<=9M]+bestaudio[filesize<=2M]/best[filesize<=10M]"'
+      '--format', '"bestvideo[filesize_approx<=9M]+bestaudio[filesize_approx<=2M]/best[filesize_approx<=10M]"',
       '--max-filesize', '10M',
       '--no-playlist',
-      '--max-downloads', '2',
+      '--max-downloads', '1',
       '--limit-rate', '1M',
       '--output', f'tmp/{filenumber}.mp4',
       '--no-warnings',
       '--format-sort', '"+codec:h264,fps"',
+      '--merge-output-format', 'mp4',
+      '--recode-video', 'mp4',
       shlex.quote(media_url)
     )), stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
     logs = ''
