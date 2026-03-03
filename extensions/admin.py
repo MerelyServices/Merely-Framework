@@ -64,7 +64,7 @@ class Admin(commands.Cog):
   async def janitor_autodelete(self, message:discord.Message):
     """janitor service, deletes messages after 30 seconds"""
     if f"{message.channel.id}_janitor" in self.config:
-      strict = int(self.config.get(f"{message.channel.id}_janitor"))
+      strict = self.config.getboolean(f"{message.channel.id}_janitor") or False
       if self.check_delete(message, strict):
         await asyncio.sleep(30)
         await message.delete()

@@ -36,7 +36,7 @@ class Download(commands.Cog):
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 
-  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> str:
+  def babel(self, target:Resolvable, key:str, **values: str | bool) -> str:
     """ Shorthand for self.bot.babel(scope, key, **values) """
     return self.bot.babel(target, self.SCOPE, key, **values)
 
@@ -80,23 +80,28 @@ class Download(commands.Cog):
     self.runtime_counter += 1
     dlp = await asyncio.create_subprocess_shell(' '.join((
       'yt-dlp',
+      '--format', '"bestvideo[filesize_approx<=9M]+bestaudio[filesize_approx<=2M]/best[filesize_approx<=10M]"',
       '--max-filesize', '10M',
       '--no-playlist',
       '--max-downloads', '1',
       '--limit-rate', '1M',
       '--output', f'tmp/{filenumber}.mp4',
-      '--quiet',
       '--no-warnings',
-      '-S', '"+codec:h264,res:480,fps"',
+      '--format-sort', '"+codec:h264,fps"',
+      '--merge-output-format', 'mp4',
+      '--recode-video', 'mp4',
       shlex.quote(media_url)
     )), stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
     logs = ''
-    if stdout := await dlp.stdout.read():
-      logs += '```'+stdout.decode()+'```\n'
     if stderr := await dlp.stderr.read():
-      logs += '```'+stderr.decode()+'```\n'
+      logs = '```'+stderr.decode()+'```\n'
+    elif stdout := await dlp.stdout.read():
+      logs = '```'+stdout.decode()+'```\n'
     filepath = os.path.join('tmp', f'{filenumber}.mp4')
     if os.path.exists(filepath):
+      if os.path.getsize(filepath) > 10_000_000: # 10MB discord limit
+        await inter.edit_original_response(content=self.babel(inter, 'too_large'))
+        return
       await inter.edit_original_response(attachments=(discord.File(filepath),))
     else:
       await inter.edit_original_response(content=self.babel(inter, 'failed', log=logs))
