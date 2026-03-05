@@ -14,14 +14,25 @@ You can test these implementations on my [official Discord server](https://disco
 
 ## Usage
  - Clone the project to a folder
- - Install python >= 3.10
+ - Install python >= 3.11
  - Install required python packages with `python3 -m pip install -r requirements.txt`
- - Create a discord bot in the [Discord Developer Portal](https://discordapp.com/developers/applications/), you will need the token to continue
- - Give MerelyBot the token by setting it in the [main] section of the config
+ - Run MerelyBot without once to generate the config file; `python3 merelybot.py`
+ - Create a discord bot in the [Discord Developer Portal](https://discord.com/developers/applications/), you will need the token
+ - Give MerelyBot the token by setting it in the [main] section of the config (config.ini)
+   - **Never put your token in config.factory.ini** - this file is public when you commit to GitHub.
  - Run MerelyBot with `python3 merelybot.py`
- - Add your instance of merely to your server
+ - Add your instance of merely to your server, use the id from the Discord Developer Portal in the following link;
+   - `https://discord.com/oauth2/authorize?client_id=PASTE_ID_HERE`
  - *Optional*: change the behaviour and features of your bot in the `config/config.ini` file.
-   - Restart the bot to apply changes.
+   - Restart the bot to apply changes; `/die restart:true`
+
+### Updating
+To update, first shut down your bot gracefully with `/die`, then use the following commands.
+
+```sh
+$ git pull
+$ pip install -r requirements.txt
+```
 
 ## Contributing
 The best way to contribute is to create your own discord bot using this framework, and send any improvements to the framework my way in the form of a pull request!
