@@ -68,27 +68,27 @@ class MerelyBot(commands.AutoShardedBot):
         overlay = self.config.get('main', 'botname', fallback='unknown')
         o_beta = self.config.getboolean('main', 'beta', fallback=False)
         o_version = self.config.get('main', 'ver', fallback='0.0.0')
-        creator = self.config.get('main', 'creator', fallback='Unknown')
+      else:
+        beta = self.config.getboolean('main', 'beta', fallback=False)
+        version = self.config.get('main', 'ver', fallback='0.0.0')
+        name = self.config.get('main', 'botname', fallback='unknown')
+      creator = self.config.get('main', 'creator', fallback='Unknown')
+      print(
+        '',
+        'Framework: Merely Framework' + (' beta' if beta else '') + ' v'+version,
+        "Created by Yiays. https://github.com/MerelyServices/Merely-Framework",
+        '',
+        sep='\n'
+      )
+      if self.config.master:
         print(
-          '',
-          'Framework: Merely Framework' + (' beta' if beta else '') + ' v'+version,
-          "Created by Yiays. https://github.com/MerelyServices/Merely-Framework",
-          '',
           'Overlay: ' + overlay + (' beta' if o_beta else '') + ' v'+o_version,
           "Created by " + creator,
           '',
           sep='\n'
         )
       else:
-        beta = self.config.getboolean('main', 'beta', fallback=False)
-        version = self.config.get('main', 'ver', fallback='0.0.0')
-        name = self.config.get('main', 'botname', fallback='unknown')
-        creator = self.config.get('main', 'creator', fallback='Unknown')
         print(
-          '',
-          'Framework: Merely Framework' + (' beta' if beta else '') + ' v'+version,
-          "Created by Yiays. https://github.com/MerelyServices/Merely-Framework",
-          '',
           'Bot name: ' + name,
           "Maintained by " + creator,
           '',
@@ -128,7 +128,7 @@ class MerelyBot(commands.AutoShardedBot):
     intents.guild_typing = 'guild' in self.config.get('intents', 'typing')
     intents.dm_typing = 'dm' in self.config.get('intents', 'typing')
     intents.guild_polls = 'guild' in self.config.get('intents', 'polls')
-    intents.dm_polls = 'dm' in self.config.get('intents', 'typing')
+    intents.dm_polls = 'dm' in self.config.get('intents', 'polls')
 
     # set cache policy
     cachepolicy = discord.MemberCacheFlags.from_intents(intents)

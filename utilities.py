@@ -3,7 +3,7 @@
   Just a modest collection of utility functions that should be useful for multiple bots.
 """
 
-from typing import Callable
+from typing import Callable, Awaitable
 import discord
 
 
@@ -22,12 +22,18 @@ class Utilities:
 
   class CallbackButton(discord.ui.Button):
     """ Modified Button which can have a pre-defined callback function """
-    def __init__(self, callback:Callable[[discord.Interaction], None], **kwargs) -> None:
+    def __init__(self, callback:Callable[[discord.Interaction], Awaitable[None]], **kwargs) -> None:
       super().__init__(**kwargs)
-      self.callback = callback
+      self._callback = callback
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+      await self._callback(interaction)
 
   class CallbackSelect(discord.ui.Select):
     """ Modified Select which can have a pre-defined callback function """
-    def __init__(self, callback:Callable[[discord.Interaction], None], **kwargs) -> None:
+    def __init__(self, callback:Callable[[discord.Interaction], Awaitable[None]], **kwargs) -> None:
       super().__init__(**kwargs)
-      self.callback = callback
+      self._callback = callback
+
+    async def callback(self, interaction: discord.Interaction) -> None:
+      await self._callback(interaction)

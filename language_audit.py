@@ -101,7 +101,9 @@ def main(lang=None):
         found_scopekeys.add(entry)
         break
     else:
+      assert cmd.cog is object
       if hasattr(cmd.cog, 'SCOPE'):
+        assert isinstance(cmd.cog.SCOPE, str)
         found_scopekeys.add(f'{cmd.cog.SCOPE}/{docname}')
 
   for key in special_scopekeys['wildcard']:
