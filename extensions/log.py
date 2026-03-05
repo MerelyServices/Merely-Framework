@@ -27,9 +27,9 @@ class Log(commands.Cog):
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 
-  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> str:
+  def babel(self, target:Resolvable, key:str, **values: str | bool) -> str:
     """ Shorthand for self.bot.babel(scope, key, **values) """
-    return self.bot.babel(target, self.SCOPE, key, **values)
+    return self.bot.babel(target, self.SCOPE, key, fallback=None, **values)
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
@@ -55,26 +55,26 @@ class Log(commands.Cog):
     if isinstance(channel, discord.TextChannel):
       return ' '.join((
         f"[{truncate(channel.guild.name, 10)}#{truncate(channel.name, 20)}]",
-        f"{truncate(author.name, 10)}#{author.discriminator}: {truncate(content, maxlen)}"
+        f"{truncate(author.name, 15)}: {truncate(content, maxlen)}"
       ))
     if isinstance(channel, discord.DMChannel):
       if channel.recipient:
         return ' '.join((
-          f"[DM({truncate(channel.recipient.name, 10)}#{channel.recipient.discriminator})]",
-          f"{author.name}#{author.discriminator}: {truncate(content, maxlen)}"
+          f"[DM({truncate(channel.recipient.name, 15)})]",
+          f"{author.name}: {truncate(content, maxlen)}"
         ))
       return (
-        f"[DM] {truncate(author.name, 10)}#{author.discriminator}: {truncate(content, maxlen)}"
+        f"[DM] {truncate(author.name, 15)}: {truncate(content, maxlen)}"
       )
     if isinstance(channel, discord.Thread):
-      channelname = f"{truncate(channel.guild.name, 10)}#{truncate(channel.parent.name, 20)}"
+      channelname = f"{truncate(channel.guild.name, 10)}#{truncate(channel.parent.name if channel.parent else '', 20)}"
       return ' '.join((
         f"[{channelname}/{truncate(channel.name, 20)}]",
-        f"{truncate(author.name, 10)}#{author.discriminator}:",
+        f"{truncate(author.name, 15)}:",
         f"{truncate(content, maxlen)}"
       ))
     return (
-      f"[Unknown] {truncate(author.name, 10)}#{author.discriminator}: {truncate(content, maxlen)}"
+      f"[Unknown] {truncate(author.name, 15)}: {truncate(content, maxlen)}"
     )
 
   @commands.Cog.listener('on_interaction')
