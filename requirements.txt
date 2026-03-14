@@ -1,4 +1,4 @@
 discord.py==2.6.2
-emoji
+emoji>=2.14.0
 packaging
 regex
