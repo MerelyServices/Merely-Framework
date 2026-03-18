@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 import copy
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Protocol, List, runtime_checkable, cast
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -16,7 +16,16 @@ import regex
 if TYPE_CHECKING:
   from main import MerelyBot
   from babel import Resolvable
+  from extensions.premium import Premium
   from configparser import SectionProxy
+
+type Components = List[discord.ui.Button | discord.ui.Select]
+
+
+@runtime_checkable
+class ControlPanelCog(Protocol):
+  def controlpanel_settings(self, inter:discord.Interaction) -> List[Setting]: ...
+  def controlpanel_theme(self) -> tuple[str, discord.ButtonStyle]: ...
 
 # Models
 
@@ -51,7 +60,7 @@ class Setting():
       self.bot.config.set(self.scope, self.key, value)
     self.bot.config.save()
 
-  def generate_components(self, target:Resolvable, callback:Callable) -> list[discord.ui.Item]:
+  def generate_components(self, target:Resolvable, callback:Callable) -> Components:
     raise Exception("Setting.generate_components() must be overriden.")
 
 
@@ -61,7 +70,7 @@ class Toggleable(Setting):
     super().__init__(scope, key, babel_key)
     self.default = default
 
-  def get(self, fallback=None):
+  def get(self, fallback=None) -> str | None:
     return self.bot.config.get(self.scope, self.key, fallback=fallback)
 
   def toggle(self):
@@ -71,10 +80,10 @@ class Toggleable(Setting):
       'False': None if self.default is True else 'True',
       '_default': 'True' if self.default is None else str(not self.default)
     }
-    value = converter.get(self.get('_default'), 'True')
+    value = converter.get(str(self.get('_default')), 'True')
     self.set(value)
 
-  def generate_components(self, target:Resolvable, callback:Callable) -> list[discord.ui.Item]:
+  def generate_components(self, target:Resolvable, callback:Callable) -> Components:
     """ Toggle button for settings which can only be true or false """
     value = self.get(str(self.default))
     b1 = discord.ui.Button(
@@ -115,7 +124,7 @@ class Selectable(Setting):
     super().__init__(scope, key, babel_key)
     self.possible_values = possible_values
 
-  def generate_components(self, target:Resolvable, callback:Callable) -> list[discord.ui.Item]:
+  def generate_components(self, target:Resolvable, callback:Callable) -> Components:
     """ Select button for settings which can only have pre-determined values """
     value = self.get('*unset*')
     select = discord.ui.Select(
@@ -135,7 +144,7 @@ class Stringable(Setting):
     super().__init__(scope, key, babel_key)
     self.validation = validation
 
-  def generate_components(self, target:Resolvable, callback:Callable) -> list[discord.ui.Item]:
+  def generate_components(self, target:Resolvable, callback:Callable) -> Components:
     value = self.get('*unset*')
     b1 = discord.ui.Button(
       style=self.buttonstyle,
@@ -166,9 +175,9 @@ class ControlPanel(commands.Cog):
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 
-  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> str:
+  def babel(self, target:Resolvable, key:str, **values: str | bool) -> str:
     """ Shorthand for self.bot.babel(scope, key, **values) """
-    return self.bot.babel(target, self.SCOPE, key, **values)
+    return self.bot.babel(target, self.SCOPE, key, fallback=None, **values)
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
@@ -179,17 +188,15 @@ class ControlPanel(commands.Cog):
   @commands.Cog.listener('on_connect')
   async def discover_styles(self):
     for cog in self.bot.cogs:
-      fn = getattr(self.bot.cogs[cog], 'controlpanel_theme', None)
-      if callable(fn):
-        data:tuple[str, discord.ButtonStyle] = fn()
+      if isinstance(cog, ControlPanelCog):
+        data = cog.controlpanel_theme()
         self.section_styles[data[0]] = data[1]
 
   def discover_settings(self, inter:discord.Interaction) -> list[Setting]:
     out = []
     for cog in self.bot.cogs:
-      fn = getattr(self.bot.cogs[cog], 'controlpanel_settings', None)
-      if callable(fn):
-        out += fn(inter)
+      if isinstance(cog, ControlPanelCog):
+        out += cog.controlpanel_settings(inter)
     return out
 
   # Modals
@@ -275,7 +282,10 @@ class ControlPanel(commands.Cog):
           self.add_item(item)
 
     async def callback_all(self, inter:discord.Interaction, value:str | None = None):
+      """ Callback function for all ControlPanel inputs """
+      assert inter.data is not None
       id = inter.data.get('custom_id')
+      assert isinstance(id, str)
       reset = False
       if id.endswith('_reset') and id[0:-len('_reset')] in self.settings:
         reset = True
@@ -294,32 +304,37 @@ class ControlPanel(commands.Cog):
         generickey in self.parent.bot.config['premium']['restricted_config'].split()
         and 'Premium' in self.parent.bot.cogs
       ):
-        if not await self.parent.bot.cogs['Premium'].check_premium(inter.user):
-          embed = self.parent.bot.cogs['Premium'].error_embed(inter)
+        premium = cast(Premium, self.parent.bot.cogs['Premium'])
+        if not await premium.check_premium(inter.user):
+          embed = premium.error_embed(inter)
           await inter.response.send_message(embed=embed, ephemeral=True)
           return
 
       if reset:
+        # Callback from 🔁 button
         setting.set(None)
       elif value:
         # Callback from string edit modal
         setting.set(value)
-      elif type(setting).__name__ in (Toggleable.__name__, Listable.__name__):
+      elif isinstance(setting, (Toggleable, Listable)):
         # Toggle-style button was pressed
         setting.toggle()
-      elif type(setting).__name__ == Selectable.__name__:
+      elif isinstance(setting, Selectable):
         # Selection was made
-        if inter.data.get('values')[0] == '*unset*':
+        assert inter.data is not None
+        values = cast(List[str], inter.data.values)
+        if values[0] == '*unset*':
           setting.set(None)
         else:
-          setting.set(inter.data.get('values')[0])
-      elif type(setting).__name__ == Stringable.__name__:
+          setting.set(values[0])
+      elif isinstance(setting, Stringable):
         # String edit button was pressed
         await inter.response.send_modal(self.parent.StringEditModal(self, setting))
         return
       else:
         raise TypeError(setting)
 
+      # Update view to reflect changed state
       comps = setting.generate_components(inter, self.callback_all)
       for comp in comps:
         oldcompindex = [
@@ -328,11 +343,14 @@ class ControlPanel(commands.Cog):
             isinstance(c, (discord.ui.Button, discord.ui.Select)) and c.custom_id == comp.custom_id
           )
         ][0]
-        if isinstance(self.children[oldcompindex], discord.ui.Button):
-          self.children[oldcompindex].label = comp.label
-          self.children[oldcompindex].emoji = comp.emoji
-        elif isinstance(self.children[oldcompindex], discord.ui.Select):
-          self.children[oldcompindex].placeholder = comp.placeholder
+        targetElement = self.children[oldcompindex]
+        if isinstance(targetElement, discord.ui.Button):
+          assert isinstance(comp, discord.ui.Button)
+          targetElement.label = comp.label
+          targetElement.emoji = comp.emoji
+        elif isinstance(targetElement, discord.ui.Select):
+          assert isinstance(comp, discord.ui.Select)
+          targetElement.placeholder = comp.placeholder
       self.timeout = 300
       await inter.response.edit_message(view=self)
 

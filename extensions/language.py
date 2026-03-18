@@ -29,9 +29,9 @@ class Language(commands.Cog):
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 
-  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> str:
+  def babel(self, target:Resolvable, key:str, **values: str | bool) -> str:
     """ Shorthand for self.bot.babel(scope, key, **values) """
-    return self.bot.babel(target, self.SCOPE, key, **values)
+    return self.bot.babel(target, self.SCOPE, key, fallback=None, **values)
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
@@ -101,7 +101,7 @@ class Language(commands.Cog):
           'contributors',
           fallback=self.babel(inter, 'unknown_contributors')
         ) + '\n' +
-        self.babel(inter, 'coverage_label', coverage=coverage) + '\n' +
+        self.babel(inter, 'coverage_label', coverage=str(coverage)) + '\n' +
         self.bot.utilities.progress_bar(coverage, 100) + '\n',
         inline=False
       )
@@ -172,6 +172,7 @@ class Language(commands.Cog):
         else:
           self.config[str(inter.user.id)] = language
       else:
+        assert inter.guild is not None
         usermode = False
         if language == 'default':
           self.config.pop(str(inter.guild.id))

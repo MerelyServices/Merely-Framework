@@ -6,8 +6,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-import asyncio, traceback
+from typing import TYPE_CHECKING, cast
+import asyncio
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -15,6 +15,7 @@ from discord.ext import commands
 if TYPE_CHECKING:
   from main import MerelyBot
   from babel import Resolvable
+  from extensions.help import Help
   from configparser import SectionProxy
 
 
@@ -27,9 +28,9 @@ class Error(commands.Cog):
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 
-  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> str:
+  def babel(self, target:Resolvable, key:str, **values: str | bool) -> str:
     """ Shorthand for self.bot.babel(scope, key, **values) """
-    return self.bot.babel(target, self.SCOPE, key, **values)
+    return self.bot.babel(target, self.SCOPE, key, fallback=None, **values)
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
@@ -42,46 +43,48 @@ class Error(commands.Cog):
   ):
     """ Report to the user what went wrong """
     send = (inter.followup.send if inter.response.is_done() else inter.response.send_message)
+    realerror: Exception = error
     if isinstance(error, app_commands.CommandInvokeError):
       if isinstance(error.original, self.bot.auth.AuthError):
-        await send(str(error.original), **kwargs)
+        await send(str(error.original))
         return
-      error = error.original
+      realerror = error.original
     print("error detected")
     try:
-      if isinstance(error, app_commands.CommandOnCooldown):
-        if error.cooldown.get_retry_after() > 5:
+      if isinstance(realerror, app_commands.CommandOnCooldown):
+        if realerror.cooldown.get_retry_after() > 5:
           await send(
-            self.babel(inter, 'cooldown', t=int(error.cooldown.get_retry_after())),
+            self.babel(inter, 'cooldown', t=str(int(realerror.cooldown.get_retry_after()))),
             ephemeral=True
           )
           return
         print("cooldown")
         return
-      kwargs = {'ephemeral': True}
       if isinstance(
         error,
         (app_commands.CommandNotFound, commands.BadArgument, commands.MissingRequiredArgument)
       ):
         if 'Help' in self.bot.cogs:
+          help = cast(Help, self.bot.cogs['Help'])
+          assert inter.command is not None
           await send(
-            await self.bot.cogs['Help'].resolve_docs(inter, inter.command.name),
-            **kwargs
+            content=await help.resolve_docs(inter, inter.command.name),
+            ephemeral=True
           )
         else:
-          await send(self.babel(inter, 'missingrequiredargument'), **kwargs)
+          await send(self.babel(inter, 'missingrequiredargument'), ephemeral=True)
         return
       if isinstance(error, app_commands.NoPrivateMessage):
-        await send(self.babel(inter, 'noprivatemessage'), **kwargs)
+        await send(self.babel(inter, 'noprivatemessage'), ephemeral=True)
         return
       if isinstance(error, commands.PrivateMessageOnly):
-        await send(self.babel(inter, 'privatemessageonly'), **kwargs)
+        await send(self.babel(inter, 'privatemessageonly'), ephemeral=True)
         return
       if isinstance(error, (app_commands.BotMissingPermissions, app_commands.MissingPermissions)):
         permlist = self.bot.babel.string_list(inter, [f'`{p}`' for p in error.missing_permissions])
         me = isinstance(error, app_commands.BotMissingPermissions)
         await send(
-          self.babel(inter, 'missingperms', me=me, perms=permlist), **kwargs
+          self.babel(inter, 'missingperms', me=me, perms=permlist), ephemeral=True
         )
         return
       if isinstance(error, (app_commands.CheckFailure, commands.CheckAnyFailure)):

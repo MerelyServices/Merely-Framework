@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from enum import Enum
 import asyncio, io, os, re, importlib, glob, contextlib
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, cast
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -38,11 +38,11 @@ class System(commands.Cog):
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 
-  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> str:
+  def babel(self, target:Resolvable, key:str, **values: str | bool) -> str:
     """ Shorthand for self.bot.babel(scope, key, **values) """
     # for legacy reasons, this module has no local scope
     #BABEL: -main
-    return self.bot.babel(target, 'main', key, **values)
+    return self.bot.babel(target, 'main', key, fallback=None, **values)
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
@@ -183,13 +183,15 @@ class System(commands.Cog):
   async def module_ac(self, inter:discord.Interaction, search:str) -> list[app_commands.Choice[str]]:
     """ Suggests modules based on the list in config """
     extension_list = None
-    if 'action' in inter.data.get('options', {}):
-      if inter.data.get('options').get('action').get('value') in [Actions.reload, Actions.unload]:
+    assert inter.data is not None
+    interoptions = cast(dict[str, dict[str, int]], inter.data.get('options', {}))
+    if 'action' in interoptions:
+      if interoptions['action']['value'] in [Actions.reload, Actions.unload]:
         extension_list = [
           e.replace('extensions.','').replace('overlay.','').strip('_')
           for e in self.bot.extensions.keys()
         ]
-      elif inter['options']['action']['value'] == Actions.list:
+      elif interoptions['action']['value'] == Actions.list:
         return []
     if extension_list is None:
       stock_extensions = glob.glob(os.path.join('extensions', '*.py'))
@@ -262,12 +264,16 @@ class System(commands.Cog):
 
     try:
       channel = await self.bot.fetch_channel(int(channel_id))
+      assert isinstance(channel, discord.abc.Messageable)
       message = await channel.fetch_message(int(message_id))
     except TypeError:
       await inter.response.send_message("Provided ids are invalid!")
       return
     except discord.NotFound:
       await inter.response.send_message("Message/channel id does not match!")
+      return
+    except AssertionError:
+      await inter.response.send_message("Channel id is the wrong channel type!")
       return
 
     try:

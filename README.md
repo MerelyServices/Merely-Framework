@@ -6,7 +6,7 @@
 ## Featured implementations
 You can test these implementations on my [official Discord server](https://discord.gg/wfKx24kDUR).
  - [Merely](https://discordapp.com/oauth2/authorize?client_id=309270899909984267&scope=bot&permissions=0) is an example implementation of the framework. Merely uses the default config included with this code so you can run it yourself.
- - [ConfessionBot](https://github.com/yiays/ConfessionBot-2.0) is an anonymous messaging system for Discord. ConfessionBot uses the help command, translation support, and module reloading features to speed up development and shares improvements to the framework back here.
+ - [ConfessionBot](https://github.com/yiays/ConfessionBot) is an anonymous messaging system for Discord. ConfessionBot uses the help command, translation support, and module reloading features to speed up development and shares improvements to the framework back here.
 
 ## News
 **MerelyBot v2.0 has launched!** This is a major release because we are changing the underlying library back to Discord.py in order to support user installation. This means you can now add Merely to your account and use the new command (`/download`) anywhere!
@@ -16,12 +16,12 @@ You can test these implementations on my [official Discord server](https://disco
  - Clone the project to a folder
  - Install python >= 3.11
  - Install required python packages with `python3 -m pip install -r requirements.txt`
- - Run MerelyBot without once to generate the config file; `python3 merelybot.py`
+ - Run youur bot once to generate the config file; `python3 main.py`
  - Create a discord bot in the [Discord Developer Portal](https://discord.com/developers/applications/), you will need the token
- - Give MerelyBot the token by setting it in the [main] section of the config (config.ini)
+ - Give your bot the token by setting it in the [main] section of the config (config/config.ini)
    - **Never put your token in config.factory.ini** - this file is public when you commit to GitHub.
- - Run MerelyBot with `python3 merelybot.py`
- - Add your instance of merely to your server, use the id from the Discord Developer Portal in the following link;
+ - Run your bot with `python3 main.py`
+ - Add your your bot to your server, use the id from the Discord Developer Portal in the following link;
    - `https://discord.com/oauth2/authorize?client_id=PASTE_ID_HERE`
  - *Optional*: change the behaviour and features of your bot in the `config/config.ini` file.
    - Restart the bot to apply changes; `/die restart:true`

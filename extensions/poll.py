@@ -32,7 +32,7 @@ class LivePoll():
   expiry:int
   expired:bool = False
   message:discord.Message
-  target:discord.Guild | discord.User
+  target:discord.Guild | discord.User | discord.Member
 
   EMOJIS = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟']
 
@@ -53,7 +53,7 @@ class LivePoll():
 
   def create(
     self,
-    target:discord.Guild | discord.User,
+    target:discord.Guild | discord.User | discord.Member,
     title:str,
     answers:list[str],
     votes:list[int],
@@ -78,16 +78,19 @@ class LivePoll():
     self.message = message
     if message.guild:
       self.target = message.guild
-    elif message.channel.recipient:
+      discord.GroupChannel
+    elif isinstance(message.channel, discord.DMChannel) and message.channel.recipient is not None:
       self.target = message.channel.recipient
+    elif isinstance(message.channel, discord.GroupChannel):
+      self.target = message.channel.recipients[0]
     else:
-      self.target = message.channel.members[0]
+      raise Exception("Unable to determine locale for this poll channel type", message.channel)
+    assert self.message.embeds[0].title is not None
     self.title = self.message.embeds[0].title
-    self.answers = [f.name[4:-1] for f in self.message.embeds[0].fields]
+    self.answers = [f.name[4:-1] for f in self.message.embeds[0].fields if f.name]
     if self.expired:
-      self.votes = [
-        int(re.match(r'.*\((\d+)\)', f.value).group(1)) for f in self.message.embeds[0].fields
-      ]
+      _votes = [re.match(r'.*\((\d+)\)', f.value) for f in self.message.embeds[0].fields if f.value]
+      self.votes = [int(i.group()) for i in _votes if i is not None]
     else:
       self.votes = [0 for _ in self.answers]
       for react in self.message.reactions:
@@ -213,7 +216,7 @@ class LivePoll():
       await self.message.channel.send(
         self.parent.babel(self.target, 'multiple_winners',
                           title=self.title,
-                          num=len(winners),
+                          num=str(len(winners)),
                           winners=winnerstring),
         reference=self.message
       )
@@ -233,15 +236,11 @@ class Poll(commands.Cog):
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 
-  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> str:
+  def babel(self, target:Resolvable, key:str, **values: str | bool) -> str:
     """ Shorthand for self.bot.babel(scope, key, **values) """
-    return self.bot.babel(target, self.SCOPE, key, **values)
+    return self.bot.babel(target, self.SCOPE, key, fallback=None, **values)
 
   livepolls: dict[int, LivePoll] = {}
-  poll_tick_timer: tasks.Loop
-  current_poll_timer: tasks.Loop
-  old_poll_timer: tasks.Loop
-  ancient_poll_timer: tasks.Loop
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
@@ -268,6 +267,9 @@ class Poll(commands.Cog):
         if message_id not in self.livepolls:
           try:
             channel = await self.bot.fetch_channel(channel_id)
+            assert not isinstance(channel, (discord.CategoryChannel, discord.ForumChannel))
+            if isinstance(channel, discord.abc.PrivateChannel):
+              assert isinstance(channel, (discord.DMChannel, discord.GroupChannel))
             message = await channel.fetch_message(message_id)
           except (discord.NotFound, discord.Forbidden):
             self.config.pop(key)
@@ -299,8 +301,9 @@ class Poll(commands.Cog):
     )
   ):
     """ Handle changes to the reaction list of a poll """
+    assert self.bot.user is not None
     if e.message_id in self.livepolls and\
-       (not hasattr(e, 'user_id') or e.user_id != self.bot.user.id):
+       (isinstance(e, discord.RawReactionActionEvent) and e.user_id != self.bot.user.id or True):
       poll = self.livepolls[e.message_id]
       if poll.expiry > time():
         if isinstance(e, discord.RawReactionActionEvent):
@@ -417,10 +420,10 @@ class Poll(commands.Cog):
     answer8:Optional[str] = None,
     answer9:Optional[str] = None,
     answer10:Optional[str] = None,
-    expiry_days:Optional[int] = 0,
-    expiry_hours:Optional[int] = 0,
-    expiry_minutes:Optional[int] = 0,
-    expiry_seconds:Optional[int] = 0
+    expiry_days:int = 0,
+    expiry_hours:int = 0,
+    expiry_minutes:int = 0,
+    expiry_seconds:int = 0
   ):
     """
       Creates a poll with up to 10 options and an expiry time
@@ -439,7 +442,7 @@ class Poll(commands.Cog):
       expiry = 300
     poll = LivePoll(self)
     target = inter.guild if inter.guild else inter.user
-    poll.create(target, title, answers, [0]*len(answers), time() + expiry)
+    poll.create(target, title, answers, [0]*len(answers), int(time()) + expiry)
 
     embed = poll.generate_embed()
     announce = self.babel(target, 'poll_created', author=inter.user.mention)

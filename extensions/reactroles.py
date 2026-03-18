@@ -327,7 +327,7 @@ class ReactRoles(commands.Cog):
       await self.msg.edit(view=self)
 
     @discord.ui.button(style=discord.ButtonStyle.green, emoji='❔', custom_id='add_reactrole_emoji')
-    async def add_reaction_button(self, inter:discord.Interaction, _:discord.Button):
+    async def add_reaction_button(self, inter:discord.Interaction, _:discord.ui.Button):
       """ Sends the command needed to add a reaction (and associated roles) """
       self.parent.bot.auth.admins(inter)
 
@@ -339,7 +339,7 @@ class ReactRoles(commands.Cog):
     @discord.ui.button(
       style=discord.ButtonStyle.primary, emoji='💾', disabled=True, custom_id='reactrole_submit'
     )
-    async def save_button(self, inter:discord.Interaction, _:discord.Button):
+    async def save_button(self, inter:discord.Interaction, _:discord.ui.Button):
       """ Saves the reactrole message to storage so it will start to take effect """
       self.parent.bot.auth.admins(inter)
       assert inter.channel is not None
@@ -440,8 +440,7 @@ class ReactRoles(commands.Cog):
       await inter.response.send_message(self.babel(inter, 'no_emoji'), ephemeral=True)
       return
 
-    _roles = set((role1, role2, role3))
-    roles: set[discord.Role] = {role for role in _roles if role is not None}
+    roles = {role for role in (role1, role2, role3) if role is not None}
     unassignable = []
     for role in roles:
       if not role.is_assignable():
@@ -465,7 +464,7 @@ class ReactRoles(commands.Cog):
 
     search = search.strip()
     lang = self.find_locale(inter)[2:]
-    if lang not in ej.EMOJI_DATA['🤣']:
+    if lang not in ej.LANGUAGES:
       # Fallback to en if the language is not supported
       lang = 'en'
 

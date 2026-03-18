@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import asyncio
 from enum import Enum
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Protocol, Coroutine, Any, runtime_checkable
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -17,6 +17,11 @@ if TYPE_CHECKING:
   from main import MerelyBot
   from babel import Resolvable
   from configparser import SectionProxy
+
+
+@runtime_checkable
+class PurgeableChannel(Protocol):
+  def purge(self, *args, **kwargs) -> Coroutine[Any, Any, list[discord.Message]]: ...
 
 
 class JanitorMode(int, Enum):
@@ -35,9 +40,9 @@ class Admin(commands.Cog):
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 
-  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> str:
+  def babel(self, target:Resolvable, key:str, **values: str | bool) -> str:
     """ Shorthand for self.bot.babel(scope, key, **values) """
-    return self.bot.babel(target, self.SCOPE, key, **values)
+    return self.bot.babel(target, self.SCOPE, key, fallback=None, **values)
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
@@ -47,6 +52,7 @@ class Admin(commands.Cog):
 
   def check_delete(self, message:discord.Message, strict:bool = False):
     """ Criteria for message deletion """
+    assert self.bot.user is not None
     return (
       not message.flags.ephemeral and
       (
@@ -79,6 +85,7 @@ class Admin(commands.Cog):
     """
       Add or remove janitor from this channel. Janitor deletes messages after 30 seconds
     """
+    assert isinstance(inter.channel, (discord.TextChannel | discord.Thread))
     if mode != JanitorMode.DISABLED:
       self.config[f'{inter.channel.id}_janitor'] = str(int(mode))
       self.bot.config.save()
@@ -106,6 +113,9 @@ class Admin(commands.Cog):
     """
       Clean messages from this channel. By default, this only deletes messages to and from this bot.
     """
+    if not isinstance(inter.channel, PurgeableChannel):
+      await inter.followup.send(self.babel(inter, 'clean_failed'))
+      return
     try:
       await inter.response.defer(thinking=True)
       if clean_to:
@@ -120,7 +130,7 @@ class Admin(commands.Cog):
           check=lambda m: self.check_delete(m, strict),
           before=await inter.original_response()
         )
-      await inter.followup.send(self.babel(inter, 'clean_success', n=len(deleted)))
+      await inter.followup.send(self.babel(inter, 'clean_success', n=str(len(deleted))))
     except discord.Forbidden:
       await inter.followup.send(self.babel(inter, 'clean_failed'))
     except discord.NotFound:

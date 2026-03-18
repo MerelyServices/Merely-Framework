@@ -25,9 +25,9 @@ class Emoji(commands.Cog):
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 
-  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> str:
+  def babel(self, target:Resolvable, key:str, **values: str | bool) -> str:
     """ Shorthand for self.bot.babel(scope, key, **values) """
-    return self.bot.babel(target, self.SCOPE, key, **values)
+    return self.bot.babel(target, self.SCOPE, key, fallback=None, **values)
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
@@ -58,8 +58,9 @@ class Emoji(commands.Cog):
   async def ac_emoji(self, _:discord.Interaction, search:str):
     """ Autocomplete for emoji search """
     results = [
-      app_commands.Choice(name=f':{e.name}: ({e.guild.name})', value=str(e.id))
-      for e in self.bot.emojis if search.replace(':','').lower() in e.name.lower() + e.guild.name
+      app_commands.Choice(name=f':{e.name}: ({getattr(e.guild, 'name', '')})', value=str(e.id))
+      for e in self.bot.emojis
+      if search.replace(':','').lower() in e.name.lower() + getattr(e.guild, 'name', '')
     ]
     return results[:25]
 

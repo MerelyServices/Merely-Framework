@@ -1,7 +1,6 @@
 """
   Premium - exclusive functionality for paying users
-  Still rather primitive, prevents usage of an entire command unless a user has a certain role
-  Currently unused until new premium exclusive features are developed
+  Prevents usage of an entire command unless a user has a certain role
 """
 
 from __future__ import annotations
@@ -27,9 +26,9 @@ class Premium(commands.Cog):
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 
-  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> str:
+  def babel(self, target:Resolvable, key:str, **values: str | bool) -> str:
     """ Shorthand for self.bot.babel(scope, key, **values) """
-    return self.bot.babel(target, self.SCOPE, key, **values)
+    return self.bot.babel(target, self.SCOPE, key, fallback=None, **values)
 
   premiumguild: discord.Guild
   premiumroles: set[discord.Role]
@@ -67,7 +66,6 @@ class Premium(commands.Cog):
     if not bot.config.get('help', 'serverinv', fallback=''):
       raise Exception("Premium needs serverinv to be set in config!")
 
-    self.premiumguild = None
     self.premiumroles = set()
 
     # Add command checker
@@ -84,11 +82,13 @@ class Premium(commands.Cog):
   async def cache_role(self):
     """ Fetches guild and member list on connect to decrease first response time """
     await asyncio.sleep(5)
-    self.premiumguild = self.bot.get_guild(int(self.config['premium_role_guild']))
-    if not self.premiumguild:
+    _premiumguild = self.bot.get_guild(int(self.config['premium_role_guild']))
+    if not _premiumguild:
       if not self.bot.quiet:
         print("Note: had to fetch premium guild as it has not been loaded yet")
       self.premiumguild = await self.bot.fetch_guild(int(self.config['premium_role_guild']))
+    else:
+      self.premiumguild = _premiumguild
 
     # Repopulate list of premium roles
     self.premiumroles = set()
@@ -113,12 +113,13 @@ class Premium(commands.Cog):
   # Checks
 
   async def check_premium_slash_command(self, inter:discord.Interaction) -> bool:
-    #TODO: maybe check other interaction types too?
+    """ Checks all commands to block in the event of missing premium, if required """
     if inter.type != discord.InteractionType.application_command:
       return True
 
     restricted = self.config['restricted_commands'].split(' ')
     premium_users = [int(u) for u in self.config['premium_users'].split(' ') if u]
+    assert inter.command is not None
     if inter.command.name in restricted:
       if inter.user.id in premium_users:
         return True # user is automatically premium through config
@@ -201,9 +202,11 @@ class Premium(commands.Cog):
       embed.set_thumbnail(url=self.config['icon'])
     embed.set_footer(text=self.babel(inter, 'fine_print'))
 
+    kwargs: dict
+    kwargs = {'view': self.PremiumView(inter, self)} if self.bot.config['help']['serverinv'] else {}
     await inter.response.send_message(
       embed=embed,
-      view=self.PremiumView(inter, self) if self.bot.config['help']['serverinv'] else None
+      **kwargs
     )
 
 

@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 import asyncio, re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -33,7 +33,7 @@ class Log(commands.Cog):
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
-    self.logchannel = None
+    self.logchannel:discord.abc.Messageable | None = None
     self.discord_url_filter = re.compile(r'^https://[^/]*discord[^/]*(/.*)$')
     # ensure config file has required data
     if not bot.config.has_section(self.SCOPE):
@@ -46,9 +46,17 @@ class Log(commands.Cog):
     """ Connect to the logging channel """
     if self.config['logchannel'].isdigit():
       await asyncio.sleep(10) # Wait to reduce flood of requests on ready
-      self.logchannel = await self.bot.fetch_channel(int(self.config['logchannel']))
+      logchannel = await self.bot.fetch_channel(int(self.config['logchannel']))
+      assert isinstance(logchannel, discord.abc.Messageable)
+      self.logchannel = logchannel
 
-  def wrap(self, content:str, author:discord.User, channel:discord.abc.Messageable, maxlen:int = 80):
+  def wrap(
+    self,
+    content:str,
+    author:discord.User | discord.Member,
+    channel:discord.abc.Messageable,
+    maxlen:int = 80
+  ):
     """ Format log data consistently """
     # Shorthand for truncate because it's used so many times
     truncate = self.bot.utilities.truncate
@@ -67,7 +75,10 @@ class Log(commands.Cog):
         f"[DM] {truncate(author.name, 15)}: {truncate(content, maxlen)}"
       )
     if isinstance(channel, discord.Thread):
-      channelname = f"{truncate(channel.guild.name, 10)}#{truncate(channel.parent.name if channel.parent else '', 20)}"
+      channelname = (
+        truncate(channel.guild.name, 10) + '#' +
+        truncate(channel.parent.name if channel.parent else '', 20)
+      )
       return ' '.join((
         f"[{channelname}/{truncate(channel.name, 20)}]",
         f"{truncate(author.name, 15)}:",
@@ -95,12 +106,18 @@ class Log(commands.Cog):
         inter.command.root_parent.name if inter.command.root_parent else inter.command.name
       )
     elif isinstance(inter.command, app_commands.ContextMenu):
+      assert inter.data is not None
       cmdname = inter.command.name
-      target = inter.data['target_id']
-      if inter.data['type'] == 2:
-        options.append('target:@' + inter.data['resolved']['users'][target]['username'])
-      elif inter.data['type'] == 3:
-        target_message = inter.channel.get_partial_message(target)
+      target = inter.data.get('target_id')
+      assert target is not None
+      if inter.data.get('type') == 2:
+        resolved = inter.data.get('resolved')
+        assert resolved is not None
+        users = cast(dict[str, discord.User], resolved.get('users'))
+        options.append('target:@' + users[str(target)].name)
+      elif inter.data.get('type') == 3:
+        assert isinstance(inter.channel, discord.TextChannel)
+        target_message = inter.channel.get_partial_message(int(target))
         options.append('target:'+target_message.jump_url[19:])
       else:
         options.append('target: unknown')
@@ -112,6 +129,8 @@ class Log(commands.Cog):
       cmdname = 'Unknown command'
 
     # Find parameters and values, if any
+    if inter.data is None:
+      return
     if 'options' in inter.data:
       for opt in inter.data['options']:
         value = ''
@@ -133,8 +152,11 @@ class Log(commands.Cog):
           value = pre + truncate(value, 30)
         options.append(value)
     elif 'components' in inter.data:
-      for row in inter.data['components']:
-        for opt in row['components']:
+      for row in inter.data.get('components'):
+        subcomponents = row.get('components')
+        if subcomponents is None:
+          continue
+        for opt in subcomponents:
           options.append(
             opt['custom_id'] + (':' + truncate(opt['value'], 30) if 'value' in opt else '')
           )
@@ -144,6 +166,7 @@ class Log(commands.Cog):
       options.append(truncate(inter.data['custom_id'], 30))
 
     # Compile results together
+    assert isinstance(inter.channel, discord.abc.Messageable)
     logentry = self.wrap(
       f"{cmdname} > {' '.join(options)}",
       inter.user,
@@ -166,10 +189,11 @@ class Log(commands.Cog):
       return # This interaction isn't complete yet
     originalmsg = await inter.original_response()
     # Prevent errors if message history won't be available
+    assert inter.channel is not None
     if isinstance(inter.channel, discord.DMChannel):
       if self.bot.user not in inter.channel.recipients: # This is somebody else's DMs
         return
-    elif inter.guild:
+    elif inter.guild and self.bot.user:
       member = inter.guild.get_member(self.bot.user.id)
       if member is None: # This is somebody else's server
         # Curiously, the API seems to create a fake member just so this state isn't reached
@@ -177,6 +201,9 @@ class Log(commands.Cog):
       if not inter.channel.permissions_for(member).read_message_history:
         # Can't read message history here
         return
+    if not isinstance(inter.channel, discord.abc.Messageable):
+      # Can't read message history here
+      return
     async for msg in inter.channel.history(after=originalmsg):
       if msg.author == self.bot.user and\
         msg.reference and\
@@ -186,18 +213,24 @@ class Log(commands.Cog):
       logentry = self.wrap(response.content, response.author, response.channel)
       print(logentry)
       if self.logchannel:
-        await self.logchannel.send(logentry, embed=response.embeds[0] if response.embeds else None)
+        kwargs: dict = {'embed': response.embeds[0]} if response.embeds else {}
+        await self.logchannel.send(logentry, **kwargs)
 
   async def log_misc_message(self, msg:discord.Message):
     """ Record a message that is in some way related to a command """
     logentry = self.wrap(msg.content, msg.author, msg.channel)
     print(logentry)
     if self.logchannel:
-      await self.logchannel.send(logentry, embed=msg.embeds[0] if msg.embeds else None)
+      kwargs: dict = {'embed': msg.embeds[0]} if msg.embeds else {}
+      await self.logchannel.send(logentry, **kwargs)
 
-  async def log_misc_str(self, inter:discord.Interaction | None = None, content:str = ''):
+  async def log_misc_str(self, content:str = '', *, inter:discord.Interaction | None):
     """ Record a string and interaction separately """
-    logentry = self.wrap(content, inter.user, inter.channel) if inter else content
+    if inter:
+      assert isinstance(inter.channel, discord.abc.Messageable)
+      logentry = self.wrap(content, inter.user, inter.channel)
+    else:
+      logentry = content
     print(logentry)
     if self.logchannel:
       await self.logchannel.send(logentry)

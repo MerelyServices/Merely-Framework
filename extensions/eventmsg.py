@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-import hashlib, enum
+import enum
 from datetime import datetime
 from typing import Optional, Union, TYPE_CHECKING
 import discord
@@ -36,7 +36,6 @@ class Event():
     member
       mention
       name
-      discriminator
     guild
       name
     role
@@ -62,8 +61,8 @@ class Event():
     self,
     name:str,
     usage:str,
-    variables:tuple[str],
-    components:Optional[list[dict[str]]] = None
+    variables:tuple[str, ...],
+    components:Optional[list[dict[str, discord.ui.Item]]] = None
   ) -> None:
     self.name = name
     self.example = usage
@@ -74,7 +73,7 @@ class Event():
     return self.name
 
   def __hash__(self) -> int:
-    return int(hashlib.md5(self.name, usedforsecurity=False), 16)
+    return hash(self.name)
 
 
 @enum.unique
@@ -87,8 +86,8 @@ class Events(enum.Enum):
   ),
   FAREWELL = Event(
     'on_member_leave',
-    "{member.name}#{member.discriminator} has left {guild.name}.",
-    ('member.name', 'member.discriminator', 'guild.name')
+    "@{member.name} has left {guild.name}.",
+    ('member.name', 'guild.name')
   ),
   ROLE_GAIN = Event(
     'on_member_update role add',
@@ -102,7 +101,7 @@ class Events(enum.Enum):
   ),
   MESSAGE = Event(
     'on_message',
-    "{member.name} just posted in {channel.mention}",
+    "@{member.name} just posted in {channel.mention}",
     ('member.name', 'channel.mention')
   ), # Requires message content scope
   NEW_EMOJI = Event(
@@ -112,13 +111,13 @@ class Events(enum.Enum):
   ),
   BAN = Event(
     'on_member_ban',
-    "{user.name}#{user.discriminator} has been banned! Reason: {ban.reason}.",
-    ('user.name', 'user.discriminator', 'ban.reason')
+    "@{user.name} has been banned! Reason: {ban.reason}.",
+    ('user.name', 'ban.reason')
   ),
   UNBAN = Event(
     'on_member_unban',
-    "{user.name}#{user.disciminator}'s ban has been lifted!",
-    ('user.name', 'user.discriminator')
+    "@{user.name}'s ban has been lifted!",
+    ('user.name',)
   ),
   # Time system
   DAILY = Event(
@@ -206,9 +205,9 @@ class EventMsg(commands.Cog):
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 
-  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> str:
+  def babel(self, target:Resolvable, key:str, **values: str | bool) -> str:
     """ Shorthand for self.bot.babel(scope, key, **values) """
-    return self.bot.babel(target, self.SCOPE, key, **values)
+    return self.bot.babel(target, self.SCOPE, key, fallback=None, **values)
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
@@ -247,6 +246,7 @@ class EventMsg(commands.Cog):
     if f"{member.guild.id}_welcome" in self.config:
       data = self.config[f"{member.guild.id}_welcome"].split(', ')
       channel = member.guild.get_channel(int(data[0]))
+      assert isinstance(channel, discord.abc.Messageable)
       await channel.send(
         ', '.join(data[1:]).format(member.mention, member.guild.name)
       )
@@ -257,9 +257,10 @@ class EventMsg(commands.Cog):
     if f"{payload.guild_id}_farewell" in self.config:
       data = self.config[f"{payload.guild_id}_farewell"].split(', ')
       guild = self.bot.get_guild(payload.guild_id)
-      channel = guild.get_channel(int(data[0]))
-      await channel.send(', '.join(data[1:])
-                         .format(f"{payload.user.name}#{payload.user.discriminator}", guild.name))
+      if guild is not None:
+        channel = guild.get_channel(int(data[0]))
+        assert isinstance(channel, discord.abc.Messageable)
+        await channel.send(', '.join(data[1:]).format(f"{payload.user.name}", guild.name))
 
   class EventMessageEditor(discord.ui.Modal):
     """ Modal simply provides a text box to change the event message """
@@ -267,22 +268,24 @@ class EventMsg(commands.Cog):
       """ Create modal with the current message content """
       super().__init__(
         title="Edit event message",
-        custom_id=f'{eventview.eid}_editor',
-        components=[discord.ui.TextInput(
-          label="Message",
-          custom_id='message',
-          placeholder=eventview.message,
-          default=eventview.message,
-          style=discord.TextStyle.paragraph,
-          min_length=1
-        )]
+        custom_id=f'{eventview.eid}_editor'
       )
+
+      self.messageInput = discord.ui.TextInput(
+        label="Message",
+        custom_id='message',
+        placeholder=eventview.message,
+        default=eventview.message,
+        style=discord.TextStyle.paragraph,
+        min_length=1
+      )
+      self.add_item(self.messageInput)
 
       self.eventview = eventview
 
     async def on_submit(self, inter:discord.Interaction, /):
       """ Handle the new message content """
-      self.eventview.message = inter.data.get('values')['message']
+      self.eventview.message = self.messageInput.value
       await self.eventview.update(inter)
 
   class EventEditView(discord.ui.View):
@@ -344,32 +347,30 @@ class EventMsg(commands.Cog):
         case _:
           raise AssertionError("An event was specified which was not handled in /eventmessage")
 
-      self.add_item(parent.bot.utilities.CallbackButton(
+      self.submit_btn = parent.bot.utilities.CallbackButton(
         callback=self.submit_click,
         label="Submit",
         custom_id=f"{self.eid}_submit",
         style=discord.ButtonStyle.primary,
         emoji='✅',
         disabled=True
-      ))
+      )
+      self.add_item(self.submit_btn)
 
     async def update(self, inter:discord.Interaction):
       """ Refresh the view, reflecting any changes made to variables """
       state = self.parent.babel(inter, 'event_controlpanel',
                                 message=self.message,
                                 channel=self.channel.mention,
-                                xp=self.xp,
+                                xp=str(self.xp),
                                 usage=self.usage)
 
-      submitbtn:discord.Button = [
-        child for child in self.children if child.custom_id == f'{self.eid}_submit'
-      ][0]
       if self.message:
-        submitbtn.disabled = False
+        self.submit_btn.disabled = False
       else:
-        submitbtn.disabled = True
+        self.submit_btn.disabled = True
 
-      await inter.response.edit_message(content=state, components=self.children)
+      await inter.response.edit_message(content=state, view=self)
 
     async def edit_click(self, inter:discord.Interaction):
       """ Opens the event message editor """
@@ -381,20 +382,24 @@ class EventMsg(commands.Cog):
 
     async def custom_click(self, inter:discord.Interaction):
       """ Code to handle any other user input (Button or Select) """
-      if inter.component.custom_id == 'edit_date':
+      assert inter.custom_id is not None
+      if inter.custom_id == 'edit_date':
         pass
-      elif inter.component.custom_id.endswith('_xpmult'):
+      elif inter.custom_id.endswith('_xpmult'):
         pass
-      elif inter.component.custom_id.endswith('_xpmode'):
+      elif inter.custom_id.endswith('_xpmode'):
         pass
       else:
-        raise AssertionError(f"Unhandled click event '{inter.component.custom_id}'")
+        raise Exception(f"Unhandled click event '{inter.custom_id}'")
 
     async def on_timeout(self):
       for item in self.children:
-        if 'disabled' in item:
+        if isinstance(item, (discord.ui.Button, discord.ui.Select)):
           item.disabled = True
-      #await self.msg.edit(content=self.parent.bot.babel(self.msg.guild, 'error', 'timeoutview'))
+      await self.inter.response.edit_message(
+        content=self.parent.bot.babel(self.inter, 'error', 'timeoutview'),
+        view=self
+      )
 
   @app_commands.command()
   @app_commands.describe(
@@ -408,7 +413,7 @@ class EventMsg(commands.Cog):
     self,
     inter:discord.Interaction,
     channel:discord.TextChannel,
-    event:Events,
+    event:Event,
     action:Action
   ):
     """
@@ -441,13 +446,13 @@ class EventMsg(commands.Cog):
     state = self.babel(inter, 'event_controlpanel',
                        message=message,
                        channel=channel.mention,
-                       xp=xp,
+                       xp=str(xp),
                        usage=usage)
     await inter.response.send_message(
       state,
       view=self.EventEditView(self, inter, event, action, message, xp, channel, usage),
       ephemeral=True,
-      allowed_mentions=[]
+      allowed_mentions=discord.AllowedMentions(everyone=False, users=False, roles=False)
     )
 
   welcome = app_commands.Group(
@@ -460,11 +465,12 @@ class EventMsg(commands.Cog):
   @welcome.command(name='get')
   async def welcome_get(self, inter:discord.Interaction):
     """ Gets the current welcome message. Otherwise, gives instructions on how to set one """
+    assert inter.guild is not None
     if f'{inter.guild.id}_welcome' in self.config:
       data = self.config[f"{inter.guild.id}_welcome"].split(', ')
       await inter.response.send_message(
           self.bot.babel(inter, 'greeter', 'greeting_preview',
-                         channel=inter.guild.get_channel(int(data[0])).mention,
+                         channel=self.bot.get_partial_messageable(int(data[0])).mention,
                          message=', '.join(data[1:]).format('@USER', inter.guild.name)),
           ephemeral=True
         )
@@ -480,6 +486,7 @@ class EventMsg(commands.Cog):
     """
       Sets the welcome message based on your input.
     """
+    assert inter.channel is not None and inter.guild is not None
     self.config[f'{inter.guild.id}_welcome'] = f"{inter.channel.id}, {message}"
     self.bot.config.save()
     await inter.response.send_message(
@@ -489,6 +496,7 @@ class EventMsg(commands.Cog):
   @welcome.command(name='clear')
   async def welcome_clear(self, inter:discord.Interaction):
     """ Clears the welcome message """
+    assert inter.guild is not None
     if f'{inter.guild.id}_welcome' in self.config:
       self.config.pop(f'{inter.guild.id}_welcome')
       self.bot.config.save()
@@ -510,11 +518,12 @@ class EventMsg(commands.Cog):
   @farewell.command(name='get')
   async def farewell_get(self, inter:discord.Interaction):
     """ Gets the current farewell message. Otherwise, gives instructions on how to set one """
+    assert inter.guild is not None
     if f'{inter.guild.id}_farewell' in self.config:
       data = self.config[f"{inter.guild.id}_farewell"].split(', ')
       await inter.response.send_message(
         self.bot.babel(inter, 'greeter', 'greeting_preview',
-                       channel=inter.guild.get_channel(int(data[0])).mention,
+                       channel=self.bot.get_partial_messageable(int(data[0])).mention,
                        message=', '.join(data[1:]).format('USER#1234', inter.guild.name)),
         ephemeral=True
       )
@@ -527,9 +536,8 @@ class EventMsg(commands.Cog):
   @farewell.command(name='set')
   @app_commands.describe(message="The message that will be sent when a member joins.")
   async def farewell_set(self, inter:discord.Interaction, message:str):
-    """
-      Sets the welcome message based on your input.
-    """
+    """ Sets the welcome message based on your input. """
+    assert inter.channel is not None and inter.guild is not None
     self.config[f'{inter.guild.id}_farewell'] = f"{inter.channel.id}, {message}"
     self.bot.config.save()
     await inter.response.send_message(self.bot.babel(inter, 'greeter', 'farewell_set_success'))
@@ -537,6 +545,7 @@ class EventMsg(commands.Cog):
   @farewell.command(name='clear')
   async def farewell_clear(self, inter:discord.Interaction):
     """ Clears the farewell message """
+    assert inter.guild is not None
     if f'{inter.guild.id}_farewell' in self.config:
       self.config.pop(f'{inter.guild.id}_farewell')
       self.bot.config.save()

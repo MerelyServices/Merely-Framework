@@ -56,9 +56,9 @@ class Announce(commands.Cog):
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 
-  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> str:
+  def babel(self, target:Resolvable, key:str, **values: str | bool) -> str:
     """ Shorthand for self.bot.babel(scope, key, **values) """
-    return self.bot.babel(target, self.SCOPE, key, **values)
+    return self.bot.babel(target, self.SCOPE, key, fallback=None, **values)
 
   def __init__(self, bot:MerelyBot):
     #NOTE: This module should not be translated.
@@ -120,6 +120,7 @@ class Announce(commands.Cog):
     if self.config['in_progress']:
       raw_channel_id, raw_message_id = self.config['in_progress'].split('/')
       channel = self.bot.get_channel(int(raw_channel_id))
+      assert isinstance(channel, discord.TextChannel)
       try:
         msg = await channel.fetch_message(int(raw_message_id))
       except discord.NotFound:
@@ -152,7 +153,7 @@ class Announce(commands.Cog):
 
   @commands.Cog.listener('on_guild_join')
   async def autosubscribe(self, guild:discord.Guild):
-    if self.subscribe(guild.owner_id):
+    if guild.owner_id and self.subscribe(guild.owner_id):
       self.bot.config.save()
 
   # Common functions
@@ -177,7 +178,7 @@ class Announce(commands.Cog):
 
   async def send_announcement(
     self,
-    msg:discord.InteractionMessage,
+    msg:discord.Message,
     skip=0,
     succeeded=0,
     failed:dict[str, list[str]] = {},
@@ -263,10 +264,10 @@ class Announce(commands.Cog):
 
   class AnnounceModal(discord.ui.Modal):
     """ Type out and send an announcement """
-    def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> str:
+    def babel(self, target:Resolvable, key:str, **values: str | bool) -> str:
       """ Shorthand for self.bot.babel(scope, key, **values) """
       # this modal uses the new system scope
-      return self.parent.bot.babel(target, self.parent.SCOPE, key, **values)
+      return self.parent.bot.babel(target, self.parent.SCOPE, key, fallback=None, **values)
 
     def __init__(self, parent:Announce, inter:discord.Interaction, simulate:bool):
       self.parent = parent
@@ -301,12 +302,10 @@ class Announce(commands.Cog):
       )
       self.add_item(self.urlInput)
 
-      self.imageUrlInput = discord.ui.TextInput(
-        label=self.babel(inter, 'announce_image'),
+      self.imageUrlInput = discord.ui.FileUpload(
         custom_id='image_url',
-        style=discord.TextStyle.short,
-        min_length=0,
-        required=False
+        required=False,
+        max_values=1
       )
       self.add_item(self.imageUrlInput)
 
@@ -317,7 +316,7 @@ class Announce(commands.Cog):
         url=self.urlInput.value,
         color=int(self.parent.bot.config['main']['themecolor'], 16)
       )
-      embed.set_image(url=self.imageUrlInput.value)
+      embed.set_image(url=self.imageUrlInput.values[0].url)
       embed.set_footer(text=self.babel(inter, 'announce_unsubscribe_info'))
 
       subscribed = self.parent.config['dm_subscription'].split(',')
@@ -342,6 +341,8 @@ class Announce(commands.Cog):
 
     def set_simulate(self):
       """ Enables simulation mode in the view, even if it's recovered from a restart """
+      assert isinstance(self.send_button.custom_id, str)
+      assert isinstance(self.resume_button.custom_id, str)
       self.send_button.custom_id += '_sim'
       self.resume_button.custom_id += '_sim'
       self.simulate = True
@@ -356,7 +357,7 @@ class Announce(commands.Cog):
       # Prevent any random users from pressing the button
       self.parent.bot.auth.superusers(inter)
 
-      if inter.data.get('custom_id').endswith('_sim'):
+      if inter.data and inter.data.get('custom_id', default='').endswith('_sim'):
         self.set_simulate()
 
       # Disable buttons
@@ -374,7 +375,7 @@ class Announce(commands.Cog):
       # Prevent any random users from pressing the button
       self.parent.bot.auth.superusers(inter)
 
-      if inter.data.get('custom_id').endswith('_sim'):
+      if inter.data and inter.data.get('custom_id', default='').endswith('_sim'):
         self.set_simulate()
 
       # Disable resume button once again
@@ -384,6 +385,7 @@ class Announce(commands.Cog):
       await inter.response.edit_message(view=self)
 
       # Recover state from message content
+      assert isinstance(inter.message, discord.Message)
       try:
         succeeded = int(inter.message.content[24:].split('/')[0])
       except ValueError:
@@ -440,11 +442,12 @@ class Announce(commands.Cog):
     if progress := self.config.get('in_progress'):
       raw_channel_id, raw_message_id = progress.split('/')
       channel = self.bot.get_channel(int(raw_channel_id))
-      msg = channel.get_partial_message(int(raw_message_id))
-      await inter.response.send_message(
-        self.babel(inter, 'announce_in_progress', msglink=msg.jump_url)
-      )
-      return
+      if isinstance(channel, discord.TextChannel):
+        msg = channel.get_partial_message(int(raw_message_id))
+        await inter.response.send_message(
+          self.babel(inter, 'announce_in_progress', msglink=msg.jump_url)
+        )
+        return
     await inter.response.send_modal(self.AnnounceModal(self, inter, simulate))
 
 

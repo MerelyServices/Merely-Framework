@@ -28,9 +28,9 @@ class Help(commands.Cog):
     """ Shorthand for self.bot.config[scope] """
     return self.bot.config[self.SCOPE]
 
-  def babel(self, target:Resolvable, key:str, **values: dict[str, str | bool]) -> str:
+  def babel(self, target:Resolvable, key:str, **values: str | bool) -> str:
     """ Shorthand for self.bot.babel(scope, key, **values) """
-    return self.bot.babel(target, self.SCOPE, key, **values)
+    return self.bot.babel(target, self.SCOPE, key, fallback=None, **values)
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
@@ -81,7 +81,7 @@ class Help(commands.Cog):
       await self.bot.change_presence(status=discord.Status.dnd)
 
   @commands.Cog.listener('on_ready')
-  async def set_status(self, status:discord.Status = None, message:str = None):
+  async def set_status(self, status:Optional[discord.Status] = None, message:Optional[str] = None):
     """ appear online and add help command information to the status """
     if message is None:
       if self.config['customstatus']:
@@ -93,7 +93,7 @@ class Help(commands.Cog):
     await asyncio.sleep(1) # Add delay to reduce flood of requests on connect
     await self.bot.change_presence(status=status, activity=activity)
 
-  def find_command(self, search:str) -> app_commands.Command:
+  def find_command(self, search:str) -> app_commands.Command | app_commands.Group | None:
     """ search currently enabled commands for an instance of the string """
     splitsearch = None
     if ' ' in search:
@@ -107,7 +107,9 @@ class Help(commands.Cog):
           return [sc for sc in cmd.commands if sc.name == splitsearch[1]][0]
     return None
 
-  async def get_docs(self, inter:discord.Interaction, command:app_commands.Command):
+  async def get_docs(
+    self, inter:discord.Interaction, command:app_commands.Command | app_commands.Group
+  ):
     """ find documentation for this command in babel """
     reslang = self.bot.babel.resolve_lang(
       inter.user.id, inter.guild.id if inter.guild else None, inter
@@ -142,13 +144,19 @@ class Help(commands.Cog):
               docs += '\n*'+line+'*'
           return docs
     # Return the docstring otherwise
-    mentionline = video_url + (
-      f'**{self.bot.babel.mention_command(commandname)}' + (' ' if command.parameters else '')
-    )
-    autodoc = command.description + ('\n' if command.parameters else '')
-    for param in command.parameters:
-      mentionline += f'({param.name})' if param.required else f'[{param.name}]'
-      autodoc += '\n' + f'*{param.name}: {param.description}*'
+    if isinstance(command, app_commands.Command) and command.parameters:
+      mentionline = video_url + (
+        f'**{self.bot.babel.mention_command(commandname)}' + (' ' if command.parameters else '')
+      )
+      autodoc = command.description + ('\n' if command.parameters else '')
+      for param in command.parameters:
+        mentionline += f'({param.name})' if param.required else f'[{param.name}]'
+        autodoc += '\n' + f'*{param.name}: {param.description}*'
+    else:
+      mentionline = video_url + (
+        f'**{self.bot.babel.mention_command(commandname)}'
+      )
+      autodoc = command.description
     return mentionline + '**\n' + autodoc
 
   async def resolve_docs(self, inter:discord.Interaction, search:str):
@@ -225,6 +233,7 @@ class Help(commands.Cog):
         name=section, value=self.bot.babel.string_list(inter, hcmds), inline=False
       )
 
+    assert self.bot.user is not None
     embed.set_footer(
       text=self.babel(inter, 'creator_footer'),
       icon_url=self.bot.user.avatar.url if self.bot.user.avatar else None
@@ -265,8 +274,8 @@ class Help(commands.Cog):
     embed.add_field(
       name=self.babel(inter, 'about_field1_title'),
       value=self.babel(inter, 'about_field1_value',
-                       cmds=sum(1 for _ in self.bot.tree.walk_commands()),
-                       guilds=len(self.bot.guilds)),
+                       cmds=str(sum(1 for _ in self.bot.tree.walk_commands())),
+                       guilds=str(len(self.bot.guilds))),
       inline=False
     )
     embed.add_field(
@@ -277,7 +286,7 @@ class Help(commands.Cog):
     embed.add_field(
       name=self.babel(inter, 'about_field3_title'),
       value=self.babel(inter, 'about_field3_value',
-                       videoexamples=self.config.get('video_tutorial_url_pattern'),
+                       videoexamples=bool(self.config.get('video_tutorial_url_pattern')),
                        serverinv=self.config['serverinv']),
       inline=False
     )
@@ -286,6 +295,7 @@ class Help(commands.Cog):
       value=self.babel(inter, 'about_field4_value'),
       inline=False
     )
+    assert self.bot.user is not None
     embed.add_field(
       name=self.babel(inter, 'about_field5_title'),
       value=self.babel(inter, 'about_field5_value', invite=(
@@ -343,6 +353,7 @@ class Help(commands.Cog):
       color=int(self.bot.config['main']['themecolor'], 16),
       url=logurl
     )
+    assert self.bot.user is not None
     embed.set_footer(
       text=self.babel(inter, 'creator_footer'),
       icon_url=self.bot.user.avatar.url if self.bot.user.avatar else None

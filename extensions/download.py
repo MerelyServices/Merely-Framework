@@ -38,7 +38,7 @@ class Download(commands.Cog):
 
   def babel(self, target:Resolvable, key:str, **values: str | bool) -> str:
     """ Shorthand for self.bot.babel(scope, key, **values) """
-    return self.bot.babel(target, self.SCOPE, key, **values)
+    return self.bot.babel(target, self.SCOPE, key, fallback=None, **values)
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
@@ -80,7 +80,9 @@ class Download(commands.Cog):
     self.runtime_counter += 1
     dlp = await asyncio.create_subprocess_shell(' '.join((
       'yt-dlp',
-      '--format', '"bestvideo[filesize_approx<=9M]+bestaudio[filesize_approx<=2M]/best[filesize_approx<=10M]"',
+      '--format', (
+        '"bestvideo[filesize_approx<=9M]+bestaudio[filesize_approx<=2M]/best[filesize_approx<=10M]"'
+      ),
       '--max-filesize', '10M',
       '--no-playlist',
       '--max-downloads', '1',
@@ -93,6 +95,8 @@ class Download(commands.Cog):
       shlex.quote(media_url)
     )), stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
     logs = ''
+    assert dlp.stderr is not None
+    assert dlp.stdout is not None
     if stderr := await dlp.stderr.read():
       logs = '```'+stderr.decode()+'```\n'
     elif stdout := await dlp.stdout.read():
