@@ -14,7 +14,7 @@ You can test these implementations on my [official Discord server](https://disco
 
 ## Usage
  - Clone the project to a folder
- - Install python >= 3.11
+ - Install python >= 3.12
  - Install required python packages with `python3 -m pip install -r requirements.txt`
  - Run youur bot once to generate the config file; `python3 main.py`
  - Create a discord bot in the [Discord Developer Portal](https://discord.com/developers/applications/), you will need the token
