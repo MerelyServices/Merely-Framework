@@ -63,7 +63,7 @@ class Download(commands.Cog):
     description=app_commands.locale_str('download_desc', scope=SCOPE)
   )
   @app_commands.describe(
-    media_url=app_commands.locale_str('download_media_url', scope=SCOPE)
+    media_url=app_commands.locale_str('download_media_url_desc', scope=SCOPE)
   )
   @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
   @app_commands.allowed_installs(guilds=True, users=True)
