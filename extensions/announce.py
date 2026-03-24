@@ -11,12 +11,12 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from main import MerelyCog
 from extensions.controlpanel import Listable
 
 if TYPE_CHECKING:
   from main import MerelyBot
   from babel import Resolvable
-  from configparser import SectionProxy
 
 
 # Stateless functions
@@ -46,19 +46,10 @@ def add_to_failed(failed:dict[str, list[str]], key:str, new:str):
   return failed
 
 
-class Announce(commands.Cog):
+class Announce(MerelyCog):
   """ Handles DM announcements and ensures the process can resume after a crash or restart """
   SCOPE = 'announce'
   lock = False
-
-  @property
-  def config(self) -> SectionProxy:
-    """ Shorthand for self.bot.config[scope] """
-    return self.bot.config[self.SCOPE]
-
-  def babel(self, target:Resolvable, key:str, **values: str | bool) -> str:
-    """ Shorthand for self.bot.babel(scope, key, **values) """
-    return self.bot.babel(target, self.SCOPE, key, fallback=None, **values)
 
   def __init__(self, bot:MerelyBot):
     #NOTE: This module should not be translated.

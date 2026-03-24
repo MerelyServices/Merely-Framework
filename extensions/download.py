@@ -11,10 +11,10 @@ from discord.ext import commands
 import subprocess, os, glob, asyncio, shlex
 from urllib.parse import urlparse, ParseResult
 
+from main import MerelyCog
+
 if TYPE_CHECKING:
   from main import MerelyBot
-  from babel import Resolvable
-  from configparser import SectionProxy
 
 
 # Utility functions
@@ -27,18 +27,9 @@ def uri_validator(x):
         return False
 
 
-class Download(commands.Cog):
+class Download(MerelyCog):
   """ Adds an echo command and logs new members """
   SCOPE = 'download'
-
-  @property
-  def config(self) -> SectionProxy:
-    """ Shorthand for self.bot.config[scope] """
-    return self.bot.config[self.SCOPE]
-
-  def babel(self, target:Resolvable, key:str, **values: str | bool) -> str:
-    """ Shorthand for self.bot.babel(scope, key, **values) """
-    return self.bot.babel(target, self.SCOPE, key, fallback=None, **values)
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot

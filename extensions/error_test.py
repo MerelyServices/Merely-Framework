@@ -7,13 +7,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 import discord
 from discord import app_commands
-from discord.ext import commands
+
+from main import MerelyCog
 
 if TYPE_CHECKING:
   from main import MerelyBot
 
 
-class ErrorTest(commands.Cog):
+class ErrorTest(MerelyCog):
   """ Adds an echo command and logs new members """
   def __init__(self, bot:MerelyBot):
     self.bot = bot

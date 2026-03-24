@@ -12,10 +12,11 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from main import MerelyCog
+
 if TYPE_CHECKING:
   from main import MerelyBot
   from babel import Resolvable
-  from configparser import SectionProxy
 
 
 class Actions(int, Enum):
@@ -28,19 +29,14 @@ class Actions(int, Enum):
   disable = 5
 
 
-class System(commands.Cog):
+class System(MerelyCog):
   """commands involved in working with a discord bot"""
   SCOPE = 'system'
   SPECIAL_MODULES = ['config', 'babel', 'utilities', 'auth']
 
-  @property
-  def config(self) -> SectionProxy:
-    """ Shorthand for self.bot.config[scope] """
-    return self.bot.config[self.SCOPE]
-
   def babel(self, target:Resolvable, key:str, **values: str | bool) -> str:
     """ Shorthand for self.bot.babel(scope, key, **values) """
-    # for legacy reasons, this module has no local scope
+    # for legacy reasons, this module has no local scope for translation
     #BABEL: -main
     return self.bot.babel(target, 'main', key, fallback=None, **values)
 

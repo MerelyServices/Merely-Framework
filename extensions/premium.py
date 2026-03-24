@@ -11,24 +11,15 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from main import MerelyCog
+
 if TYPE_CHECKING:
   from main import MerelyBot
-  from babel import Resolvable
-  from configparser import SectionProxy
 
 
-class Premium(commands.Cog):
+class Premium(MerelyCog):
   """ Commands can be restricted to premium in the config, this extension enforces it """
   SCOPE = 'premium'
-
-  @property
-  def config(self) -> SectionProxy:
-    """ Shorthand for self.bot.config[scope] """
-    return self.bot.config[self.SCOPE]
-
-  def babel(self, target:Resolvable, key:str, **values: str | bool) -> str:
-    """ Shorthand for self.bot.babel(scope, key, **values) """
-    return self.bot.babel(target, self.SCOPE, key, fallback=None, **values)
 
   premiumguild: discord.Guild
   premiumroles: set[discord.Role]

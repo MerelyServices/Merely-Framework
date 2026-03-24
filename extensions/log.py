@@ -12,24 +12,15 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from main import MerelyCog
+
 if TYPE_CHECKING:
   from main import MerelyBot
-  from babel import Resolvable
-  from configparser import SectionProxy
 
 
-class Log(commands.Cog):
+class Log(MerelyCog):
   """ Record messages, commands and errors to file or a discord channel """
   SCOPE = 'log'
-
-  @property
-  def config(self) -> SectionProxy:
-    """ Shorthand for self.bot.config[scope] """
-    return self.bot.config[self.SCOPE]
-
-  def babel(self, target:Resolvable, key:str, **values: str | bool) -> str:
-    """ Shorthand for self.bot.babel(scope, key, **values) """
-    return self.bot.babel(target, self.SCOPE, key, fallback=None, **values)
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot

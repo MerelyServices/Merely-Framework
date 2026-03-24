@@ -13,25 +13,16 @@ from discord.ext import commands
 import emoji as ej
 from emoji import unicode_codes
 
+from main import MerelyCog
+
 if TYPE_CHECKING:
   from main import MerelyBot
-  from babel import Resolvable
-  from configparser import SectionProxy
 
 
-class ReactRoles(commands.Cog):
+class ReactRoles(MerelyCog):
   """ Allows admins to set up messages where reacting grants users roles """
   SCOPE = 'reactroles'
   drafts:dict[int, ReactRoleEditorView]
-
-  @property
-  def config(self) -> SectionProxy:
-    """ Shorthand for self.bot.config[scope] """
-    return self.bot.config[self.SCOPE]
-
-  def babel(self, target:Resolvable, key:str, **values: str | bool) -> str:
-    """ Shorthand for self.bot.babel(scope, key, **values) """
-    return self.bot.babel(target, self.SCOPE, key, fallback=None, **values)
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot

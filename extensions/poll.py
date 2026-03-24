@@ -13,10 +13,10 @@ import discord
 from discord import app_commands
 from discord.ext import tasks, commands
 
+from main import MerelyCog
+
 if TYPE_CHECKING:
   from main import MerelyBot
-  from babel import Resolvable
-  from configparser import SectionProxy
 
 
 class LivePoll():
@@ -223,22 +223,13 @@ class LivePoll():
     await self.redraw()
 
 
-class Poll(commands.Cog):
+class Poll(MerelyCog):
   """
     Poll is an almost stateless poll extension for discord bots
     This improved poll handles votes even if the bot goes offline
     Also keeps the countdown timer up to date for a week after expiry
   """
   SCOPE = 'poll'
-
-  @property
-  def config(self) -> SectionProxy:
-    """ Shorthand for self.bot.config[scope] """
-    return self.bot.config[self.SCOPE]
-
-  def babel(self, target:Resolvable, key:str, **values: str | bool) -> str:
-    """ Shorthand for self.bot.babel(scope, key, **values) """
-    return self.bot.babel(target, self.SCOPE, key, fallback=None, **values)
 
   livepolls: dict[int, LivePoll] = {}
 
