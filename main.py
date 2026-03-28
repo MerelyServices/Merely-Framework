@@ -9,15 +9,12 @@ from itertools import groupby
 from packaging import version
 import discord
 from discord.ext import commands
+from configparser import SectionProxy
+
 from config import Config
-from babel import Babel
+from babel import Babel, Resolvable
 from utilities import Utilities
 from auth import Auth
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-  from babel import Resolvable
-  from configparser import SectionProxy
 
 
 class MerelyBot(commands.AutoShardedBot):
