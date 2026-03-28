@@ -94,7 +94,10 @@ class Download(MerelyCog):
       logs = '```'+stdout.decode()+'```\n'
     filepath = os.path.join('tmp', f'{filenumber}.mp4')
     if os.path.exists(filepath):
-      if os.path.getsize(filepath) > 10_000_000: # 10MB discord limit
+      size_limit = discord.utils.DEFAULT_FILE_SIZE_LIMIT_BYTES
+      if inter.guild:
+        size_limit = inter.guild.filesize_limit
+      if os.path.getsize(filepath) > size_limit:
         await inter.edit_original_response(content=self.babel(inter, 'too_large'))
         return
       await inter.edit_original_response(attachments=(discord.File(filepath),))
