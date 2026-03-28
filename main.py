@@ -7,9 +7,10 @@
 import sys, time, os, re, glob, importlib, logging
 from itertools import groupby
 from packaging import version
+from configparser import SectionProxy
+from typing import Mapping
 import discord
 from discord.ext import commands
-from configparser import SectionProxy
 
 from config import Config
 from babel import Babel, Resolvable
@@ -24,6 +25,7 @@ class MerelyBot(commands.AutoShardedBot):
     This includes a babel module for localised strings, a config module, automatic extension
     loading, config-defined intents, and logging.
   """
+  cogs:Mapping[str, "MerelyCog"]
   config:Config
   babel:Babel
   utilities:Utilities = Utilities()

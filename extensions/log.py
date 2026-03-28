@@ -215,7 +215,7 @@ class Log(MerelyCog):
       kwargs: dict = {'embed': msg.embeds[0]} if msg.embeds else {}
       await self.logchannel.send(logentry, **kwargs)
 
-  async def log_misc_str(self, content:str = '', *, inter:discord.Interaction | None):
+  async def log_misc_str(self, content:str = '', *, inter:discord.Interaction | None = None):
     """ Record a string and interaction separately """
     if inter:
       assert isinstance(inter.channel, discord.abc.Messageable)
