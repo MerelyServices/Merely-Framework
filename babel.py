@@ -19,7 +19,7 @@ if TYPE_CHECKING:
   from .main import MerelyBot
 
 Resolvable = (
-  discord.Interaction | discord.Message | discord.User | discord.Member | discord.Guild
+  discord.Interaction | discord.Message | discord.abc.User | discord.Guild
   | tuple[int, int | None] | str
 )
 
