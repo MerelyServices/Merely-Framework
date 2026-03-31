@@ -296,7 +296,7 @@ class ControlPanel(MerelyCog):
         generickey in self.parent.bot.config['premium']['restricted_config'].split()
         and 'Premium' in self.parent.bot.cogs
       ):
-        premium = cast(Premium, self.parent.bot.cogs['Premium'])
+        premium = cast("Premium", self.parent.bot.cogs['Premium'])
         if not await premium.check_premium(inter.user):
           embed = premium.error_embed(inter)
           await inter.response.send_message(embed=embed, ephemeral=True)

@@ -56,7 +56,7 @@ class Error(MerelyCog):
         (app_commands.CommandNotFound, commands.BadArgument, commands.MissingRequiredArgument)
       ):
         if 'Help' in self.bot.cogs:
-          help = cast(Help, self.bot.cogs['Help'])
+          help = cast("Help", self.bot.cogs['Help'])
           assert inter.command is not None
           await send(
             content=await help.resolve_docs(inter, inter.command.name),
