@@ -11,8 +11,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from main import MerelyCog
-from extensions.controlpanel import Listable
+from extensions.controlpanel import ControlPanelCog, Listable
 
 if TYPE_CHECKING:
   from main import MerelyBot
@@ -46,7 +45,7 @@ def add_to_failed(failed:dict[str, list[str]], key:str, new:str):
   return failed
 
 
-class Announce(MerelyCog):
+class Announce(ControlPanelCog):
   """ Handles DM announcements and ensures the process can resume after a crash or restart """
   SCOPE = 'announce'
   lock = False
@@ -348,7 +347,7 @@ class Announce(MerelyCog):
       # Prevent any random users from pressing the button
       self.parent.bot.auth.superusers(inter)
 
-      if inter.data and inter.data.get('custom_id', default='').endswith('_sim'):
+      if inter.data and 'custom_id' in inter.data and inter.data['custom_id'].endswith('_sim'):
         self.set_simulate()
 
       # Disable buttons
@@ -366,7 +365,7 @@ class Announce(MerelyCog):
       # Prevent any random users from pressing the button
       self.parent.bot.auth.superusers(inter)
 
-      if inter.data and inter.data.get('custom_id', default='').endswith('_sim'):
+      if inter.data and 'custom_id' in inter.data and inter.data['custom_id'].endswith('_sim'):
         self.set_simulate()
 
       # Disable resume button once again

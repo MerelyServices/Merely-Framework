@@ -11,14 +11,13 @@ import re
 import discord
 from discord import app_commands
 
-from main import MerelyCog
-from extensions.controlpanel import Selectable
+from extensions.controlpanel import ControlPanelCog, Selectable
 
 if TYPE_CHECKING:
   from main import MerelyBot
 
 
-class Language(MerelyCog):
+class Language(ControlPanelCog):
   """ Enables per-user and per-guild string translation of the bot """
   SCOPE = 'language'
 
@@ -51,6 +50,9 @@ class Language(MerelyCog):
         [discord.SelectOption(label=val) for val in langlist]
       ))
     return out
+
+  def controlpanel_theme(self):
+    return None
 
   language = app_commands.Group(
     name=app_commands.locale_str('language', scope=SCOPE),

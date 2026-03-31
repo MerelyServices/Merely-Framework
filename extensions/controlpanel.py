@@ -1,13 +1,12 @@
 """
   ControlPanel - Reduce command clutter by making settings available through ControlPanel instead.
-  Works well with Premium, depends on other cogs to have a controlpanel_settings() and optionally a
-  controlpanel_theme()
+  Works well with Premium, depends on other cogs to implement ControlPanelCog
 """
 
 from __future__ import annotations
 
 import copy
-from typing import TYPE_CHECKING, Callable, Protocol, List, runtime_checkable, cast
+from typing import TYPE_CHECKING, Callable, List, cast
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -23,10 +22,9 @@ if TYPE_CHECKING:
 type Components = List[discord.ui.Button | discord.ui.Select]
 
 
-@runtime_checkable
-class ControlPanelCog(Protocol):
-  def controlpanel_settings(self, inter:discord.Interaction) -> List[Setting]: ...
-  def controlpanel_theme(self) -> tuple[str, discord.ButtonStyle]: ...
+class ControlPanelCog(MerelyCog):
+  def controlpanel_settings(self, inter:discord.Interaction) -> List[Setting] | None: ...
+  def controlpanel_theme(self) -> tuple[str, discord.ButtonStyle] | None: ...
 
 # Models
 
@@ -179,16 +177,23 @@ class ControlPanel(MerelyCog):
 
   @commands.Cog.listener('on_connect')
   async def discover_styles(self):
-    for cog in self.bot.cogs:
+    for modulename in self.bot.cogs:
+      cog = self.bot.cogs[modulename]
       if isinstance(cog, ControlPanelCog):
         data = cog.controlpanel_theme()
+        if data is None:
+          continue
         self.section_styles[data[0]] = data[1]
 
   def discover_settings(self, inter:discord.Interaction) -> list[Setting]:
     out = []
-    for cog in self.bot.cogs:
+    for modulename in self.bot.cogs:
+      cog = self.bot.cogs[modulename]
       if isinstance(cog, ControlPanelCog):
-        out += cog.controlpanel_settings(inter)
+        data = cog.controlpanel_settings(inter)
+        if data is None:
+          continue
+        out += data
     return out
 
   # Modals
@@ -275,8 +280,8 @@ class ControlPanel(MerelyCog):
 
     async def callback_all(self, inter:discord.Interaction, value:str | None = None):
       """ Callback function for all ControlPanel inputs """
-      assert inter.data is not None
-      id = inter.data.get('custom_id')
+      assert inter.data is not None and 'custom_id' in inter.data
+      id = inter.data['custom_id']
       assert isinstance(id, str)
       reset = False
       if id.endswith('_reset') and id[0:-len('_reset')] in self.settings:

@@ -9,14 +9,13 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from main import MerelyCog
-from extensions.controlpanel import Toggleable, Listable, Selectable, Stringable
+from extensions.controlpanel import ControlPanelCog, Toggleable, Listable, Selectable, Stringable
 
 if TYPE_CHECKING:
   from main import MerelyBot
 
 
-class Example(MerelyCog):
+class Example(ControlPanelCog):
   """ Example commands for learning purposes """
   SCOPE = 'example'
 
