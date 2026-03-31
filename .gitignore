@@ -3,7 +3,8 @@ __pycache__
 .pytest_cache/
 /config/config_history
 /config/config.ini
-/logs
+/logs/*
+!/logs/archive.sh
 /overlay
 /.restart
 /tmp
