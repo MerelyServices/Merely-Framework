@@ -179,8 +179,8 @@ class System(MerelyCog):
   async def module_ac(self, inter:discord.Interaction, search:str) -> list[app_commands.Choice[str]]:
     """ Suggests modules based on the list in config """
     extension_list = None
-    assert inter.data is not None
-    interoptions = cast(dict[str, dict[str, int]], inter.data.get('options', {}))
+    assert inter.data is not None and 'options' in inter.data
+    interoptions = cast(dict[str, dict[str, int]], inter.data['options'])
     if 'action' in interoptions:
       if interoptions['action']['value'] in [Actions.reload, Actions.unload]:
         extension_list = [

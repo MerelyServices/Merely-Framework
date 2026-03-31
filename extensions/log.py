@@ -97,16 +97,17 @@ class Log(MerelyCog):
         inter.command.root_parent.name if inter.command.root_parent else inter.command.name
       )
     elif isinstance(inter.command, app_commands.ContextMenu):
-      assert inter.data is not None
+      assert inter.data is not None and 'target_id' in inter.data
       cmdname = inter.command.name
-      target = inter.data.get('target_id')
+      target = inter.data['target_id']
       assert target is not None
-      if inter.data.get('type') == 2:
-        resolved = inter.data.get('resolved')
+      if inter.data['type'] == 2:
+        assert 'resolved' in inter.data
+        resolved = inter.data['resolved']
         assert resolved is not None
         users = cast(dict[str, discord.User], resolved.get('users'))
         options.append('target:@' + users[str(target)].name)
-      elif inter.data.get('type') == 3:
+      elif inter.data['type'] == 3:
         assert isinstance(inter.channel, discord.TextChannel)
         target_message = inter.channel.get_partial_message(int(target))
         options.append('target:'+target_message.jump_url[19:])
@@ -143,16 +144,17 @@ class Log(MerelyCog):
           value = pre + truncate(value, 30)
         options.append(value)
     elif 'components' in inter.data:
-      for row in inter.data.get('components'):
-        subcomponents = row.get('components')
-        if subcomponents is None:
+      for row in inter.data['components']:
+        if 'components' in row:
+          subcomponents = row['components']
+          for opt in subcomponents:
+            options.append(
+              opt['custom_id'] + (':' + truncate(opt['value'], 30) if 'value' in opt else '')
+            )
+          if 'value' in row:
+            options.append(row['custom_id'] + (':' + truncate(row['value'],30)))
+        else:
           continue
-        for opt in subcomponents:
-          options.append(
-            opt['custom_id'] + (':' + truncate(opt['value'], 30) if 'value' in opt else '')
-          )
-        if 'value' in row:
-          options.append(row['custom_id'] + (':' + truncate(row['value'],30)))
     elif 'custom_id' in inter.data:
       options.append(truncate(inter.data['custom_id'], 30))
 
