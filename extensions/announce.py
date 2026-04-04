@@ -297,7 +297,11 @@ class Announce(ControlPanelCog):
         required=False,
         max_values=1
       )
-      self.add_item(self.imageUrlInput)
+      self.imageUrlLabel = discord.ui.Label(
+        text=self.babel(inter, 'announce_image'),
+        component=self.imageUrlInput
+      )
+      self.add_item(self.imageUrlLabel)
 
     async def on_submit(self, inter:discord.Interaction):
       embed = discord.Embed(
