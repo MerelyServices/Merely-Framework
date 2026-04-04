@@ -33,65 +33,73 @@ class Error(MerelyCog):
     error:app_commands.AppCommandError
   ):
     """ Report to the user what went wrong """
-    send = (inter.followup.send if inter.response.is_done() else inter.response.send_message)
     realerror: Exception = error
     if isinstance(error, app_commands.CommandInvokeError):
-      if isinstance(error.original, self.bot.auth.AuthError):
-        await send(str(error.original))
-        return
       realerror = error.original
-    print("error detected")
-    try:
-      if isinstance(realerror, app_commands.CommandOnCooldown):
-        if realerror.cooldown.get_retry_after() > 5:
-          await send(
-            self.babel(inter, 'cooldown', t=str(int(realerror.cooldown.get_retry_after()))),
-            ephemeral=True
-          )
-          return
-        print("cooldown")
-        return
-      if isinstance(
-        error,
-        (app_commands.CommandNotFound, commands.BadArgument, commands.MissingRequiredArgument)
-      ):
-        if 'Help' in self.bot.cogs:
-          help = cast("Help", self.bot.cogs['Help'])
-          assert inter.command is not None
-          await send(
-            content=await help.resolve_docs(inter, inter.command.name),
-            ephemeral=True
-          )
+
+    async def send(*args, **kwargs):
+      try:
+        if inter.response.is_done():
+          await inter.followup.send(*args, **kwargs)
         else:
-          await send(self.babel(inter, 'missingrequiredargument'), ephemeral=True)
-        return
-      if isinstance(error, app_commands.NoPrivateMessage):
-        await send(self.babel(inter, 'noprivatemessage'), ephemeral=True)
-        return
-      if isinstance(error, commands.PrivateMessageOnly):
-        await send(self.babel(inter, 'privatemessageonly'), ephemeral=True)
-        return
-      if isinstance(error, (app_commands.BotMissingPermissions, app_commands.MissingPermissions)):
-        permlist = self.bot.babel.string_list(inter, [f'`{p}`' for p in error.missing_permissions])
-        me = isinstance(error, app_commands.BotMissingPermissions)
+          await inter.response.send_message(*args, **kwargs)
+      except asyncio.TimeoutError:
+        print(
+          "Unable to handle error in command",
+          inter.command.name if inter.command else 'UNKNOWN COMMAND',
+          "because the interaction timed out."
+        )
+        print(error)
+      except Exception as e:
+        raise e from error
+    if isinstance(realerror, self.bot.auth.AuthError):
+      await send(str(realerror))
+      return
+    if isinstance(realerror, app_commands.CommandOnCooldown):
+      if realerror.cooldown.get_retry_after() > 5:
         await send(
-          self.babel(inter, 'missingperms', me=me, perms=permlist), ephemeral=True
+          self.babel(inter, 'cooldown', t=str(int(realerror.cooldown.get_retry_after()))),
+          ephemeral=True
         )
         return
-      if isinstance(error, (app_commands.CheckFailure, commands.CheckAnyFailure)):
-        print("Unhandled error;", error)
-        return
-      print("Unknown error;", error)
-      raise error
-    except asyncio.TimeoutError:
-      print(
-        "Unable to handle error in command",
-        inter.command.name if inter.command else 'UNKNOWN COMMAND',
-        "because the interaction timed out."
+      print("cooldown")
+      return
+    if isinstance(
+      realerror,
+      (app_commands.CommandNotFound, commands.BadArgument, commands.MissingRequiredArgument)
+    ):
+      if 'Help' in self.bot.cogs:
+        help = cast("Help", self.bot.cogs['Help'])
+        assert inter.command is not None
+        await send(
+          content=await help.resolve_docs(inter, inter.command.name),
+          ephemeral=True
+        )
+      else:
+        await send(self.babel(inter, 'missingrequiredargument'), ephemeral=True)
+      return
+    if isinstance(realerror, app_commands.NoPrivateMessage):
+      await send(self.babel(inter, 'noprivatemessage'), ephemeral=True)
+      return
+    if isinstance(realerror, commands.PrivateMessageOnly):
+      await send(self.babel(inter, 'privatemessageonly'), ephemeral=True)
+      return
+    if isinstance(realerror, (app_commands.BotMissingPermissions, app_commands.MissingPermissions)):
+      permlist = self.bot.babel.string_list(inter, [f'`{p}`' for p in realerror.missing_permissions])
+      me = isinstance(realerror, app_commands.BotMissingPermissions)
+      await send(
+        self.babel(inter, 'missingperms', me=me, perms=permlist), ephemeral=True
       )
-      print(error)
-    except Exception as e:
-      raise e from error
+      return
+    if isinstance(realerror, (app_commands.CheckFailure, commands.CheckAnyFailure)):
+      print("Check failed;", realerror)
+      return
+    if isinstance(realerror, AssertionError):
+      print(realerror)
+      return
+    print("error detected")
+    print("Unknown error;", realerror)
+    raise realerror
 
 
 async def setup(bot:MerelyBot):
