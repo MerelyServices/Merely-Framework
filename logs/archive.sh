@@ -24,7 +24,7 @@ if [ $? -eq 0 ]; then
     echo "Successfully created ${year}.zip"
     
     # Ask user if they want to delete originals
-    read -p "Do you want to delete the original folders? (y/n): " delete_choice
+    read -p "Do you want to delete the original folders? (y/N): " delete_choice
     
     if [ "$delete_choice" = "y" ] || [ "$delete_choice" = "Y" ]; then
         echo "$matching_folders" | xargs rm -rf
