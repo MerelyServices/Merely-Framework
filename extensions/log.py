@@ -108,7 +108,7 @@ class Log(MerelyCog):
         users = cast(dict[str, discord.User], resolved.get('users'))
         options.append('target:@' + users[str(target)].name)
       elif inter.data['type'] == 3:
-        assert isinstance(inter.channel, discord.TextChannel)
+        assert isinstance(inter.channel, (discord.TextChannel, discord.Thread, discord.DMChannel))
         target_message = inter.channel.get_partial_message(int(target))
         options.append('target:'+target_message.jump_url[19:])
       else:
