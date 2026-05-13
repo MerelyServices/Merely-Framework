@@ -23,6 +23,7 @@ class Premium(MerelyCog):
 
   premiumguild: discord.Guild
   premiumroles: set[discord.Role]
+  owner_paid_flag: bool
 
   def __init__(self, bot:MerelyBot):
     self.bot = bot
@@ -51,6 +52,8 @@ class Premium(MerelyCog):
       self.config['premium_users'] = ''
     if 'offer_custom_bot' not in self.config:
       self.config['offer_custom_bot'] = 'False'
+    if 'custom_bot_owner' not in self.config:
+      self.config['custom_bot_owner'] = ''
 
     if not self.config['premium_role_guild'] or not self.config['premium_roles']:
       raise Exception("Premium needs premium_role_guild and premium_roles set in config!")
@@ -58,6 +61,7 @@ class Premium(MerelyCog):
       raise Exception("Premium needs serverinv to be set in config!")
 
     self.premiumroles = set()
+    self.owner_paid_flag = True
 
     # Add command checker
     self.original_interaction_check = self.bot.tree.interaction_check
@@ -70,8 +74,8 @@ class Premium(MerelyCog):
   # Event listeners
 
   @commands.Cog.listener('on_connect')
-  async def cache_role(self):
-    """ Fetches guild and member list on connect to decrease first response time """
+  async def on_connect(self):
+    """ Fetches guild and member list on connect, checks if the owner has paid their bill """
     await asyncio.sleep(5)
     _premiumguild = self.bot.get_guild(int(self.config['premium_role_guild']))
     if not _premiumguild:
@@ -80,6 +84,13 @@ class Premium(MerelyCog):
       self.premiumguild = await self.bot.fetch_guild(int(self.config['premium_role_guild']))
     else:
       self.premiumguild = _premiumguild
+
+    # Set a flag if this is a custom bot and the owner doesn't have the premium role
+    if ownerid := self.config.getint('custom_bot_owner'):
+      self.owner_paid_flag = False
+      if owner := self.bot.get_user(ownerid):
+        if self.check_premium(owner):
+          self.owner_paid_flag = True
 
     # Repopulate list of premium roles
     self.premiumroles = set()
@@ -108,6 +119,15 @@ class Premium(MerelyCog):
     if inter.type != discord.InteractionType.application_command:
       return True
 
+    if not self.owner_paid_flag:
+      # The owner hasn't paid for premium, refuse to work
+      print(inter.command, inter.command.module if inter.command else 'No module')
+      if inter.command and inter.command.module == 'extensions.system':
+        # System commands must continue to function
+        return True
+      await inter.response.send_message(embed=self.error_embed(inter, True), ephemeral=True)
+      return False
+
     restricted = self.config['restricted_commands'].split(' ')
     premium_users = [int(u) for u in self.config['premium_users'].split(' ') if u]
     assert inter.command is not None
@@ -120,18 +140,20 @@ class Premium(MerelyCog):
       return False # user is not premium
     return True # command is not restricted
 
-  def error_embed(self, inter:discord.Interaction) -> discord.Embed:
+  def error_embed(self, inter:discord.Interaction, owner=False) -> discord.Embed:
     rolelist = self.bot.babel.string_list(inter, [r.name for r in self.premiumroles], True)
     embed = discord.Embed(
       title=self.babel(inter, 'required_title'),
-      description=self.babel(inter, 'required_error')
+      description=self.babel(inter, 'owner_required_error' if owner else 'required_error')
     )
     embed.url = (
       self.config['patreon'] if self.config['patreon']
       else self.config['other']
     )
     embed.set_thumbnail(url=self.config['icon'])
-    embed.set_footer(text=self.babel(inter, 'required_advice', role=rolelist))
+    embed.set_footer(
+      text=self.babel(inter, 'owner_required_advice' if owner else 'required_advice', role=rolelist)
+    )
     return embed
 
   # Views
