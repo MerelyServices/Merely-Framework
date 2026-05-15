@@ -91,6 +91,8 @@ class Premium(MerelyCog):
       if owner := self.bot.get_user(ownerid):
         if self.check_premium(owner):
           self.owner_paid_flag = True
+      if not self.owner_paid_flag:
+        print("ALERT: This bot has been disabled because the owner doesn't appear to have premium")
 
     # Repopulate list of premium roles
     self.premiumroles = set()
