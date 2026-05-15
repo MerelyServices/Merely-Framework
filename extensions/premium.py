@@ -86,13 +86,14 @@ class Premium(MerelyCog):
       self.premiumguild = _premiumguild
 
     # Set a flag if this is a custom bot and the owner doesn't have the premium role
-    if ownerid := self.config.getint('custom_bot_owner'):
-      self.owner_paid_flag = False
-      if owner := self.bot.get_user(ownerid):
-        if self.check_premium(owner):
-          self.owner_paid_flag = True
-      if not self.owner_paid_flag:
-        print("ALERT: This bot has been disabled because the owner doesn't appear to have premium")
+    if self.config.get('custom_bot_owner'):
+      if ownerid := self.config.getint('custom_bot_owner'):
+        self.owner_paid_flag = False
+        if owner := self.bot.get_user(ownerid):
+          if self.check_premium(owner):
+            self.owner_paid_flag = True
+        if not self.owner_paid_flag:
+          print("ALERT: This bot has been disabled because the owner doesn't appear to have premium")
 
     # Repopulate list of premium roles
     self.premiumroles = set()
