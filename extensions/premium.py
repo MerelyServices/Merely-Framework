@@ -90,7 +90,7 @@ class Premium(MerelyCog):
       if ownerid := self.config.getint('custom_bot_owner'):
         self.owner_paid_flag = False
         if owner := self.bot.get_user(ownerid):
-          if self.check_premium(owner):
+          if await self.check_premium(owner):
             self.owner_paid_flag = True
         if not self.owner_paid_flag:
           print("ALERT: This bot has been disabled because the owner doesn't appear to have premium")
@@ -124,7 +124,6 @@ class Premium(MerelyCog):
 
     if not self.owner_paid_flag:
       # The owner hasn't paid for premium, refuse to work
-      print(inter.command, inter.command.module if inter.command else 'No module')
       if inter.command and inter.command.module == 'extensions.system':
         # System commands must continue to function
         return True
