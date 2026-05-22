@@ -64,7 +64,10 @@ class Admin(MerelyCog):
       strict = self.config.getboolean(f"{message.channel.id}_janitor") or False
       if self.check_delete(message, strict):
         await asyncio.sleep(30)
-        await message.delete()
+        try:
+          await message.delete()
+        except (discord.Forbidden, discord.NotFound):
+          pass
 
   @app_commands.command()
   @app_commands.describe(mode="Choose whether to have janitor enabled or disabled in this channel")
