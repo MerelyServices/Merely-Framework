@@ -79,8 +79,6 @@ class Premium(MerelyCog):
     await asyncio.sleep(5)
     _premiumguild = self.bot.get_guild(int(self.config['premium_role_guild']))
     if not _premiumguild:
-      if not self.bot.quiet:
-        print("Note: had to fetch premium guild as it has not been loaded yet")
       self.premiumguild = await self.bot.fetch_guild(int(self.config['premium_role_guild']))
     else:
       self.premiumguild = _premiumguild
