@@ -103,7 +103,7 @@ class Babel(app_commands.Translator):
 
   def localeconv(self, locale:discord.Locale) -> str:
     """ Converts a Discord API locale to a babel locale """
-    return self.prefix + str(locale).replace('-US', '').replace('-UK', '')
+    return self.prefix + str(locale).replace('-US', '').replace('-GB', '')
 
   @overload
   def resolve_lang(
@@ -156,6 +156,9 @@ class Babel(app_commands.Translator):
             debug_origins.append('inherit '+origin)
           optlocale = self.langs[langs[-1]].get('meta', 'inherit', fallback=None)
 
+    # String locale
+    if locale:
+      resolv(locale, 'misc')
     # Manually set language for user
     if user_id and str(user_id) in self.config['language']:
       locale = self.config.get('language', str(user_id))
@@ -330,7 +333,7 @@ class Babel(app_commands.Translator):
       return None
     target = self.localeconv(locale)
     params = string.extras.copy()
-    params.pop('scope', None) # Remove scope as this is only for internal use
+    params.pop('scope') # Remove scope as this is only for internal use
     scope = string.extras['scope']
     key = 'command_' + string.message
     try:
