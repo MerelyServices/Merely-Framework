@@ -84,14 +84,7 @@ class Premium(MerelyCog):
       self.premiumguild = _premiumguild
 
     # Set a flag if this is a custom bot and the owner doesn't have the premium role
-    if self.config.get('custom_bot_owner'):
-      if ownerid := self.config.getint('custom_bot_owner'):
-        self.owner_paid_flag = False
-        if owner := self.bot.get_user(ownerid):
-          if await self.check_premium(owner):
-            self.owner_paid_flag = True
-        if not self.owner_paid_flag:
-          print("ALERT: This bot has been disabled because the owner doesn't appear to have premium")
+    await self.check_owner_premium()
 
     # Repopulate list of premium roles
     self.premiumroles = set()
@@ -104,6 +97,19 @@ class Premium(MerelyCog):
       raise Exception("The designated premium role was not found!")
 
   # Utils
+
+  async def check_owner_premium(self):
+    self.owner_paid_flag = True
+    if self.config.get('custom_bot_owner'):
+      if ownerid := self.config.getint('custom_bot_owner'):
+        self.owner_paid_flag = False
+        if owner := self.bot.get_user(ownerid):
+          if await self.check_premium(owner):
+            print("Bot owner premium check: passed")
+            return True
+        if not self.owner_paid_flag:
+          print("ALERT: Bot owner premium check: failed")
+    return False
 
   async def check_premium(self, user:discord.User | discord.Member):
     try:
@@ -120,7 +126,7 @@ class Premium(MerelyCog):
     if inter.type != discord.InteractionType.application_command:
       return True
 
-    if not self.owner_paid_flag:
+    if not self.owner_paid_flag and not await self.check_owner_premium():
       # The owner hasn't paid for premium, refuse to work
       if inter.command and inter.command.module == 'extensions.system':
         # System commands must continue to function
