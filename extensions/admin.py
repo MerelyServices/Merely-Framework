@@ -112,7 +112,7 @@ class Admin(MerelyCog):
       return
     try:
       await inter.response.defer(thinking=True)
-      if clean_to:
+      if clean_to and clean_to.isdigit() and int(clean_to):
         deleted = await inter.channel.purge(
           limit=number if number else 1000,
           check=lambda m: self.check_delete(m, strict),
